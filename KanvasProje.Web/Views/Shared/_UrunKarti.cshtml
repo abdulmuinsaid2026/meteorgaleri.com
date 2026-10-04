@@ -17,26 +17,31 @@
 
     var indirimliMi = Model.IndirimVarMi && Model.Fiyat > Model.EtkinFiyat;
     var indirimYuzdesi = indirimliMi ? (int)Math.Round((1.0 - ((double)Model.EtkinFiyat / (double)Model.Fiyat)) * 100) : 0;
+
+    var katSlug = Model.Kategori?.Slug?.ToLowerInvariant() ?? "";
+    var katAd = Model.Kategori?.Ad?.ToLowerInvariant() ?? "";
+    var baslik = Model.Baslik?.ToLowerInvariant() ?? "";
+    var fallbackGorsel = (katSlug.Contains("ayna") || katAd.Contains("ayna") || baslik.Contains("ayna"))
+        ? "/img/categories/ayna.jpg"
+        : (katSlug.Contains("kesme") || katAd.Contains("kesme") || baslik.Contains("kesme") || baslik.Contains("tahta"))
+            ? "/img/categories/cam-kesme-tahtasi.jpg"
+            : (katSlug.Contains("duvar") || katAd.Contains("duvar") || baslik.Contains("duvar kağıdı"))
+                ? "/img/categories/duvar-kagidi.jpg"
+                : "/img/categories/cam-tablo.jpg";
+
+    var goruntulenecekGorsel = !string.IsNullOrWhiteSpace(gorsel) ? gorsel : fallbackGorsel;
 }
 
 <article class="group relative flex flex-col h-full bg-white rounded-2xl border border-[#EAE3D2] p-2.5 sm:p-3 hover:border-[#01ADD3]/60 hover:shadow-[0_12px_32px_rgba(27,42,74,0.08)] hover:-translate-y-1 transition-all duration-300">
     <!-- Görsel Çerçevesi -->
     <div class="relative w-full aspect-square rounded-xl overflow-hidden bg-gradient-to-b from-[#FAF8F5] to-[#F3EEE5] flex items-center justify-center p-3 mb-2.5 border border-[#F0E8DC] shadow-[inset_0_1px_4px_rgba(0,0,0,0.02)]">
         <a href="@productUrl" class="block w-full h-full flex items-center justify-center">
-            @if (!string.IsNullOrWhiteSpace(gorsel))
-            {
-                <img src="@gorsel" 
-                     alt="@Model.Baslik" 
-                     class="max-h-full max-w-full object-contain filter drop-shadow-sm group-hover:scale-108 transition-transform duration-700 ease-out select-none" 
-                     loading="lazy" 
-                     decoding="async" />
-            }
-            else
-            {
-                <div class="flex h-full w-full items-center justify-center text-[#c5c0b8]">
-                    <i class="fas fa-image fa-2x"></i>
-                </div>
-            }
+            <img src="@goruntulenecekGorsel" 
+                 alt="@Model.Baslik" 
+                 class="max-h-full max-w-full object-contain filter drop-shadow-sm group-hover:scale-108 transition-transform duration-700 ease-out select-none" 
+                 loading="lazy" 
+                 decoding="async"
+                 onerror="this.onerror=null; this.src='@fallbackGorsel';" />
         </a>
 
         <!-- Rozetler (Badges) -->

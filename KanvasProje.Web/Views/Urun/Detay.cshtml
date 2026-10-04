@@ -155,6 +155,22 @@
     var varsayilanGaleriAltMetni = !string.IsNullOrWhiteSpace(varsayilanMedya?.AltMetin)
         ? varsayilanMedya.AltMetin
         : Model.Baslik;
+
+    var katSlug = Model.Kategori?.Slug?.ToLowerInvariant() ?? "";
+    var katAd = Model.Kategori?.Ad?.ToLowerInvariant() ?? "";
+    var baslik = Model.Baslik?.ToLowerInvariant() ?? "";
+    var fallbackGorsel = (katSlug.Contains("ayna") || katAd.Contains("ayna") || baslik.Contains("ayna"))
+        ? "/img/categories/ayna.jpg"
+        : (katSlug.Contains("kesme") || katAd.Contains("kesme") || baslik.Contains("kesme") || baslik.Contains("tahta"))
+            ? "/img/categories/cam-kesme-tahtasi.jpg"
+            : (katSlug.Contains("duvar") || katAd.Contains("duvar") || baslik.Contains("duvar kağıdı"))
+                ? "/img/categories/duvar-kagidi.jpg"
+                : "/img/categories/cam-tablo.jpg";
+
+    if (string.IsNullOrWhiteSpace(varsayilanGaleriGorseli))
+    {
+        varsayilanGaleriGorseli = fallbackGorsel;
+    }
     var varyantMedyaHaritasi = tumMedya
         .Where(x => x.UrunSecenekId.HasValue && !x.VideoMu && !string.IsNullOrWhiteSpace(x.ResimYolu))
         .GroupBy(x => x.UrunSecenekId!.Value)
@@ -238,7 +254,7 @@ ViewData["SeoTitle"] = !string.IsNullOrWhiteSpace(Model.SeoTitle) ? Model.SeoTit
         <i class="fas fa-times text-2xl"></i>
     </button>
     <div class="relative z-[99991] w-full h-full flex items-center justify-center overflow-hidden px-4 py-20" id="lightboxImgContainer">
-        <img id="mobileLightboxImage" class="max-w-full max-h-full object-contain transition-transform duration-200" src="@varsayilanGaleriGorseli" alt="@varsayilanGaleriAltMetni" decoding="async">
+        <img id="mobileLightboxImage" class="max-w-full max-h-full object-contain transition-transform duration-200" src="@varsayilanGaleriGorseli" alt="@varsayilanGaleriAltMetni" decoding="async" onerror="this.onerror=null; this.src='@fallbackGorsel';">
     </div>
     <div class="absolute bottom-8 left-1/2 z-[100000] transform -translate-x-1/2 flex items-center gap-4 bg-black/60 text-white rounded-full px-4 py-2">
         <button type="button" class="w-10 h-10 flex items-center justify-center" onclick="rotateMobileImage()" aria-label="Döndür"><i class="fas fa-redo"></i></button>
@@ -259,7 +275,7 @@ ViewData["SeoTitle"] = !string.IsNullOrWhiteSpace(Model.SeoTitle) ? Model.SeoTit
         <button type="button" class="w-10 h-10 flex items-center justify-center" onclick="zoomInDesktop()" aria-label="Yakınlaştır"><i class="fas fa-search-plus"></i></button>
     </div>
     <div class="relative z-[99991] w-full h-full flex items-center justify-center overflow-hidden px-6 py-20">
-        <img id="desktopLightboxImage" src="@varsayilanGaleriGorseli" class="max-w-full max-h-full object-contain transition-transform duration-200" alt="@varsayilanGaleriAltMetni" loading="lazy" decoding="async">
+        <img id="desktopLightboxImage" src="@varsayilanGaleriGorseli" class="max-w-full max-h-full object-contain transition-transform duration-200" alt="@varsayilanGaleriAltMetni" loading="lazy" decoding="async" onerror="this.onerror=null; this.src='@fallbackGorsel';">
     </div>
 </div>
 
@@ -330,7 +346,7 @@ ViewData["SeoTitle"] = !string.IsNullOrWhiteSpace(Model.SeoTitle) ? Model.SeoTit
         <!-- Left: Image Gallery -->
         <div class="space-y-4">
             <div id="mainProductImageContainer" class="relative bg-[#FDF6E3] aspect-square rounded-lg overflow-hidden group cursor-zoom-in flex items-center justify-center p-4" onclick="openProductLightbox()">
-                <img id="mainProductImage" src="@varsayilanGaleriGorseli" data-default-src="@(varsayilanMedya?.ResimYolu ?? Model.AnaGorselUrl)" data-default-alt="@varsayilanGaleriAltMetni" data-product-name="@Model.Baslik" class="w-full h-full object-contain transition-transform duration-700 ease-out group-hover:scale-[2] main-product-image" alt="@varsayilanGaleriAltMetni" decoding="async" fetchpriority="high">
+                <img id="mainProductImage" src="@varsayilanGaleriGorseli" data-default-src="@(varsayilanMedya?.ResimYolu ?? Model.AnaGorselUrl)" data-default-alt="@varsayilanGaleriAltMetni" data-product-name="@Model.Baslik" class="w-full h-full object-contain transition-transform duration-700 ease-out group-hover:scale-[2] main-product-image" alt="@varsayilanGaleriAltMetni" decoding="async" fetchpriority="high" onerror="this.onerror=null; this.src='@fallbackGorsel';">
                 
                 <button type="button" class="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur-sm w-10 h-10 rounded-full shadow-sm text-[#1B2A4A] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white z-10" onclick="navigateGallery('prev', event)">
                     <i class="fas fa-chevron-left"></i>
@@ -351,7 +367,7 @@ ViewData["SeoTitle"] = !string.IsNullOrWhiteSpace(Model.SeoTitle) ? Model.SeoTit
                     {
                         var altMetin = string.IsNullOrWhiteSpace(resim.AltMetin) ? Model.Baslik : resim.AltMetin;
                         <button type="button" class="thumbnail-item flex-shrink-0 w-20 h-20 md:w-24 md:h-24 rounded border-2 @(string.Equals(resim.ResimYolu, varsayilanGaleriGorseli, StringComparison.OrdinalIgnoreCase) ? "border-[#1B2A4A]" : "border-transparent") overflow-hidden transition-colors bg-[#FFFBF0]" data-image="@resim.ResimYolu" data-alt="@altMetin" onclick="changeProductImage(this.dataset.image, this, this.dataset.alt)">
-                                            <img src="@resim.EtkinPosterYolu" class="w-full h-full object-cover" alt="@altMetin" loading="lazy" decoding="async">
+                                            <img src="@resim.EtkinPosterYolu" class="w-full h-full object-cover" alt="@altMetin" loading="lazy" decoding="async" onerror="this.onerror=null; this.src='@fallbackGorsel';">
                         </button>
                     }
                 </div>
