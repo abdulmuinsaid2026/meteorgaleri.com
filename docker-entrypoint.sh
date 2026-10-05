@@ -7,6 +7,7 @@ APP_PORT=$(echo "${PORT:-8080}" | tr -d '"'\'' ')
 
 mkdir -p \
   "$PERSISTENT_ROOT/uploads" \
+  "$PERSISTENT_ROOT/img/products" \
   "$PERSISTENT_ROOT/img/products/kanvas-panoramik" \
   "$PERSISTENT_ROOT/App_Data" \
   "$PERSISTENT_ROOT/logs"
@@ -30,8 +31,8 @@ link_directory() {
   ln -s "$target_dir" "$link_path"
 }
 
-# Railway volumes: sadece kullanici tarafindan yuklenen/guncellenen dosyalar kalici olsun.
-# Mevcut img/products image icinde kalir; toplu kanvas importu ayri bir alt klasorde saklanir.
+# Railway volumes: dosyalar kalici olsun ve image icindeki baslangic dosyalari sync edilsin.
+seed_directory "$APP_ROOT/wwwroot/img/products" "$PERSISTENT_ROOT/img/products"
 seed_directory "$APP_ROOT/wwwroot/uploads" "$PERSISTENT_ROOT/uploads"
 seed_directory "$APP_ROOT/App_Data" "$PERSISTENT_ROOT/App_Data"
 seed_directory "$APP_ROOT/logs" "$PERSISTENT_ROOT/logs"
