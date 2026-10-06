@@ -187,7 +187,7 @@ var touchIconUrl = "/favicon.svg";
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
     <style data-purpose="custom-fonts">
-        body { font-family: 'Source Sans 3', 'Source Sans Pro', system-ui, sans-serif; color: #1B2A4A; padding: 0 !important; margin: 0 !important; background: #FFFBF0 !important; font-size: 14px; line-height: 1.6; }
+        body { font-family: 'Source Sans 3', 'Source Sans Pro', system-ui, sans-serif; color: #2E2721; padding: 0 !important; margin: 0 !important; background: #FAF8F5 !important; font-size: 14px; line-height: 1.6; }
         h1, h2, h3, h4, h5, h6, .font-serif { font-family: 'Playfair Display', Georgia, serif; }
         .text-xxs { font-size: 0.65rem; }
         nav a, button, .tracking-widest { letter-spacing: 0.1em; }
@@ -237,7 +237,7 @@ var touchIconUrl = "/favicon.svg";
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     @await RenderSectionAsync("Styles", required: false)
 </head>
-<body class="bg-[#FFFBF0] overflow-x-hidden antialiased flex flex-col min-h-screen">
+<body class="bg-[#FAF8F5] overflow-x-hidden antialiased flex flex-col min-h-screen">
     <form id="globalAntiForgeryForm" class="hidden">
         @Html.AntiForgeryToken()
     </form>
@@ -246,14 +246,14 @@ var touchIconUrl = "/favicon.svg";
     @if (siteSettings.UstBarEtkin)
     {
         var tickerSpeed = siteSettings.UstBarHizi > 0 ? siteSettings.UstBarHizi : 34;
-        <div class="trust-ticker relative z-50 overflow-hidden bg-[#1B2A4A] py-2 text-xs font-light tracking-wider text-white">
+        <div class="trust-ticker relative z-50 overflow-hidden bg-[#241E1A] py-2 text-[11px] font-light tracking-[0.18em] text-[#FAF8F5] border-b border-[#3D332A]">
             <div class="trust-ticker-track flex items-center" style="animation-duration: @tickerSpeed.ToString("0", System.Globalization.CultureInfo.InvariantCulture)s;">
                 @for (var repeat = 0; repeat < 2; repeat++)
                 {
                     foreach (var message in trustMessages)
                     {
-                        <span class="mx-5 flex shrink-0 items-center gap-2 whitespace-nowrap">
-                            <i class="fas fa-check text-[10px] text-[#f7ead8]"></i>
+                        <span class="mx-6 flex shrink-0 items-center gap-2 whitespace-nowrap">
+                            <i class="fas fa-gem text-[9px] text-[#C9A84C]"></i>
                             @message
                         </span>
                     }
@@ -264,244 +264,228 @@ var touchIconUrl = "/favicon.svg";
     <!-- END: AnnouncementBar -->
 
 <!-- BEGIN: MainHeader -->
-    <header class="sticky top-0 bg-[#FFFBF0] z-[100] border-b border-[#F5E6C8]">
-        <div class="w-full max-w-[1360px] mx-auto px-4 py-2 flex flex-col items-center relative">
-            <!-- Logo -->
-            <a class="mb-1 mt-1 inline-block leading-none" href="/" aria-label="@brandName" id="siteLogo">
-                @if (!string.IsNullOrEmpty(logoUrl)) {
-                    <img src="@logoUrl" asp-append-version="true" alt="@siteSettings.MarkaAdi" class="block h-auto w-[155px] object-contain md:w-[215px]" width="215" height="45" decoding="async" fetchpriority="high" />
-                } else {
-                    <h1 class="font-serif text-2xl md:text-3xl tracking-widest text-[#1B2A4A] font-medium text-center">@siteSettings.MarkaAdi</h1>
-                }
-            </a>
-
-            <!-- Desktop Nav Right Side: Search + Account/Favorites/Cart -->
-            <div class="absolute right-4 top-1/2 -translate-y-1/2 hidden md:flex items-center gap-4 text-[#1B2A4A]">
-                <!-- Desktop Search Bar (inline, replaces button when active) -->
-                <div id="desktopSearchBar" class="hidden items-center">
-                    <form action="/Urun" method="get" class="relative flex items-center">
-                        <input type="text" name="s" id="desktopSearchInput" placeholder="Ürün ara..." autocomplete="off"
-                               class="w-[260px] bg-white border border-[#F5E6C8] rounded-full px-4 pr-9 py-2 text-sm text-[#1B2A4A] placeholder-[#a09e99] focus:outline-none focus:ring-1 focus:ring-[#3A7CA5] focus:border-[#3A7CA5] shadow-md" />
-                        <button type="submit" aria-label="Ara" class="absolute right-3 top-1/2 -translate-y-1/2 text-[#a09e99] hover:text-[#3A7CA5] transition-colors">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewbox="0 0 24 24"><path d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                        </button>
-                    </form>
-                    <button type="button" id="desktopSearchCloseBtn" class="ml-2 text-[#333333] hover:text-[#1B2A4A]">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewbox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+    <header class="sticky top-0 z-[100] shadow-md">
+        <!-- Top Main Bar (Espresso Bronze with Champagne Gold Accent Line) -->
+        <div class="bg-[#2E2721] text-[#FAF8F5] border-b-2 border-[#C9A84C]">
+            <div class="w-full max-w-[1440px] mx-auto px-4 sm:px-6 py-3 flex items-center justify-between relative">
+                
+                <!-- Mobile Left: Hamburger + Search Toggle -->
+                <div class="flex md:hidden items-center gap-3 text-[#FAF8F5]">
+                    <button aria-label="Menüyü aç" onclick="window.toggleMobileNav(true)" class="p-1.5 hover:text-[#C9A84C] transition-colors" id="mobileMenuBtn">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                    </button>
+                    <button type="button" aria-label="Arama" onclick="window.toggleSearchBar()" class="p-1.5 hover:text-[#C9A84C] transition-colors" id="mobileSearchBtn">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" stroke-linecap="round" stroke-linejoin="round"></path></svg>
                     </button>
                 </div>
 
-                <!-- Desktop Search Button (shown when search is closed) -->
-                <button type="button" aria-label="Arama" onclick="window.toggleSearchBar()" class="hover:text-[#3A7CA5] transition-colors" id="desktopSearchBtn">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewbox="0 0 24 24"><path d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                </button>
-
-                <!-- Account -->
-                @if (SignInManager.IsSignedIn(User))
-                {
-                    <a href="/Profil" aria-label="Hesabım" title="Hesabım" class="hover:text-[#3A7CA5] transition-colors">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewbox="0 0 24 24"><path d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                    </a>
-                }
-                else
-                {
-                    <a href="/Hesap/GirisYap" aria-label="Giriş Yap" title="Giriş Yap" class="hover:text-[#3A7CA5] transition-colors">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewbox="0 0 24 24"><path d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                    </a>
-                }
-
-                <!-- Favoriler -->
-                <a href="/Favori" aria-label="Favoriler" class="hover:text-red-500 transition-colors">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" /></svg>
+                <!-- Logo -->
+                <a class="inline-flex flex-col items-center leading-none group text-center py-1" href="/" aria-label="@brandName" id="siteLogo">
+                    <span class="font-serif text-2xl sm:text-[26px] md:text-[28px] tracking-[0.24em] text-[#FAF8F5] uppercase font-medium group-hover:text-[#E8D08D] transition-colors">METEOR GALERİ</span>
+                    <span class="text-[8.5px] uppercase tracking-[0.42em] text-[#C9A84C] font-light mt-0.5">ART & WALL DECOR</span>
                 </a>
 
-                <!-- Sepet -->
-                <a href="/Sepet" aria-label="Sepet" class="relative hover:text-[#3A7CA5] transition-colors">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewbox="0 0 24 24"><path d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                    <span id="cartItemCount" class="absolute -top-1 -right-2 bg-[#3A7CA5] text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center transition-transform duration-300">@sepetCount</span>
-                </a>
-            </div>
+                <!-- Desktop Search Bar (Centered Pill) -->
+                <div class="hidden md:flex flex-1 max-w-[360px] lg:max-w-[440px] mx-6 lg:mx-8">
+                    <form action="/Urun" method="get" class="relative w-full">
+                        <input type="text" name="s" id="desktopSearchInput" placeholder="Tablo, eser veya koleksiyon ara..." autocomplete="off"
+                               class="w-full bg-[#3D352E]/90 hover:bg-[#483E34] focus:bg-[#FAF8F5] text-sm text-[#FAF8F5] focus:text-[#2E2721] placeholder-[#A69B8F] focus:placeholder-[#8C8276] rounded-full px-4 pr-10 py-2 border border-[#4F443A] focus:border-[#C9A84C] focus:outline-none focus:ring-1 focus:ring-[#C9A84C] transition-all shadow-inner" />
+                        <button type="submit" aria-label="Ara" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#C9A84C] hover:text-white transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                        </button>
+                    </form>
+                    <!-- Fallback elements for legacy script compatibility -->
+                    <div id="desktopSearchBar" class="hidden"></div>
+                    <button type="button" id="desktopSearchBtn" class="hidden" aria-label="Arama"></button>
+                    <button type="button" id="desktopSearchCloseBtn" class="hidden" aria-label="Kapat"></button>
+                </div>
 
-            <!-- Mobile Left: Hamburger + Search Toggle -->
-            <div class="absolute left-4 top-1/2 -translate-y-1/2 flex md:hidden items-center gap-3 text-[#1B2A4A]">
-                <button aria-label="Menüyü aç" onclick="window.toggleMobileNav(true)" class="hover:text-[#3A7CA5]" id="mobileMenuBtn">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewbox="0 0 24 24"><path d="M3.75 6h16.5m-16.5 6h16.5m-16.5 6h16.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                </button>
-                <button type="button" aria-label="Arama" onclick="window.toggleSearchBar()" class="hover:text-[#3A7CA5]" id="mobileSearchBtn">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewbox="0 0 24 24"><path d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                </button>
-            </div>
-
-            <!-- Mobile Right: Account/Favorites/Cart -->
-            <div id="mobileIcons" class="absolute right-4 top-1/2 -translate-y-1/2 flex md:hidden items-center gap-3 text-[#1B2A4A]">
-                @if (SignInManager.IsSignedIn(User))
-                {
-                    <a href="/Profil" aria-label="Hesabım" title="Hesabım" class="hover:text-[#3A7CA5]">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewbox="0 0 24 24"><path d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                    </a>
-                }
-                else
-                {
-                    <a href="/Hesap/GirisYap" aria-label="Giriş Yap" title="Giriş Yap" class="hover:text-[#3A7CA5]">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewbox="0 0 24 24"><path d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                    </a>
-                }
-                <a href="/Favori" aria-label="Favoriler" class="hover:text-red-500">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" /></svg>
-                </a>
-                <a href="/Sepet" aria-label="Sepet" class="relative hover:text-[#3A7CA5]">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewbox="0 0 24 24"><path d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                    <span id="cartItemCountMobile" class="absolute -top-1 -right-2 bg-[#3A7CA5] text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center">@sepetCount</span>
-                </a>
-            </div>
-
-            <!-- Desktop Navigation -->
-            <nav class="w-full hidden md:block z-50" data-desktop-nav>
-                <ul class="flex justify-center space-x-4 text-xs tracking-widest text-[#333333] font-light uppercase" data-desktop-nav-list>
-                    @foreach (var kategori in tumKategoriler.Where(x => x.ParentKategoriId == null).OrderBy(x => x.Sira).ThenBy(x => x.Ad))
+                <!-- Desktop / Mobile Icons (Right Side) -->
+                <div class="flex items-center gap-3.5 sm:gap-5 text-[#FAF8F5]">
+                    <!-- Account -->
+                    @if (SignInManager.IsSignedIn(User))
                     {
-                        var altKategoriler = tumKategoriler.Where(x => x.ParentKategoriId == kategori.Id).OrderBy(x => x.Sira).ToList();
-                        var kategoriPreviewGorsel = GetCategoryMenuImage(kategori);
-                        var kategoriPreviewMetin = !string.IsNullOrWhiteSpace(kategori.KisaAciklama)
-                            ? kategori.KisaAciklama
-                            : "Seçili koleksiyondaki ürünleri keşfedin.";
-                        
-                        <li class="relative group cursor-pointer hover:text-[#1B2A4A] transition-colors py-2" data-category-menu-item>
-                            <a href="/Urun?k=@kategori.Id" class="flex items-center gap-1 whitespace-nowrap">
-                                @kategori.Ad
-                                <i class="fas fa-chevron-down text-[10px] opacity-70 group-hover:rotate-180 transition-transform"></i>
-                            </a>
-                            
-                            <!-- Dropdown Menü -->
-                            <div class="absolute left-1/2 top-full pt-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible transition-all duration-300 w-[min(820px,calc(100vw-32px))] z-[9999]" style="transform:translateX(-50%) translateZ(1px);isolation:isolate" data-category-dropdown>
-                                <div class="bg-[#f7f1e6] border border-[#c9b58a]/60 shadow-xl rounded-sm p-5 ring-1 ring-[#1B2A4A]/5">
-                                    <div class="mb-4 flex items-center justify-between border-b border-[#d8c9aa] pb-3">
-                                        <div>
-                                            <div class="font-serif text-lg normal-case tracking-normal text-[#1B2A4A]">@kategori.Ad</div>
-                                            <div class="mt-1 text-[11px] font-light normal-case tracking-normal text-[#6f6a5e]">@(altKategoriler.Any() ? "Alt kategoriler" : "Kategori detayı")</div>
-                                        </div>
-                                        <a href="/Urun?k=@kategori.Id" class="text-[11px] font-medium tracking-widest text-[#3A7CA5] hover:text-[#1B2A4A]">TÜMÜNÜ GÖR</a>
-                                    </div>
-
-                                    @if (altKategoriler.Any())
-                                    {
-                                        <div class="grid gap-5 lg:grid-cols-[1.35fr_0.65fr]">
-                                            <div class="grid grid-cols-2 gap-x-5 gap-y-1 sm:grid-cols-3">
-                                                @foreach (var alt in altKategoriler)
-                                                {
-                                                    var altGorsel = GetCategoryMenuImage(alt);
-                                                    var altPreviewMetin = !string.IsNullOrWhiteSpace(alt.KisaAciklama)
-                                                        ? alt.KisaAciklama
-                                                        : (!string.IsNullOrWhiteSpace(alt.SeoDescription) ? alt.SeoDescription : "Bu koleksiyondaki öne çıkan tasarımları inceleyin.");
-                                                    <a href="/Urun?k=@alt.Id"
-                                                       class="flex items-center gap-3 border-b border-[#dfd3ba]/70 px-1 py-2 text-left text-[11px] leading-snug text-[#333333] transition-colors hover:text-[#3A7CA5]"
-                                                       data-category-preview-src="@altGorsel"
-                                                       data-category-preview-title="@alt.Ad"
-                                                       data-category-preview-text="@altPreviewMetin">
-                                                        <span class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden bg-[#efe4cf] text-[#3A7CA5]">
-                                                            @if (!string.IsNullOrWhiteSpace(altGorsel))
-                                                            {
-                                                                <img src="@altGorsel" alt="@alt.Ad" class="h-full w-full object-cover" loading="lazy" decoding="async" />
-                                                            }
-                                                            else
-                                                            {
-                                                                <i class="fas fa-layer-group text-xs"></i>
-                                                            }
-                                                        </span>
-                                                        <span>@alt.Ad</span>
-                                                    </a>
-                                                }
-                                            </div>
-                                            <div class="category-preview-panel hidden overflow-hidden bg-[#efe4cf] lg:block" data-category-preview-panel>
-                                                <div class="category-preview-media aspect-[4/5] bg-[#e5d6ba]">
-                                                    @if (!string.IsNullOrWhiteSpace(kategoriPreviewGorsel))
-                                                    {
-                                                        <img src="@kategoriPreviewGorsel" alt="@kategori.Ad" class="h-full w-full object-cover" data-category-preview-image loading="lazy" decoding="async" />
-                                                    }
-                                                    else
-                                                    {
-                                                        <div class="flex h-full w-full items-center justify-center text-[#3A7CA5]" data-category-preview-placeholder>
-                                                            <i class="fas fa-layer-group text-xl"></i>
-                                                        </div>
-                                                    }
-                                                </div>
-                                                <div class="px-4 py-4">
-                                                    <p class="mb-1 text-[10px] uppercase tracking-[0.22em] text-[#3A7CA5]">Koleksiyon</p>
-                                                    <h4 class="category-preview-title font-serif text-xl normal-case tracking-normal text-[#1B2A4A]" data-category-preview-title>@kategori.Ad</h4>
-                                                    <p class="category-preview-text mt-2 line-clamp-3 text-xs normal-case leading-5 tracking-normal text-[#6f6a5e]" data-category-preview-text>@kategoriPreviewMetin</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    }
-                                    else
-                                    {
-                                        <div class="grid gap-5 lg:grid-cols-[0.8fr_1.2fr]">
-                                            <div class="overflow-hidden bg-[#efe4cf]">
-                                                <div class="aspect-[4/3] bg-[#e5d6ba]">
-                                                    @if (!string.IsNullOrWhiteSpace(kategoriPreviewGorsel))
-                                                    {
-                                                        <img src="@kategoriPreviewGorsel" alt="@kategori.Ad" class="h-full w-full object-cover" loading="lazy" decoding="async" />
-                                                    }
-                                                    else
-                                                    {
-                                                        <div class="flex h-full w-full items-center justify-center text-[#3A7CA5]">
-                                                            <i class="fas fa-layer-group text-xl"></i>
-                                                        </div>
-                                                    }
-                                                </div>
-                                            </div>
-                                            <div class="flex flex-col justify-center text-left normal-case tracking-normal">
-                                                <p class="mb-3 text-[10px] uppercase tracking-[0.22em] text-[#3A7CA5]">Kategori</p>
-                                                <h4 class="font-serif text-2xl text-[#1B2A4A]">@kategori.Ad</h4>
-                                                <p class="mt-3 text-sm leading-6 text-[#6f6a5e]">@kategoriPreviewMetin</p>
-                                                <a href="/Urun?k=@kategori.Id" class="mt-5 inline-flex w-fit items-center gap-2 border-b border-[#1B2A4A] pb-1 text-[11px] font-medium uppercase tracking-widest text-[#1B2A4A] transition-colors hover:text-[#3A7CA5]">
-                                                    Kategoriyi İncele
-                                                    <i class="fas fa-arrow-right text-[10px]"></i>
-                                                </a>
-                                            </div>
-                                        </div>
-                                    }
-                                </div>
-                            </div>
-                        </li>
+                        <a href="/Profil" aria-label="Hesabım" title="Hesabım" class="hover:text-[#C9A84C] transition-colors flex items-center gap-1.5">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                            <span class="hidden xl:inline text-[11px] uppercase tracking-wider font-light">Hesabım</span>
+                        </a>
                     }
-                    <li class="cursor-pointer hover:text-[#1B2A4A] transition-colors py-2 whitespace-nowrap"><a href="/Kurumsal/Iletisim">İLETİŞİM</a></li>
-                </ul>
-            </nav>
+                    else
+                    {
+                        <a href="/Hesap/GirisYap" aria-label="Giriş Yap" title="Giriş Yap" class="hover:text-[#C9A84C] transition-colors flex items-center gap-1.5">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                            <span class="hidden xl:inline text-[11px] uppercase tracking-wider font-light">Giriş Yap</span>
+                        </a>
+                    }
+
+                    <!-- Favoriler -->
+                    <a href="/Favori" aria-label="Favoriler" title="Favoriler" class="hover:text-[#C9A84C] transition-colors relative">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" /></svg>
+                    </a>
+
+                    <!-- Sepet -->
+                    <a href="/Sepet" aria-label="Sepet" class="hover:text-[#C9A84C] transition-colors relative flex items-center gap-2">
+                        <div class="relative">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                            <span id="cartItemCount" class="absolute -top-1.5 -right-2 bg-[#C9A84C] text-[#2E2721] text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-xs">@sepetCount</span>
+                        </div>
+                        <span class="hidden xl:inline text-[11px] uppercase tracking-wider font-medium">Sepetim</span>
+                    </a>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Sub-Nav Bar (Warm Sand / Ivory Category Bar) -->
+        <div class="bg-[#FAF7F2] border-b border-[#E8E1D5] hidden md:block">
+            <div class="w-full max-w-[1440px] mx-auto px-4 sm:px-6">
+                <nav data-desktop-nav>
+                    <ul class="flex justify-center items-center space-x-6 lg:space-x-8 text-[12px] tracking-[0.18em] text-[#2E2721] font-medium uppercase py-2.5" data-desktop-nav-list>
+                        @foreach (var kategori in tumKategoriler.Where(x => x.ParentKategoriId == null).OrderBy(x => x.Sira).ThenBy(x => x.Ad))
+                        {
+                            var altKategoriler = tumKategoriler.Where(x => x.ParentKategoriId == kategori.Id).OrderBy(x => x.Sira).ToList();
+                            var kategoriPreviewGorsel = GetCategoryMenuImage(kategori);
+                            var kategoriPreviewMetin = !string.IsNullOrWhiteSpace(kategori.KisaAciklama)
+                                ? kategori.KisaAciklama
+                                : "Seçili koleksiyondaki ürünleri keşfedin.";
+                            
+                            <li class="relative group cursor-pointer hover:text-[#C9A84C] transition-colors py-1" data-category-menu-item>
+                                <a href="/Urun?k=@kategori.Id" class="flex items-center gap-1.5 whitespace-nowrap">
+                                    @kategori.Ad
+                                    <i class="fas fa-chevron-down text-[9px] opacity-70 group-hover:rotate-180 transition-transform"></i>
+                                </a>
+                                
+                                <!-- Dropdown Menü -->
+                                <div class="absolute left-1/2 top-full pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible transition-all duration-300 w-[min(820px,calc(100vw-32px))] z-[9999]" style="transform:translateX(-50%) translateZ(1px);isolation:isolate" data-category-dropdown>
+                                    <div class="bg-[#FAF7F2] border border-[#DDD5C7] shadow-2xl rounded-sm p-6 ring-1 ring-black/5">
+                                        <div class="mb-4 flex items-center justify-between border-b border-[#E8E1D5] pb-3">
+                                            <div>
+                                                <div class="font-serif text-lg normal-case tracking-normal text-[#2E2721]">@kategori.Ad</div>
+                                                <div class="mt-1 text-[11px] font-light normal-case tracking-normal text-[#736B63]">@(altKategoriler.Any() ? "Alt kategoriler" : "Kategori detayı")</div>
+                                            </div>
+                                            <a href="/Urun?k=@kategori.Id" class="text-[11px] font-medium tracking-widest text-[#C9A84C] hover:text-[#2E2721] transition-colors">TÜMÜNÜ GÖR</a>
+                                        </div>
+
+                                        @if (altKategoriler.Any())
+                                        {
+                                            <div class="grid gap-6 lg:grid-cols-[1.35fr_0.65fr]">
+                                                <div class="grid grid-cols-2 gap-x-5 gap-y-1 sm:grid-cols-3">
+                                                    @foreach (var alt in altKategoriler)
+                                                    {
+                                                        var altGorsel = GetCategoryMenuImage(alt);
+                                                        var altPreviewMetin = !string.IsNullOrWhiteSpace(alt.KisaAciklama)
+                                                            ? alt.KisaAciklama
+                                                            : (!string.IsNullOrWhiteSpace(alt.SeoDescription) ? alt.SeoDescription : "Bu koleksiyondaki öne çıkan tasarımları inceleyin.");
+                                                        <a href="/Urun?k=@alt.Id"
+                                                           class="flex items-center gap-3 border-b border-[#E8E1D5]/70 px-1 py-2 text-left text-[11px] leading-snug text-[#2E2721] transition-colors hover:text-[#C9A84C]"
+                                                           data-category-preview-src="@altGorsel"
+                                                           data-category-preview-title="@alt.Ad"
+                                                           data-category-preview-text="@altPreviewMetin">
+                                                            <span class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden bg-[#EFE9DF] text-[#C9A84C]">
+                                                                @if (!string.IsNullOrWhiteSpace(altGorsel))
+                                                                {
+                                                                    <img src="@altGorsel" alt="@alt.Ad" class="h-full w-full object-cover" loading="lazy" decoding="async" />
+                                                                }
+                                                                else
+                                                                {
+                                                                    <i class="fas fa-layer-group text-xs"></i>
+                                                                }
+                                                            </span>
+                                                            <span>@alt.Ad</span>
+                                                        </a>
+                                                    }
+                                                </div>
+                                                <div class="category-preview-panel hidden overflow-hidden bg-[#EFE9DF] lg:block rounded-sm" data-category-preview-panel>
+                                                    <div class="category-preview-media aspect-[4/5] bg-[#E5DDD0]">
+                                                        @if (!string.IsNullOrWhiteSpace(kategoriPreviewGorsel))
+                                                        {
+                                                            <img src="@kategoriPreviewGorsel" alt="@kategori.Ad" class="h-full w-full object-cover" data-category-preview-image loading="lazy" decoding="async" />
+                                                        }
+                                                        else
+                                                        {
+                                                            <div class="flex h-full w-full items-center justify-center text-[#C9A84C]" data-category-preview-placeholder>
+                                                                <i class="fas fa-layer-group text-xl"></i>
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                    <div class="px-4 py-4">
+                                                        <p class="mb-1 text-[10px] uppercase tracking-[0.22em] text-[#C9A84C]">Koleksiyon</p>
+                                                        <h4 class="category-preview-title font-serif text-xl normal-case tracking-normal text-[#2E2721]" data-category-preview-title>@kategori.Ad</h4>
+                                                        <p class="category-preview-text mt-2 line-clamp-3 text-xs normal-case leading-5 tracking-normal text-[#736B63]" data-category-preview-text>@kategoriPreviewMetin</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="grid gap-5 lg:grid-cols-[0.8fr_1.2fr]">
+                                                <div class="overflow-hidden bg-[#EFE9DF] rounded-sm">
+                                                    <div class="aspect-[4/3] bg-[#E5DDD0]">
+                                                        @if (!string.IsNullOrWhiteSpace(kategoriPreviewGorsel))
+                                                        {
+                                                            <img src="@kategoriPreviewGorsel" alt="@kategori.Ad" class="h-full w-full object-cover" loading="lazy" decoding="async" />
+                                                        }
+                                                        else
+                                                        {
+                                                            <div class="flex h-full w-full items-center justify-center text-[#C9A84C]">
+                                                                <i class="fas fa-layer-group text-xl"></i>
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                </div>
+                                                <div class="flex flex-col justify-center text-left normal-case tracking-normal">
+                                                    <p class="mb-2 text-[10px] uppercase tracking-[0.22em] text-[#C9A84C]">Kategori</p>
+                                                    <h4 class="font-serif text-2xl text-[#2E2721]">@kategori.Ad</h4>
+                                                    <p class="mt-2 text-sm leading-6 text-[#736B63]">@kategoriPreviewMetin</p>
+                                                    <a href="/Urun?k=@kategori.Id" class="mt-4 inline-flex w-fit items-center gap-2 border-b border-[#2E2721] pb-1 text-[11px] font-medium uppercase tracking-widest text-[#2E2721] transition-colors hover:text-[#C9A84C]">
+                                                        Kategoriyi İncele
+                                                        <i class="fas fa-arrow-right text-[10px]"></i>
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </li>
+                        }
+                        <li class="cursor-pointer hover:text-[#C9A84C] transition-colors py-1 whitespace-nowrap"><a href="/Kurumsal/Iletisim">İLETİŞİM</a></li>
+                    </ul>
+                </nav>
+            </div>
         </div>
 
         <!-- Mobile Navigation Drawer -->
-        <div id="mobileNavBackdrop" class="mobile-nav-backdrop fixed inset-0 z-[80] hidden bg-[#1B2A4A]/45 md:hidden" onclick="window.toggleMobileNav(false)"></div>
-        <div id="mobileNav" class="mobile-nav-panel fixed left-0 top-0 z-[90] hidden h-dvh w-[88vw] max-w-[380px] overflow-y-auto overscroll-contain border-r border-[#d8c9aa] bg-[#f7f1e6] px-5 py-5 shadow-2xl md:hidden">
-            <div class="mb-5 flex items-center justify-between border-b border-[#d8c9aa] pb-4">
-                <a href="/" class="font-serif text-xl tracking-widest text-[#1B2A4A]">@brandName</a>
-                <button type="button" aria-label="Menüyü kapat" onclick="window.toggleMobileNav(false)" class="flex h-9 w-9 items-center justify-center rounded-full border border-[#c9b58a] text-[#1B2A4A]">
+        <div id="mobileNavBackdrop" class="mobile-nav-backdrop fixed inset-0 z-[80] hidden bg-black/60 md:hidden" onclick="window.toggleMobileNav(false)"></div>
+        <div id="mobileNav" class="mobile-nav-panel fixed left-0 top-0 z-[90] hidden h-dvh w-[88vw] max-w-[380px] overflow-y-auto overscroll-contain border-r border-[#E8E1D5] bg-[#FAF8F5] px-5 py-5 shadow-2xl md:hidden">
+            <div class="mb-5 flex items-center justify-between border-b border-[#E8E1D5] pb-4">
+                <a href="/" class="font-serif text-xl tracking-[0.2em] text-[#2E2721] uppercase">@brandName</a>
+                <button type="button" aria-label="Menüyü kapat" onclick="window.toggleMobileNav(false)" class="flex h-9 w-9 items-center justify-center rounded-full border border-[#DDD5C7] text-[#2E2721] hover:text-[#C9A84C]">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
 
-            <ul class="space-y-3 text-sm tracking-widest text-[#333333] font-light uppercase" data-mobile-nav-list>
-                <li class="border-b border-[#d8c9aa] pb-3" data-mobile-nav-item><a href="/Urun" class="block w-full">TÜM ÜRÜNLER</a></li>
+            <ul class="space-y-3 text-sm tracking-widest text-[#2E2721] font-light uppercase" data-mobile-nav-list>
+                <li class="border-b border-[#E8E1D5] pb-3" data-mobile-nav-item><a href="/Urun" class="block w-full">TÜM ESERLER</a></li>
                 @foreach (var kategori in tumKategoriler.Where(x => x.ParentKategoriId == null).OrderBy(x => x.Sira).ThenBy(x => x.Ad))
                 {
                     var altKategoriler = tumKategoriler.Where(x => x.ParentKategoriId == kategori.Id).OrderBy(x => x.Sira).ToList();
-                    <li class="border-b border-[#d8c9aa] pb-3" data-mobile-nav-item>
+                    <li class="border-b border-[#E8E1D5] pb-3" data-mobile-nav-item>
                         @if (altKategoriler.Any())
                         {
                             <details class="group" data-mobile-category>
                                 <summary class="flex justify-between items-center cursor-pointer list-none w-full py-1">
-                                    <span class="hover:text-[#1B2A4A]">@kategori.Ad</span>
-                                    <span class="transition group-open:rotate-180 p-1 text-[#3A7CA5]"><i class="fas fa-chevron-down"></i></span>
+                                    <span class="hover:text-[#C9A84C]">@kategori.Ad</span>
+                                    <span class="transition group-open:rotate-180 p-1 text-[#C9A84C]"><i class="fas fa-chevron-down"></i></span>
                                 </summary>
-                                <ul class="mt-3 max-h-[52vh] space-y-1 overflow-y-auto border-l-2 border-[#c9b58a] pl-4 pr-1 text-xs normal-case tracking-normal">
+                                <ul class="mt-3 max-h-[52vh] space-y-1 overflow-y-auto border-l-2 border-[#C9A84C] pl-4 pr-1 text-xs normal-case tracking-normal">
                                     <li data-mobile-subitem>
-                                        <a href="/Urun?k=@kategori.Id" class="mb-2 block rounded-sm bg-[#1B2A4A] px-3 py-2 text-center font-medium tracking-widest text-white">
+                                        <a href="/Urun?k=@kategori.Id" class="mb-2 block rounded-sm bg-[#2E2721] px-3 py-2 text-center font-medium tracking-widest text-white hover:bg-[#C9A84C] hover:text-[#2E2721] transition-colors">
                                              Tümünü Gör
                                         </a>
                                     </li>
                                     @foreach (var alt in altKategoriler)
                                     {
-                                        <li data-mobile-subitem><a href="/Urun?k=@alt.Id" class="block w-full rounded-sm px-2 py-2 text-[#5f594e] hover:bg-[#efe4cf] hover:text-[#1B2A4A]">@alt.Ad</a></li>
+                                        <li data-mobile-subitem><a href="/Urun?k=@alt.Id" class="block w-full rounded-sm px-2 py-2 text-[#6B6155] hover:bg-[#EFE9DF] hover:text-[#2E2721]">@alt.Ad</a></li>
                                     }
                                 </ul>
                             </details>
@@ -512,8 +496,8 @@ var touchIconUrl = "/favicon.svg";
                         }
                     </li>
                 }
-                <li class="border-b border-[#d8c9aa] pb-3" data-mobile-nav-item><a href="/Kurumsal/Iletisim" class="block w-full">İLETİŞİM</a></li>
-                <li class="border-b border-[#d8c9aa] pb-3" data-mobile-nav-item><a href="/Favori" class="block w-full flex items-center gap-2"><i class="far fa-heart text-red-400"></i> FAVORİLERİM</a></li>
+                <li class="border-b border-[#E8E1D5] pb-3" data-mobile-nav-item><a href="/Kurumsal/Iletisim" class="block w-full">İLETİŞİM</a></li>
+                <li class="border-b border-[#E8E1D5] pb-3" data-mobile-nav-item><a href="/Favori" class="block w-full flex items-center gap-2"><i class="far fa-heart text-[#C9A84C]"></i> FAVORİLERİM</a></li>
                 @if (SignInManager.IsSignedIn(User))
                 {
                     <li data-mobile-nav-item><a href="/Profil" class="block w-full">HESABIM</a></li>
@@ -526,16 +510,16 @@ var touchIconUrl = "/favicon.svg";
         </div>
 
         <!-- Mobile Search Bar (full width overlay) -->
-        <form id="mobileSearchBar" action="/Urun" method="get" style="display:none;" class="absolute left-0 right-0 top-0 z-[95] bg-[#FFFBF0] px-4 py-3 flex items-center gap-3 border-b border-[#F5E6C8] md:hidden">
-            <button type="button" id="mobileSearchCloseBtn" class="shrink-0 text-[#333333] hover:text-[#1B2A4A]">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewbox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        <form id="mobileSearchBar" action="/Urun" method="get" style="display:none;" class="absolute left-0 right-0 top-0 z-[95] bg-[#2E2721] px-4 py-3 flex items-center gap-3 border-b-2 border-[#C9A84C] md:hidden">
+            <button type="button" id="mobileSearchCloseBtn" class="shrink-0 text-stone-300 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"></path></svg>
             </button>
             <div class="flex-1 relative">
-                <input type="text" name="s" id="mobileSearchInput" placeholder="Ürün ara..." autocomplete="off"
-                       class="w-full bg-white border border-[#F5E6C8] rounded-full px-4 pr-10 py-2.5 text-sm text-[#1B2A4A] placeholder-[#a09e99] focus:outline-none focus:ring-1 focus:ring-[#3A7CA5] focus:border-[#3A7CA5]" />
-                <svg class="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#a09e99] pointer-events-none" fill="none" stroke="currentColor" stroke-width="1.5" viewbox="0 0 24 24"><path d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                <input type="text" name="s" id="mobileSearchInput" placeholder="Eser veya kategori ara..." autocomplete="off"
+                       class="w-full bg-[#3D352E] text-white border border-[#4F443A] rounded-full px-4 pr-10 py-2.5 text-sm placeholder-[#A89F95] focus:outline-none focus:border-[#C9A84C]" />
+                <svg class="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#C9A84C] pointer-events-none" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" stroke-linecap="round" stroke-linejoin="round"></path></svg>
             </div>
-            <button type="submit" id="mobileSearchSubmit" class="shrink-0 text-[#3A7CA5] hover:text-[#1B2A4A] text-xs font-medium uppercase tracking-wider">Ara</button>
+            <button type="submit" id="mobileSearchSubmit" class="shrink-0 text-[#C9A84C] hover:text-white text-xs font-semibold uppercase tracking-wider">Ara</button>
         </form>
     </header>
     <!-- END: MainHeader -->
@@ -545,34 +529,34 @@ var touchIconUrl = "/favicon.svg";
     </main>
 
     <!-- BEGIN: Footer -->
-    <footer class="bg-[#1B2A4A] text-[#f4f0ea] pt-0 pb-8 mt-auto">
-        <div class="border-b border-white/10 bg-[#131E35]">
+    <footer class="bg-[#241E1A] text-[#FAF8F5] pt-0 pb-8 mt-auto">
+        <div class="border-b border-[#3D332A] bg-[#1D1815]">
             <div class="container mx-auto grid grid-cols-1 gap-4 px-8 py-5 text-center md:grid-cols-3">
                 <div class="flex items-center justify-center gap-3">
-                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#F5E6C8]/30 text-[#F5E6C8]">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#C9A84C]/30 text-[#C9A84C]">
                         <i class="fas fa-truck-fast"></i>
                     </span>
                     <div>
-                        <div class="text-xs uppercase tracking-widest text-[#F5E6C8]">Tüm Türkiye'ye</div>
-                        <div class="text-sm font-semibold text-white">Ücretsiz Kargo</div>
+                        <div class="text-xs uppercase tracking-widest text-[#C9A84C]">Tüm Türkiye'ye</div>
+                        <div class="text-sm font-semibold text-[#FAF8F5]">Ücretsiz Kargo</div>
                     </div>
                 </div>
                 <div class="flex items-center justify-center gap-3">
-                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#F5E6C8]/30 text-[#F5E6C8]">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#C9A84C]/30 text-[#C9A84C]">
                         <i class="fas fa-shield-halved"></i>
                     </span>
                     <div>
-                        <div class="text-xs uppercase tracking-widest text-[#F5E6C8]">%100 Güvenli Alışveriş</div>
-                        <div class="text-sm font-semibold text-white">256 Bit SSL Sertifikası</div>
+                        <div class="text-xs uppercase tracking-widest text-[#C9A84C]">%100 Güvenli Alışveriş</div>
+                        <div class="text-sm font-semibold text-[#FAF8F5]">256 Bit SSL Sertifikası</div>
                     </div>
                 </div>
                 <div class="flex items-center justify-center gap-3">
-                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#F5E6C8]/30 text-[#F5E6C8]">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#C9A84C]/30 text-[#C9A84C]">
                         <i class="fas fa-credit-card"></i>
                     </span>
                     <div>
-                        <div class="text-xs uppercase tracking-widest text-[#F5E6C8]">Tüm Kredi Kartlarına</div>
-                        <div class="text-sm font-semibold text-white">12 Taksit İmkanı</div>
+                        <div class="text-xs uppercase tracking-widest text-[#C9A84C]">Tüm Kredi Kartlarına</div>
+                        <div class="text-sm font-semibold text-[#FAF8F5]">12 Taksit İmkanı</div>
                     </div>
                 </div>
             </div>
@@ -581,20 +565,20 @@ var touchIconUrl = "/favicon.svg";
             <div class="grid grid-cols-1 md:grid-cols-2 gap-12 mb-12">
                 <!-- Newsletter Signup -->
                 <div>
-                    <h3 class="font-serif text-2xl mb-4 text-[#F5E6C8]">BÜLTENE ABONE OLUN</h3>
-                    <p class="text-sm font-light mb-6 text-gray-300 leading-relaxed max-w-md">
+                    <h3 class="font-serif text-2xl mb-4 text-[#FAF8F5]">BÜLTENE ABONE OLUN</h3>
+                    <p class="text-sm font-light mb-6 text-stone-300 leading-relaxed max-w-md">
                         Yeni ürün lansmanları, sezonluk koleksiyonlar ve özel teklifler de dahil olmak üzere @brandName'dan en son haberleri almak için bültenimize abone olun.
                     </p>
-                    <form id="newsletterForm" action="/Home/BulteneAboneOl" method="post" class="flex border-b border-gray-500 pb-2 max-w-md relative">
+                    <form id="newsletterForm" action="/Home/BulteneAboneOl" method="post" class="flex border-b border-stone-500 pb-2 max-w-md relative">
                         @Html.AntiForgeryToken()
-                        <input name="email" id="newsletterEmail" class="bg-transparent border-none w-full focus:ring-0 text-sm px-0 text-white placeholder-gray-400 outline-none" placeholder="E-posta Adresi" required="" type="email"/>
-                        <button type="submit" class="text-xs tracking-widest uppercase hover:text-[#3A7CA5] transition-colors ml-4 whitespace-nowrap">ABONE OL</button>
+                        <input name="email" id="newsletterEmail" class="bg-transparent border-none w-full focus:ring-0 text-sm px-0 text-white placeholder-stone-400 outline-none" placeholder="E-posta Adresi" required="" type="email"/>
+                        <button type="submit" class="text-xs tracking-widest uppercase hover:text-[#C9A84C] transition-colors ml-4 whitespace-nowrap text-[#FAF8F5]">ABONE OL</button>
                     </form>
                     <div id="newsletterMessage" class="text-xs mt-2 hidden"></div>
                 </div>
                 <!-- Footer Links & Socials -->
                 <div class="flex flex-col md:items-end">
-                    <h4 class="font-bold text-sm tracking-widest mb-4 uppercase text-[#F5E6C8]">KURUMSAL</h4>
+                    <h4 class="font-bold text-sm tracking-widest mb-4 uppercase text-[#C9A84C]">KURUMSAL</h4>
                     <ul class="space-y-2 text-sm font-light text-gray-300 text-left md:text-right">
                         <li><a class="hover:text-white transition-colors" href="/Kurumsal/Hakkimizda">Hakkımızda</a></li>
                         <li><a class="hover:text-white transition-colors" href="/Kurumsal/Iletisim">İletişim</a></li>
