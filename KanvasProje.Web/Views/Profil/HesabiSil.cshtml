@@ -1,35 +1,37 @@
-﻿@{
+@{
     ViewData["Title"] = "Hesabı Sil";
 }
 
-<div class="bg-[#FDF6E3] border-b border-[#F5E6C8] py-3">
-    <div class="container mx-auto px-4 flex items-center gap-2 text-xs text-[#333333]">
-        <a href="/" class="hover:text-[#1B2A4A] transition-colors">Ana Sayfa</a>
+<div class="bg-slate-50 border-b border-slate-200 py-3">
+    <div class="container mx-auto px-4 flex items-center gap-2 text-xs text-slate-500">
+        <a href="/" class="hover:text-[#00A4D3] transition-colors">Ana Sayfa</a>
         <span>/</span>
-        <a href="/Profil" class="hover:text-[#1B2A4A] transition-colors">Hesabım</a>
+        <a href="/Profil" class="hover:text-[#00A4D3] transition-colors">Hesabım</a>
         <span>/</span>
-        <span class="text-[#1B2A4A] font-medium">Hesabı Sil</span>
+        <span class="text-slate-800 font-semibold">Hesabı Sil</span>
     </div>
 </div>
 
-<div class="container mx-auto px-4 py-16 max-w-2xl text-center">
-    <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-red-100 mb-6">
-        <i class="fas fa-exclamation-triangle text-4xl text-red-600"></i>
-    </div>
-    <h1 class="font-serif text-3xl tracking-widest text-[#1B2A4A] uppercase mb-4">Hesabınızı Silmek Üzeresiniz</h1>
-    <p class="text-sm text-[#333333] mb-8 leading-relaxed">
-        Hesabınızı silerseniz sipariş geçmişiniz, favorileriniz ve tüm kayıtlı adres bilgileriniz kalıcı olarak silinecektir. Bu işlem geri alınamaz. 
-        Onaylıyor musunuz?
-    </p>
+<div class="container mx-auto px-4 py-16 max-w-xl text-center">
+    <div class="bg-white border border-slate-200/80 rounded-2xl p-8 sm:p-10 shadow-sm">
+        <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-red-50 text-red-600 mb-6 text-3xl">
+            <i class="fas fa-triangle-exclamation"></i>
+        </div>
+        <h1 class="font-heading text-2xl sm:text-3xl font-extrabold text-slate-900 mb-4">Hesabınızı Silmek Üzeresiniz</h1>
+        <p class="text-sm text-slate-600 mb-8 leading-relaxed">
+            Hesabınızı silerseniz sipariş geçmişiniz, favorileriniz ve tüm kayıtlı adres bilgileriniz kalıcı olarak silinecektir. Bu işlem geri alınamaz. 
+            Onaylıyor musunuz?
+        </p>
 
-    <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
-        <form asp-action="HesabiSilOnay" method="post" class="w-full sm:w-auto">
-            <button type="submit" class="w-full sm:w-auto bg-red-600 text-white px-8 py-3 text-xs tracking-widest uppercase rounded hover:bg-red-700 transition-colors flex items-center justify-center gap-2">
-                <i class="fas fa-trash"></i> Evet, Hesabımı Sil
-            </button>
-        </form>
-        <a href="/Profil" class="w-full sm:w-auto bg-white border border-[#F5E6C8] text-[#1B2A4A] px-8 py-3 text-xs tracking-widest uppercase rounded hover:bg-[#FFFBF0] transition-colors inline-block text-center">
-            Vazgeç
-        </a>
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <form asp-action="HesabiSilOnay" method="post" class="w-full sm:w-auto">
+                <button type="submit" class="w-full sm:w-auto bg-[#E30613] text-white px-8 py-3.5 text-xs font-bold tracking-wider uppercase rounded-xl hover:bg-[#DC2626] transition-all shadow-md shadow-red-500/20 flex items-center justify-center gap-2">
+                    <i class="fas fa-trash"></i> Evet, Hesabımı Sil
+                </button>
+            </form>
+            <a href="/Profil" class="w-full sm:w-auto bg-white border border-slate-300 text-slate-700 px-8 py-3.5 text-xs font-bold tracking-wider uppercase rounded-xl hover:bg-slate-50 transition-colors inline-block text-center">
+                Vazgeç
+            </a>
+        </div>
     </div>
 </div>

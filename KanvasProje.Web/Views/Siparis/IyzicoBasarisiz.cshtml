@@ -1,71 +1,73 @@
 @model KanvasProje.Core.Varliklar.Siparis?
 @{
-    ViewData["Title"] = "Ödeme Alınamadı - MeteorGaleri";
+    ViewData["Title"] = "Ödeme Alınamadı - Meteor Galeri";
     var siparisNo = Model?.SiparisNo ?? ViewBag.SiparisNo as string ?? string.Empty;
     var hataMesaji = ViewBag.Hata as string ?? "Ödeme işlemi bankanız veya ödeme altyapısı tarafından onaylanmadı.";
 }
 
-<div class="container mx-auto px-4 py-12 md:py-20">
-    <div class="max-w-xl mx-auto text-center">
-        <!-- İkaz Rozeti -->
-        <div class="w-20 h-20 bg-amber-50 border-2 border-amber-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
-            <i class="fas fa-exclamation-triangle text-3xl text-amber-600"></i>
-        </div>
-
-        <span class="text-xs font-semibold uppercase tracking-widest text-[#3A7CA5] mb-2 inline-block">Ödeme İşlemi Tamamlanamadı</span>
-        <h1 class="font-serif text-3xl md:text-4xl text-[#1B2A4A] mb-3 font-bold">Ödemeniz Gerçekleştirilemedi</h1>
-        <p class="text-[#4A5568] mb-8 leading-relaxed text-sm">
-            Kartınızdan herhangi bir ücret tahsil edilmemiştir. Lütfen kart limitinizi, internet alışveriş yetkisini veya 3D Secure onay kodunuzu kontrol edip tekrar deneyiniz.
-        </p>
-
-        <!-- Hata Bildirim Kutusu -->
-        <div class="bg-red-50/80 border border-red-200 rounded-2xl p-5 mb-8 text-left">
-            <div class="flex items-start gap-3">
-                <i class="fas fa-circle-exclamation text-red-500 mt-1 flex-shrink-0"></i>
-                <div class="space-y-1">
-                    <div class="text-xs font-bold text-red-900 uppercase tracking-wider">Hata Detayı</div>
-                    <div class="text-xs text-red-700 leading-relaxed font-mono">@hataMesaji</div>
-                </div>
+<div class="min-h-[70vh] bg-[#F8FAFC] py-12 md:py-20">
+    <div class="container mx-auto px-4">
+        <div class="max-w-xl mx-auto text-center">
+            <!-- İkaz Rozeti -->
+            <div class="w-20 h-20 bg-amber-50 border-2 border-amber-400 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
+                <i class="fas fa-exclamation-triangle text-3xl text-amber-500"></i>
             </div>
-            @if (!string.IsNullOrWhiteSpace(siparisNo))
-            {
-                <div class="mt-4 pt-3 border-t border-red-200/70 flex justify-between items-center text-xs text-red-800">
-                    <span>İlişkili Sipariş No:</span>
-                    <strong class="font-mono">#@siparisNo</strong>
+
+            <span class="text-xs font-bold uppercase tracking-wider text-[#00A4D3] mb-2 inline-block">Ödeme İşlemi Tamamlanamadı</span>
+            <h1 class="font-heading text-3xl md:text-4xl text-slate-900 mb-3 font-extrabold tracking-tight">Ödemeniz Gerçekleştirilemedi</h1>
+            <p class="text-slate-600 mb-8 leading-relaxed text-sm">
+                Kartınızdan herhangi bir ücret tahsil edilmemiştir. Lütfen kart limitinizi, internet alışveriş yetkisini veya 3D Secure onay kodunuzu kontrol edip tekrar deneyiniz.
+            </p>
+
+            <!-- Hata Bildirim Kutusu -->
+            <div class="bg-red-50 border border-red-200 rounded-2xl p-5 mb-8 text-left shadow-sm">
+                <div class="flex items-start gap-3">
+                    <i class="fas fa-circle-exclamation text-red-500 mt-1 flex-shrink-0"></i>
+                    <div class="space-y-1">
+                        <div class="text-xs font-bold text-red-900 uppercase tracking-wider">Hata Detayı</div>
+                        <div class="text-xs text-red-800 leading-relaxed font-mono">@hataMesaji</div>
+                    </div>
                 </div>
-            }
-        </div>
+                @if (!string.IsNullOrWhiteSpace(siparisNo))
+                {
+                    <div class="mt-4 pt-3 border-t border-red-200/70 flex justify-between items-center text-xs text-red-800">
+                        <span>İlişkili Sipariş No:</span>
+                        <strong class="font-mono font-bold">#@siparisNo</strong>
+                    </div>
+                }
+            </div>
 
-        <!-- Olası Nedenler -->
-        <div class="bg-white border border-[#F5E6C8] rounded-2xl p-6 mb-8 shadow-sm text-left">
-            <h2 class="text-xs font-bold uppercase tracking-wider text-[#1B2A4A] mb-3 flex items-center gap-2">
-                <i class="fas fa-lightbulb text-[#3A7CA5]"></i> Sık Karşılaşılan Nedenler
-            </h2>
-            <ul class="text-xs text-gray-600 space-y-2 list-disc list-inside">
-                <li>Kartınızın internetten alışveriş yetkisi kapalı olabilir.</li>
-                <li>Kart limitiniz veya bakiye yetersiz olabilir.</li>
-                <li>Banka tarafından gönderilen 3D Secure SMS doğrulama kodu süresi dolmuş olabilir.</li>
-                <li>Kart bilgilerinde (kart no, son kullanma, CVV) tuşlama hatası olabilir.</li>
-            </ul>
-        </div>
+            <!-- Olası Nedenler -->
+            <div class="bg-white border border-slate-200/80 rounded-2xl p-6 mb-8 shadow-sm text-left">
+                <h2 class="text-xs font-bold uppercase tracking-wider text-slate-900 mb-3 flex items-center gap-2">
+                    <i class="fas fa-lightbulb text-[#00A4D3]"></i> Sık Karşılaşılan Nedenler
+                </h2>
+                <ul class="text-xs text-slate-600 space-y-2 list-disc list-inside">
+                    <li>Kartınızın internetten alışveriş yetkisi kapalı olabilir.</li>
+                    <li>Kart limitiniz veya bakiye yetersiz olabilir.</li>
+                    <li>Banka tarafından gönderilen 3D Secure SMS doğrulama kodu süresi dolmuş olabilir.</li>
+                    <li>Kart bilgilerinde (kart no, son kullanma, CVV) tuşlama hatası olabilir.</li>
+                </ul>
+            </div>
 
-        <!-- Aksiyon Butonları -->
-        <div class="flex flex-col sm:flex-row gap-3 justify-center">
-            @if (!string.IsNullOrWhiteSpace(siparisNo))
-            {
-                <a href="/Siparis/IyzicoOdeme?siparisNo=@siparisNo"
-                   class="inline-flex items-center justify-center gap-2 bg-[#3A7CA5] hover:bg-[#2C5E7A] text-white text-xs font-semibold tracking-wider uppercase px-6 py-3.5 rounded-xl transition-all duration-300 shadow-md">
-                    <i class="fas fa-redo"></i> Tekrar Dene
+            <!-- Aksiyon Butonları -->
+            <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                @if (!string.IsNullOrWhiteSpace(siparisNo))
+                {
+                    <a href="/Siparis/IyzicoOdeme?siparisNo=@siparisNo"
+                       class="inline-flex items-center justify-center gap-2 bg-[#00A4D3] hover:bg-[#0284C7] text-white text-xs font-bold tracking-wider uppercase px-6 py-3.5 rounded-xl transition-all duration-300 shadow-md shadow-sky-500/20">
+                        <i class="fas fa-redo"></i> Tekrar Dene
+                    </a>
+                }
+                <a href="/Sepet"
+                   class="inline-flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold tracking-wider uppercase px-6 py-3.5 rounded-xl transition-all duration-300 shadow-md">
+                    <i class="fas fa-shopping-cart"></i> Sepete Dön
                 </a>
-            }
-            <a href="/Sepet"
-               class="inline-flex items-center justify-center gap-2 bg-[#1B2A4A] hover:bg-[#2C5E7A] text-white text-xs font-semibold tracking-wider uppercase px-6 py-3.5 rounded-xl transition-all duration-300 shadow-md">
-                <i class="fas fa-shopping-cart"></i> Sepete Dön
-            </a>
-            <a href="/iletisim"
-               class="inline-flex items-center justify-center gap-2 border border-[#F5E6C8] bg-[#FDF6E3] hover:bg-white text-[#1B2A4A] text-xs font-semibold tracking-wider uppercase px-6 py-3.5 rounded-xl transition-all duration-300">
-                <i class="fas fa-headset"></i> Destek Al
-            </a>
+                <a href="/Kurumsal/Iletisim"
+                   class="inline-flex items-center justify-center gap-2 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold tracking-wider uppercase px-6 py-3.5 rounded-xl transition-all duration-300">
+                    <i class="fas fa-headset"></i> Destek Al
+                </a>
+            </div>
         </div>
     </div>
 </div>

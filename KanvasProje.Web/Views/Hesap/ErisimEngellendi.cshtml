@@ -1,17 +1,20 @@
-﻿@{
+@{
     ViewData["Title"] = "Erişim Engellendi";
 }
 
-<div class="min-h-[80vh] flex items-center justify-center py-16 px-4 bg-[#FFFBF0]">
-    <div class="w-full max-w-lg text-center">
-        <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-red-100 mb-6">
-            <i class="fas fa-ban text-4xl text-red-600"></i>
+<div class="min-h-[80vh] flex items-center justify-center py-16 px-4 bg-[#F8FAFC]">
+    <div class="w-full max-w-lg text-center bg-white border border-slate-200/80 rounded-2xl p-8 sm:p-10 shadow-sm">
+        <a href="/" class="inline-block mb-6">
+            <img src="/meteorgaleri-logo.png" alt="Meteor Galeri" class="h-10 md:h-12 mx-auto object-contain" />
+        </a>
+        <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-red-50 text-red-600 mb-6">
+            <i class="fas fa-ban text-3xl"></i>
         </div>
-        <h1 class="font-serif text-3xl tracking-widest text-red-700 uppercase mb-4">Yetkisiz Erişim</h1>
-        <p class="text-sm text-[#333333] mb-8 leading-relaxed">
+        <h1 class="font-heading text-2xl sm:text-3xl font-extrabold text-slate-900 mb-3">Yetkisiz Erişim</h1>
+        <p class="text-sm text-slate-600 mb-8 leading-relaxed">
             Bu sayfaya erişim yetkiniz bulunmamaktadır.
         </p>
-        <a href="/" class="inline-block bg-[#1B2A4A] text-white px-8 py-3 text-xs tracking-widest uppercase rounded hover:bg-[#1c2001] transition-colors">
+        <a href="/" class="inline-block bg-[#00A4D3] text-white px-8 py-3.5 text-xs font-bold tracking-wider uppercase rounded-xl hover:bg-[#0284C7] transition-all shadow-md shadow-sky-500/20">
             Ana Sayfaya Dön
         </a>
     </div>

@@ -94,11 +94,11 @@
 }
 
 <!-- Breadcrumb -->
-<div class="bg-[#FDF6E3] border-b border-[#F5E6C8] py-3">
-    <div class="container mx-auto px-4 flex items-center gap-2 text-xs text-[#333333]">
-        <a href="/" class="hover:text-[#1B2A4A] transition-colors">Ana Sayfa</a>
+<div class="bg-[#F8FAFC] border-b border-slate-200 py-3.5">
+    <div class="container mx-auto px-4 flex items-center gap-2 text-xs text-slate-500">
+        <a href="/" class="hover:text-[#00A4D3] transition-colors">Ana Sayfa</a>
         <span>/</span>
-        <span class="text-[#1B2A4A] font-medium">@aktifKategoriAd</span>
+        <span class="text-slate-900 font-semibold">@aktifKategoriAd</span>
     </div>
 </div>
 
@@ -106,13 +106,13 @@
     <div class="flex gap-8">
 
         <!-- Sidebar Filtreler -->
-        <aside class="hidden lg:block w-56 flex-shrink-0">
-            <h3 class="font-serif text-lg text-[#1B2A4A] mb-4 border-b border-[#F5E6C8] pb-2">Kategoriler</h3>
-            <ul class="space-y-2 text-sm mb-8">
+        <aside class="hidden lg:block w-60 flex-shrink-0">
+            <h3 class="font-serif text-lg font-bold text-slate-900 mb-4 border-b border-slate-200 pb-2">Kategoriler</h3>
+            <ul class="space-y-1.5 text-sm mb-8">
                 <li>
-                    <a href="/Urun" class="flex items-center justify-between rounded-lg px-3 py-2 @(!aktifKategori.HasValue ? "bg-[#1B2A4A] text-white font-semibold" : "text-[#333333] hover:bg-[#FDF6E3] hover:text-[#1B2A4A]") transition-colors">
-                        <span>Tüm Koleksiyonlar</span>
-                        <span class="text-xs @(!aktifKategori.HasValue ? "text-white/75" : "text-[#9a958c]")">(@toplamAktifUrunSayisi)</span>
+                    <a href="/Urun" class="flex items-center justify-between rounded-xl px-3 py-2.5 @(!aktifKategori.HasValue ? "bg-[#00A4D3] text-white font-semibold shadow-xs" : "text-slate-700 hover:bg-slate-100 hover:text-[#00A4D3]") transition-all">
+                        <span>Tüm Tablolar</span>
+                        <span class="text-xs @(!aktifKategori.HasValue ? "text-white/80" : "text-slate-400")">(@toplamAktifUrunSayisi)</span>
                     </a>
                 </li>
                 @foreach (var anaKategori in anaKategoriler)
@@ -129,33 +129,33 @@
                     <li>
                     @if (altKategoriler.Count == 0)
                     {
-                            <a href="/Urun?k=@anaKategori.Id" class="flex items-center justify-between rounded-lg px-3 py-2 @(anaAktif ? "bg-[#f6efe3] text-[#3A7CA5] font-semibold" : "text-[#333333] hover:bg-[#FDF6E3] hover:text-[#1B2A4A]") transition-colors">
+                            <a href="/Urun?k=@anaKategori.Id" class="flex items-center justify-between rounded-xl px-3 py-2.5 @(anaAktif ? "bg-sky-50 text-[#00A4D3] font-semibold border border-sky-200" : "text-slate-700 hover:bg-slate-100 hover:text-[#00A4D3]") transition-all">
                                 <span>@anaKategori.Ad</span>
-                                <span class="text-xs @(anaUrunSayisi == 0 ? "text-red-400" : "text-[#9a958c]")">(@anaUrunSayisi)</span>
+                                <span class="text-xs @(anaUrunSayisi == 0 ? "text-slate-400" : "text-slate-400")">(@anaUrunSayisi)</span>
                             </a>
                     }
                     else
                     {
-                            <details class="group rounded-xl border border-[#F5E6C8] bg-white/70" open="@grupAcik">
-                                <summary class="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 text-[#1B2A4A] transition-colors group-open:border-b group-open:border-[#eee8df] [&::-webkit-details-marker]:hidden">
-                                    <span class="font-medium">@anaKategori.Ad</span>
-                                    <span class="flex items-center gap-2 text-xs text-[#9a958c]">
+                            <details class="group rounded-xl border border-slate-200 bg-white" open="@grupAcik">
+                                <summary class="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 text-slate-800 transition-colors group-open:border-b group-open:border-slate-100 [&::-webkit-details-marker]:hidden">
+                                    <span class="font-semibold text-xs uppercase tracking-wider">@anaKategori.Ad</span>
+                                    <span class="flex items-center gap-1.5 text-xs text-slate-400">
                                         (@anaUrunSayisi)
                                         <i class="fas fa-chevron-down text-[10px] transition-transform group-open:rotate-180"></i>
                                     </span>
                                 </summary>
-                                <div class="space-y-1 px-2 py-2">
-                                    <a href="/Urun?k=@anaKategori.Id" class="flex items-center justify-between rounded-lg px-2 py-1.5 text-xs @(anaAktif ? "bg-[#1B2A4A] text-white font-semibold" : "text-[#6a665e] hover:bg-[#FDF6E3] hover:text-[#1B2A4A]") transition-colors">
+                                <div class="space-y-1 p-2">
+                                    <a href="/Urun?k=@anaKategori.Id" class="flex items-center justify-between rounded-lg px-2.5 py-1.5 text-xs @(anaAktif ? "bg-[#00A4D3] text-white font-semibold" : "text-slate-600 hover:bg-slate-100 hover:text-[#00A4D3]") transition-colors">
                                         <span>Tüm @anaKategori.Ad</span>
-                                        <span class="@(anaAktif ? "text-white/75" : "text-[#9a958c]")">(@anaUrunSayisi)</span>
+                                        <span class="@(anaAktif ? "text-white/80" : "text-slate-400")">(@anaUrunSayisi)</span>
                                     </a>
                                     @foreach (var altKategori in altKategoriler)
                                     {
                                         var altAktif = aktifKategori.HasValue && aktifKategori.Value == altKategori.Id;
                                         var altUrunSayisi = GetKategoriUrunSayisi(altKategori.Id);
-                                        <a href="/Urun?k=@altKategori.Id" class="flex items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-xs @(altAktif ? "bg-[#f6efe3] text-[#3A7CA5] font-semibold" : "text-[#333333] hover:bg-[#FDF6E3] hover:text-[#1B2A4A]") transition-colors">
+                                        <a href="/Urun?k=@altKategori.Id" class="flex items-center justify-between gap-3 rounded-lg px-2.5 py-1.5 text-xs @(altAktif ? "bg-sky-50 text-[#00A4D3] font-semibold border border-sky-200" : "text-slate-600 hover:bg-slate-100 hover:text-[#00A4D3]") transition-colors">
                                             <span class="truncate">@altKategori.Ad</span>
-                                            <span class="shrink-0 @(altUrunSayisi == 0 ? "text-red-400" : "text-[#9a958c]")">(@altUrunSayisi)</span>
+                                            <span class="shrink-0 text-slate-400">(@altUrunSayisi)</span>
                                         </a>
                                     }
                                 </div>
@@ -166,8 +166,8 @@
             </ul>
 
             <!-- Fiyat Filtresi -->
-            <h3 class="font-serif text-lg text-[#1B2A4A] mb-4 border-b border-[#F5E6C8] pb-2">Fiyat Aralığı</h3>
-            <form method="get" action="/Urun" class="space-y-2">
+            <h3 class="font-serif text-lg font-bold text-slate-900 mb-4 border-b border-slate-200 pb-2">Fiyat Aralığı</h3>
+            <form method="get" action="/Urun" class="space-y-3">
                 @if (aktifKategori.HasValue)
                 {
                     <input type="hidden" name="k" value="@aktifKategori" />
@@ -178,12 +178,12 @@
                 }
                 <input type="hidden" name="sort" value="@aktifSort" />
                 <div class="flex gap-2 items-center">
-                    <input name="min" type="number" placeholder="Min ₺" value="@aktifMin" class="w-full border border-[#F5E6C8] rounded px-2 py-1.5 text-xs focus:ring-1 focus:ring-[#3A7CA5] focus:border-[#3A7CA5] bg-white" />
-                    <span class="text-gray-400 text-xs">—</span>
-                    <input name="max" type="number" placeholder="Max ₺" value="@aktifMax" class="w-full border border-[#F5E6C8] rounded px-2 py-1.5 text-xs focus:ring-1 focus:ring-[#3A7CA5] focus:border-[#3A7CA5] bg-white" />
+                    <input name="min" type="number" placeholder="Min ₺" value="@aktifMin" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-[#00A4D3] focus:border-[#00A4D3] bg-white text-slate-800" />
+                    <span class="text-slate-400 text-xs">—</span>
+                    <input name="max" type="number" placeholder="Max ₺" value="@aktifMax" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-[#00A4D3] focus:border-[#00A4D3] bg-white text-slate-800" />
                 </div>
-                <button type="submit" class="w-full bg-[#1B2A4A] text-white text-xs py-2 rounded hover:bg-[#1c2001] transition-colors tracking-widest uppercase">
-                    Uygula
+                <button type="submit" class="w-full bg-[#00A4D3] hover:bg-[#0284C7] text-white text-xs font-bold py-2.5 rounded-xl shadow-xs transition-colors tracking-wider uppercase">
+                    Filtrele
                 </button>
             </form>
         </aside>
@@ -193,18 +193,18 @@
             <!-- Başlık + Sıralama -->
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
                 <div>
-                    <h1 class="font-serif text-3xl text-[#1B2A4A]">@aktifKategoriAd</h1>
-                    <p class="text-xs text-[#333333] mt-1">@totalItems ürün listeleniyor</p>
+                    <h1 class="font-serif text-3xl font-bold text-slate-900">@aktifKategoriAd</h1>
+                    <p class="text-xs text-slate-500 mt-1">@totalItems tablo listeleniyor</p>
                 </div>
                 <div class="flex items-center gap-3">
                     @if (!string.IsNullOrWhiteSpace(aktifArama))
                     {
-                        <span class="bg-[#1B2A4A] text-white text-xs px-3 py-1 rounded-full flex items-center gap-1">
+                        <span class="bg-[#00A4D3] text-white text-xs px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-xs font-medium">
                             "<span>@aktifArama</span>"
-                            <a href="/Urun@(aktifKategori.HasValue ? "?k=" + aktifKategori : "")" class="ml-1 opacity-70 hover:opacity-100">×</a>
+                            <a href="/Urun@(aktifKategori.HasValue ? "?k=" + aktifKategori : "")" class="ml-1 opacity-80 hover:opacity-100 font-bold">×</a>
                         </span>
                     }
-                    <select id="sortSelect" onchange="window.location.href=this.value" class="border border-[#F5E6C8] text-xs rounded px-3 py-2 focus:ring-1 focus:ring-[#3A7CA5] bg-white text-[#333333]">
+                    <select id="sortSelect" onchange="window.location.href=this.value" class="border border-slate-200 text-xs rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-[#00A4D3] bg-white text-slate-700 shadow-2xs font-medium">
                         @foreach (var opt in sortOptions)
                         {
                             <option value="@BuildFilterUrl("sort", opt.Key)" selected="@(aktifSort == opt.Key)">@opt.Value</option>
@@ -215,13 +215,13 @@
 
             <!-- Mobile Kategori Chips -->
             <div class="hidden md:flex lg:hidden flex gap-2 overflow-x-auto pb-3 mb-6 custom-scrollbar">
-                <a href="/Urun" class="whitespace-nowrap text-xs border @(!aktifKategori.HasValue ? "bg-[#1B2A4A] text-white border-[#1B2A4A]" : "border-[#F5E6C8] text-[#333333]") rounded-full px-3 py-1.5">Tümü</a>
+                <a href="/Urun" class="whitespace-nowrap text-xs border @(!aktifKategori.HasValue ? "bg-[#00A4D3] text-white border-[#00A4D3] font-bold" : "border-slate-200 text-slate-700 bg-white") rounded-full px-3.5 py-1.5 shadow-2xs">Tümü</a>
                 @if (kategoriler != null)
                 {
                     foreach (var kat in kategoriler.Where(x => !x.SilindiMi && x.AktifMi))
                     {
                         bool isActive = aktifKategori.HasValue && aktifKategori.Value == kat.Id;
-                        <a href="/Urun?k=@kat.Id" class="whitespace-nowrap text-xs border @(isActive ? "bg-[#1B2A4A] text-white border-[#1B2A4A]" : "border-[#F5E6C8] text-[#333333]") rounded-full px-3 py-1.5">@kat.Ad</a>
+                        <a href="/Urun?k=@kat.Id" class="whitespace-nowrap text-xs border @(isActive ? "bg-[#00A4D3] text-white border-[#00A4D3] font-bold" : "border-slate-200 text-slate-700 bg-white") rounded-full px-3.5 py-1.5 shadow-2xs">@kat.Ad</a>
                     }
                 }
             </div>
@@ -242,19 +242,19 @@
                     <div class="flex justify-center items-center gap-2 mt-16">
                         @if (currentPage > 1)
                         {
-                            <a href="@BuildFilterUrl("page", (currentPage - 1).ToString())" class="w-9 h-9 border border-[#F5E6C8] rounded flex items-center justify-center text-[#333333] hover:bg-[#1B2A4A] hover:text-white hover:border-[#1B2A4A] transition-colors text-xs">
+                            <a href="@BuildFilterUrl("page", (currentPage - 1).ToString())" class="w-10 h-10 border border-slate-200 rounded-xl flex items-center justify-center text-slate-700 hover:bg-[#00A4D3] hover:text-white hover:border-[#00A4D3] transition-colors text-xs shadow-2xs">
                                 <i class="fas fa-chevron-left"></i>
                             </a>
                         }
                         @for (int i = Math.Max(1, currentPage - 2); i <= Math.Min(totalPages, currentPage + 2); i++)
                         {
-                            <a href="@BuildFilterUrl("page", i.ToString())" class="w-9 h-9 border @(i == currentPage ? "bg-[#1B2A4A] text-white border-[#1B2A4A]" : "border-[#F5E6C8] text-[#333333] hover:bg-[#FDF6E3]") rounded flex items-center justify-center text-xs transition-colors">
+                            <a href="@BuildFilterUrl("page", i.ToString())" class="w-10 h-10 border @(i == currentPage ? "bg-[#00A4D3] text-white border-[#00A4D3] font-bold shadow-xs" : "border-slate-200 text-slate-700 hover:bg-slate-100") rounded-xl flex items-center justify-center text-xs transition-colors">
                                 @i
                             </a>
                         }
                         @if (currentPage < totalPages)
                         {
-                            <a href="@BuildFilterUrl("page", (currentPage + 1).ToString())" class="w-9 h-9 border border-[#F5E6C8] rounded flex items-center justify-center text-[#333333] hover:bg-[#1B2A4A] hover:text-white hover:border-[#1B2A4A] transition-colors text-xs">
+                            <a href="@BuildFilterUrl("page", (currentPage + 1).ToString())" class="w-10 h-10 border border-slate-200 rounded-xl flex items-center justify-center text-slate-700 hover:bg-[#00A4D3] hover:text-white hover:border-[#00A4D3] transition-colors text-xs shadow-2xs">
                                 <i class="fas fa-chevron-right"></i>
                             </a>
                         }
@@ -263,12 +263,12 @@
             }
             else
             {
-                <div class="text-center py-24 text-[#333333]">
-                    <i class="fas fa-search fa-3x mb-6 opacity-30"></i>
-                    <h3 class="font-serif text-2xl text-[#1B2A4A] mb-2">Ürün Bulunamadı</h3>
-                    <p class="text-sm mb-6">Farklı bir kategori veya arama terimi deneyin.</p>
-                    <a href="/Urun" class="inline-block border border-[#1B2A4A] text-[#1B2A4A] px-6 py-2 text-xs uppercase tracking-widest hover:bg-[#1B2A4A] hover:text-white transition-colors rounded-full">
-                        Tüm Ürünleri Gör
+                <div class="text-center py-24 text-slate-500">
+                    <i class="fas fa-search fa-3x mb-6 text-slate-300"></i>
+                    <h3 class="font-serif text-2xl font-bold text-slate-900 mb-2">Ürün Bulunamadı</h3>
+                    <p class="text-sm mb-6">Farklı bir kategori veya arama terimi deneyebilirsiniz.</p>
+                    <a href="/Urun" class="inline-block border-2 border-[#00A4D3] text-[#00A4D3] px-6 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-[#00A4D3] hover:text-white transition-colors rounded-full">
+                        Tüm Tabloları Gör
                     </a>
                 </div>
             }

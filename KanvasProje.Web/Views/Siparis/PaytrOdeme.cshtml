@@ -1,5 +1,5 @@
-﻿@{
-    ViewData["Title"] = "PayTR ile Güvenli Ödeme";
+@{
+    ViewData["Title"] = "PayTR ile Güvenli Ödeme - Meteor Galeri";
     var token = ViewBag.PaytrToken as string;
     var siparisNo = ViewBag.SiparisNo as string;
     var toplamTutar = ViewBag.ToplamTutar is decimal t ? t : 0m;
@@ -7,63 +7,67 @@
 }
 
 <!-- Breadcrumb -->
-<div class="bg-[#FDF6E3] border-b border-[#F5E6C8] py-4">
-    <div class="container mx-auto px-4 flex items-center justify-center gap-4 text-xs tracking-widest uppercase">
-        <a href="/Sepet" class="text-[#333333] hover:text-[#1B2A4A] transition-colors flex items-center gap-2">
-            <span class="w-5 h-5 rounded-full bg-[#F5E6C8] text-[#333333] flex items-center justify-center font-bold">1</span> Sepet
+<div class="bg-slate-50 border-b border-slate-200 py-3.5">
+    <div class="container mx-auto px-4 flex items-center justify-center gap-4 text-xs font-bold tracking-wider uppercase">
+        <a href="/Sepet" class="text-slate-500 hover:text-[#00A4D3] transition-colors flex items-center gap-2">
+            <span class="w-5 h-5 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center font-bold text-[11px]">1</span> Sepet
         </a>
-        <span class="text-[#F5E6C8]">/</span>
-        <a href="/Siparis/Odeme" class="text-[#333333] hover:text-[#1B2A4A] transition-colors flex items-center gap-2">
-            <span class="w-5 h-5 rounded-full bg-[#F5E6C8] text-[#333333] flex items-center justify-center font-bold">2</span> Teslimat
+        <span class="text-slate-300">/</span>
+        <a href="/Siparis/Odeme" class="text-slate-500 hover:text-[#00A4D3] transition-colors flex items-center gap-2">
+            <span class="w-5 h-5 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center font-bold text-[11px]">2</span> Teslimat
         </a>
-        <span class="text-[#F5E6C8]">/</span>
-        <span class="text-[#1B2A4A] font-bold flex items-center gap-2">
-            <span class="w-5 h-5 rounded-full bg-[#1B2A4A] text-white flex items-center justify-center font-bold">3</span> Ödeme
+        <span class="text-slate-300">/</span>
+        <span class="text-[#00A4D3] font-bold flex items-center gap-2">
+            <span class="w-5 h-5 rounded-full bg-[#00A4D3] text-white flex items-center justify-center font-bold text-[11px]">3</span> Ödeme
         </span>
     </div>
 </div>
 
-<div class="container mx-auto px-4 py-12 md:py-16">
-    <div class="text-center mb-12">
-        <h1 class="font-serif text-3xl md:text-5xl text-[#1B2A4A] mb-4">Güvenli Ödeme</h1>
-        <p class="text-sm text-[#333333] max-w-2xl mx-auto">
-            Siparişiniz oluşturuldu. Aşağıdaki güvenli ödeme formunu kullanarak ödemenizi tamamlayın.
+<div class="container mx-auto px-4 py-10 md:py-14">
+    <div class="text-center mb-10">
+        <h1 class="font-heading text-3xl md:text-4xl font-extrabold text-slate-900 mb-3 tracking-tight">Güvenli Ödeme</h1>
+        <p class="text-sm text-slate-600 max-w-2xl mx-auto leading-relaxed">
+            Siparişiniz oluşturuldu. Aşağıdaki güvenli ödeme formunu kullanarak kartınızla ödemenizi tamamlayabilirsiniz.
         </p>
     </div>
 
     @if (!string.IsNullOrEmpty(hata))
     {
-        <div class="max-w-2xl mx-auto mb-8 rounded-lg border border-red-200 bg-red-50 px-6 py-5 text-sm text-red-700">
-            <div class="font-semibold mb-1">Ödeme başlatılamadı</div>
-            <p>@hata</p>
-            <a href="/Siparis/Odeme" class="inline-block mt-3 text-[#1B2A4A] underline font-medium">Tekrar dene</a>
+        <div class="max-w-2xl mx-auto mb-8 rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-700 shadow-sm">
+            <div class="font-bold mb-1 flex items-center gap-2">
+                <i class="fas fa-circle-exclamation text-red-500"></i> Ödeme başlatılamadı
+            </div>
+            <p class="text-xs text-red-800 leading-relaxed font-mono">@hata</p>
+            <a href="/Siparis/Odeme" class="inline-flex items-center gap-1.5 mt-4 text-xs font-bold uppercase tracking-wider text-[#00A4D3] hover:text-[#0284C7] underline">
+                <i class="fas fa-redo"></i> Tekrar dene
+            </a>
         </div>
     }
     else if (!string.IsNullOrEmpty(token))
     {
         <!-- Sipariş Özeti -->
-        <div class="max-w-3xl mx-auto mb-8 bg-white border border-[#F5E6C8] rounded-lg p-6">
+        <div class="max-w-3xl mx-auto mb-6 bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm">
             <div class="flex flex-wrap items-center justify-between gap-4">
                 <div>
-                    <span class="text-xs uppercase tracking-widest text-[#333333]">Sipariş No</span>
-                    <div class="text-lg font-bold text-[#1B2A4A]">@siparisNo</div>
+                    <span class="text-xs uppercase tracking-wider text-slate-400 font-bold">Sipariş No</span>
+                    <div class="text-lg font-bold text-slate-900 font-mono mt-0.5">#@siparisNo</div>
                 </div>
                 <div class="text-right">
-                    <span class="text-xs uppercase tracking-widest text-[#333333]">Toplam Tutar</span>
-                    <div class="text-2xl font-bold text-[#1B2A4A]">@toplamTutar.ToString("N2") TL</div>
+                    <span class="text-xs uppercase tracking-wider text-slate-400 font-bold">Toplam Tutar</span>
+                    <div class="text-2xl font-extrabold text-[#E30613] mt-0.5">@toplamTutar.ToString("N2") TL</div>
                 </div>
             </div>
         </div>
 
         <!-- PayTR Güvenli Ödeme Iframe -->
-        <div class="max-w-3xl mx-auto bg-white border border-[#F5E6C8] rounded-lg overflow-hidden">
-            <div class="bg-[#1B2A4A] text-white text-xs tracking-widest uppercase px-6 py-3 flex items-center gap-3">
-                <i class="fas fa-lock"></i>
-                <span>256-Bit SSL Güvenli Ödeme</span>
-                <span class="ml-auto flex items-center gap-2">
-                    <i class="fab fa-cc-visa text-lg"></i>
-                    <i class="fab fa-cc-mastercard text-lg"></i>
-                    <i class="fab fa-cc-amex text-lg"></i>
+        <div class="max-w-3xl mx-auto bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
+            <div class="bg-slate-900 text-white text-xs tracking-wider uppercase px-6 py-3.5 flex items-center gap-3">
+                <i class="fas fa-lock text-[#00A4D3]"></i>
+                <span class="font-semibold">256-Bit SSL Güvenli Ödeme</span>
+                <span class="ml-auto flex items-center gap-2 text-white/90">
+                    <i class="fab fa-cc-visa text-base"></i>
+                    <i class="fab fa-cc-mastercard text-base"></i>
+                    <i class="fab fa-cc-troy text-base"></i>
                 </span>
             </div>
             <div class="p-4 md:p-8">
@@ -78,32 +82,31 @@
                 </iframe>
                 <script>iFrameResize({}, '#paytriframe');</script>
 
-                <div class="mt-6 pt-4 border-t border-[#F5E6C8] text-center">
-                    <p class="text-xs text-[#333333]">
-                        <i class="fas fa-shield-alt text-[#C0392B] mr-1"></i>
-                        Ödemeniz PayTR tarafından 256-Bit SSL ile korunmaktadır.
-                        Kart bilgileriniz mağazamızla paylaşılmaz.
+                <div class="mt-6 pt-4 border-t border-slate-100 text-center">
+                    <p class="text-xs text-slate-500">
+                        <i class="fas fa-shield-alt text-[#00A4D3] mr-1"></i>
+                        Ödemeniz PayTR tarafından 256-Bit SSL ile korunmaktadır. Kart bilgileriniz mağazamız sunucularında asla saklanmaz.
                     </p>
                 </div>
             </div>
         </div>
 
         <!-- İşlem Beklerken Uyarı -->
-        <div class="max-w-3xl mx-auto mt-6 bg-[#FFFBF0] border border-[#F5E6C8] rounded-lg p-4 text-center">
-            <p class="text-sm text-[#333333]">
-                <i class="fas fa-info-circle text-[#C0392B] mr-1"></i>
-                Ödeme işleminiz tamamlandıktan sonra yönlendirileceksiniz.
+        <div class="max-w-3xl mx-auto mt-6 bg-sky-50/60 border border-sky-100 rounded-2xl p-4 text-center">
+            <p class="text-xs text-slate-600">
+                <i class="fas fa-info-circle text-[#00A4D3] mr-1"></i>
+                Ödeme işleminiz tamamlandıktan sonra onay sayfasına otomatik yönlendirileceksiniz.
                 Herhangi bir sorun olursa
-                <a href="/Kurumsal/Iletisim" class="text-[#1B2A4A] underline font-medium">iletişime</a>
+                <a href="/Kurumsal/Iletisim" class="text-[#00A4D3] underline font-semibold hover:text-[#0284C7]">iletişime</a>
                 geçebilirsiniz.
             </p>
         </div>
     }
     else
     {
-        <div class="max-w-2xl mx-auto text-center py-12">
-            <div class="animate-spin w-10 h-10 border-4 border-[#F5E6C8] border-t-[#1B2A4A] rounded-full mx-auto mb-6"></div>
-            <p class="text-[#333333]">Ödeme sayfası hazırlanıyor...</p>
+        <div class="max-w-2xl mx-auto text-center py-16">
+            <div class="animate-spin w-10 h-10 border-4 border-slate-200 border-t-[#00A4D3] rounded-full mx-auto mb-4"></div>
+            <p class="text-slate-600 font-medium text-sm">Ödeme sayfası hazırlanıyor...</p>
             <meta http-equiv="refresh" content="3">
         </div>
     }

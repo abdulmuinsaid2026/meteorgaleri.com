@@ -1,54 +1,56 @@
-﻿@{
+@{
     ViewData["Title"] = "Giriş Yap";
 }
 
-<div class="min-h-[80vh] flex items-center justify-center py-16 px-4 bg-[#FFFBF0]">
+<div class="min-h-[80vh] flex items-center justify-center py-16 px-4 bg-[#F8FAFC]">
     <div class="w-full max-w-md">
         <!-- Logo / Başlık -->
-        <div class="text-center mb-10">
-            <a href="/" class="font-serif text-3xl tracking-widest text-[#1B2A4A]">METEORGALERİ</a>
-            <p class="text-xs text-[#333333] mt-2 tracking-wide">Hesabınıza giriş yapın</p>
+        <div class="text-center mb-8">
+            <a href="/" class="inline-block">
+                <img src="/meteorgaleri-logo.png" alt="Meteor Galeri" class="h-10 md:h-12 mx-auto object-contain" />
+            </a>
+            <p class="text-xs text-slate-500 mt-3 font-medium">Hesabınıza giriş yapın</p>
         </div>
 
         <!-- Hata / Başarı Mesajları -->
         @if (ViewBag.Hata != null)
         {
-            <div class="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded mb-6 flex items-center gap-2">
+            <div class="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl mb-6 flex items-center gap-2">
                 <i class="fas fa-circle-exclamation"></i>
                 @ViewBag.Hata
             </div>
         }
         @if (TempData.Peek("Basari") != null)
         {
-            <div class="bg-green-50 border border-green-200 text-green-700 text-sm px-4 py-3 rounded mb-6 flex items-center gap-2">
+            <div class="bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm px-4 py-3 rounded-xl mb-6 flex items-center gap-2">
                 <i class="fas fa-circle-check"></i>
                 @TempData.Peek("Basari")
             </div>
         }
 
         <!-- Form Kartı -->
-        <div class="bg-white border border-[#F5E6C8] rounded-lg p-8 shadow-sm">
+        <div class="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm">
             <form asp-action="GirisYap" method="post" class="space-y-5">
                 <input type="hidden" name="returnUrl" value="@ViewBag.ReturnUrl" />
 
                 <div>
-                    <label for="eposta" class="block text-xs font-medium text-[#1B2A4A] tracking-wide mb-1.5 uppercase">E-posta</label>
+                    <label for="eposta" class="block text-xs font-bold text-slate-800 tracking-wider mb-2 uppercase">E-posta</label>
                     <input id="eposta" name="eposta" type="email" placeholder="ornek@mail.com" autocomplete="email" required
-                           class="w-full border border-[#F5E6C8] rounded px-4 py-3 text-sm text-[#1B2A4A] focus:ring-1 focus:ring-[#C0392B] focus:border-[#C0392B] outline-none transition bg-[#FFFBF0]" />
+                           class="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 focus:ring-2 focus:ring-[#00A4D3] focus:border-[#00A4D3] outline-none transition bg-white" />
                 </div>
 
                 <div>
-                    <label for="sifre" class="block text-xs font-medium text-[#1B2A4A] tracking-wide mb-1.5 uppercase">Şifre</label>
+                    <label for="sifre" class="block text-xs font-bold text-slate-800 tracking-wider mb-2 uppercase">Şifre</label>
                     <input id="sifre" name="sifre" type="password" placeholder="••••••••" autocomplete="current-password" required
-                           class="w-full border border-[#F5E6C8] rounded px-4 py-3 text-sm text-[#1B2A4A] focus:ring-1 focus:ring-[#C0392B] focus:border-[#C0392B] outline-none transition bg-[#FFFBF0]" />
+                           class="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 focus:ring-2 focus:ring-[#00A4D3] focus:border-[#00A4D3] outline-none transition bg-white" />
                 </div>
 
                 <div class="flex justify-end">
-                    <a href="/Hesap/SifremiUnuttum" class="text-xs text-[#C0392B] hover:underline">Şifremi unuttum</a>
+                    <a href="/Hesap/SifremiUnuttum" class="text-xs text-[#00A4D3] hover:underline font-semibold">Şifremi unuttum</a>
                 </div>
 
                 <button type="submit"
-                        class="w-full bg-[#1B2A4A] text-white py-3 text-xs tracking-widest uppercase rounded hover:bg-[#1c2001] transition-colors font-medium">
+                        class="w-full bg-[#00A4D3] hover:bg-[#0284C7] text-white py-3.5 text-xs font-bold tracking-wider uppercase rounded-xl shadow-md hover:shadow-lg transition-all active:scale-[0.98]">
                     Giriş Yap
                 </button>
             </form>
@@ -58,34 +60,34 @@
         <div class="mt-6">
             <div class="relative mb-6">
                 <div class="absolute inset-0 flex items-center">
-                    <div class="w-full border-t border-[#F5E6C8]"></div>
+                    <div class="w-full border-t border-slate-200"></div>
                 </div>
                 <div class="relative flex justify-center">
-                    <span class="bg-white px-4 text-xs text-[#333333] uppercase tracking-widest">veya</span>
+                    <span class="bg-[#F8FAFC] px-4 text-xs text-slate-400 uppercase tracking-widest font-semibold">veya</span>
                 </div>
             </div>
             <div class="grid grid-cols-2 gap-2 sm:gap-3">
                 <form asp-action="ExternalLogin" method="post" class="block">
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="provider" value="Google" />
-                    <button type="submit" class="w-full h-11 border border-[#F5E6C8] rounded text-xs uppercase tracking-widest text-[#333333] hover:border-[#C0392B] hover:text-[#C0392B] transition-colors flex items-center justify-center gap-1 sm:gap-2 bg-white">
-                        <i class="fab fa-google text-sm"></i><span class="hidden sm:inline">Google ile </span>Giriş Yap
+                    <button type="submit" class="w-full h-11 border border-slate-200 rounded-xl text-xs uppercase tracking-wider text-slate-700 hover:border-[#00A4D3] hover:text-[#00A4D3] transition-colors flex items-center justify-center gap-1 sm:gap-2 bg-white font-semibold shadow-2xs">
+                        <i class="fab fa-google text-sm text-[#E30613]"></i><span class="hidden sm:inline">Google ile </span>Giriş
                     </button>
                 </form>
                 <form asp-action="ExternalLogin" method="post" class="block">
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="provider" value="Facebook" />
-                    <button type="submit" class="w-full h-11 border border-[#F5E6C8] rounded text-xs uppercase tracking-widest text-[#333333] hover:border-[#C0392B] hover:text-[#C0392B] transition-colors flex items-center justify-center gap-1 sm:gap-2 bg-white">
-                        <i class="fab fa-facebook-f text-sm"></i><span class="hidden sm:inline">Facebook ile </span>Giriş Yap
+                    <button type="submit" class="w-full h-11 border border-slate-200 rounded-xl text-xs uppercase tracking-wider text-slate-700 hover:border-[#00A4D3] hover:text-[#00A4D3] transition-colors flex items-center justify-center gap-1 sm:gap-2 bg-white font-semibold shadow-2xs">
+                        <i class="fab fa-facebook-f text-sm text-[#00A4D3]"></i><span class="hidden sm:inline">Facebook ile </span>Giriş
                     </button>
                 </form>
             </div>
         </div>
 
         <!-- Kayıt Linki -->
-        <p class="text-center text-sm text-[#333333] mt-6">
+        <p class="text-center text-sm text-slate-600 mt-6">
             Hesabınız yok mu?
-            <a href="/Hesap/KayitOl" class="text-[#C0392B] hover:underline font-medium">Kayıt Olun</a>
+            <a href="/Hesap/KayitOl" class="text-[#E30613] hover:underline font-bold">Kayıt Olun</a>
         </p>
     </div>
 </div>

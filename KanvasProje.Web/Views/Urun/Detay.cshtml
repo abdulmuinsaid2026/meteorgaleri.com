@@ -313,9 +313,9 @@ ViewData["SeoTitle"] = !string.IsNullOrWhiteSpace(Model.SeoTitle) ? Model.SeoTit
 
 <!-- Yorum Yapma Modal -->
 <div class="fixed inset-0 z-50 hidden bg-black bg-opacity-50 items-center justify-center" id="commentModal">
-    <div class="bg-white rounded-lg w-full max-w-md p-6 relative">
-        <button class="absolute top-4 right-4 text-gray-400 hover:text-black" id="closeCommentModalBtn"><i class="fas fa-times"></i></button>
-        <h5 class="font-serif text-2xl text-[#1B2A4A] mb-6">Ürünü Değerlendir</h5>
+    <div class="bg-white rounded-2xl w-full max-w-md p-6 relative shadow-2xl border border-slate-200">
+        <button class="absolute top-4 right-4 text-slate-400 hover:text-slate-800" id="closeCommentModalBtn"><i class="fas fa-times text-lg"></i></button>
+        <h5 class="font-serif text-2xl font-bold text-slate-900 mb-6">Ürünü Değerlendir</h5>
         <form action="/Urun/YorumYap" method="post">
             @Html.AntiForgeryToken()
             <input type="hidden" name="UrunId" value="@Model.Id" />
@@ -339,54 +339,54 @@ ViewData["SeoTitle"] = !string.IsNullOrWhiteSpace(Model.SeoTitle) ? Model.SeoTit
                         <i class="fas fa-star"></i>
                     </button>
                 </div>
-                <span id="starRatingLabel" class="text-xs font-semibold text-[#1B2A4A] mt-2">5 Yıldız - Mükemmel</span>
+                <span id="starRatingLabel" class="text-xs font-semibold text-slate-900 mt-2">5 Yıldız - Mükemmel</span>
             </div>
 
             @if (User.Identity?.IsAuthenticated != true)
             {
                 <div class="mb-4">
-                    <label class="block text-xs uppercase tracking-widest text-[#1B2A4A] font-medium mb-1.5">Adınız Soyadınız</label>
-                    <input type="text" name="AdSoyad" class="w-full border border-[#F5E6C8] rounded px-4 py-2 text-sm focus:ring-[#3A7CA5] focus:border-[#3A7CA5]" required>
+                    <label class="block text-xs uppercase tracking-wider text-slate-900 font-bold mb-1.5">Adınız Soyadınız</label>
+                    <input type="text" name="AdSoyad" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-[#00A4D3] focus:border-[#00A4D3]" required>
                 </div>
             }
 
             <div class="mb-6">
-                <label class="block text-xs uppercase tracking-widest text-[#1B2A4A] font-medium mb-1.5">Yorumunuz</label>
-                <textarea name="YorumMetni" class="w-full border border-[#F5E6C8] rounded px-4 py-2 text-sm focus:ring-[#3A7CA5] focus:border-[#3A7CA5]" rows="4" required></textarea>
+                <label class="block text-xs uppercase tracking-wider text-slate-900 font-bold mb-1.5">Yorumunuz</label>
+                <textarea name="YorumMetni" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-[#00A4D3] focus:border-[#00A4D3]" rows="4" required></textarea>
             </div>
 
-            <button type="submit" class="w-full bg-[#1B2A4A] text-white text-xs tracking-widest uppercase py-3 rounded hover:bg-[#1c2001] transition-colors">Yorumu Gönder</button>
+            <button type="submit" class="w-full bg-[#00A4D3] hover:bg-[#0284C7] text-white text-xs font-bold tracking-widest uppercase py-3.5 rounded-xl shadow-md transition-colors">Yorumu Gönder</button>
         </form>
     </div>
 </div>
 
 <!-- Breadcrumb -->
-<div class="bg-[#FDF6E3] border-b border-[#F5E6C8] py-3">
-    <div class="container mx-auto px-4 flex items-center gap-2 text-xs text-[#333333]">
-        <a href="/" class="hover:text-[#1B2A4A] transition-colors">Ana Sayfa</a>
+<div class="bg-[#F8FAFC] border-b border-slate-200 py-3.5">
+    <div class="container mx-auto px-4 flex items-center gap-2 text-xs text-slate-500">
+        <a href="/" class="hover:text-[#00A4D3] transition-colors">Ana Sayfa</a>
         <span>/</span>
-        <a href="/Urun" class="hover:text-[#1B2A4A] transition-colors">Koleksiyon</a>
+        <a href="/Urun" class="hover:text-[#00A4D3] transition-colors">Tablolar</a>
         <span>/</span>
-        <span class="text-[#1B2A4A] font-medium">@Model.Baslik</span>
+        <span class="text-slate-900 font-semibold">@Model.Baslik</span>
     </div>
 </div>
 
-<div class="container mx-auto px-4 py-12">
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16">
+<div class="container mx-auto px-4 py-10 lg:py-12">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14">
         
         <!-- Left: Image Gallery -->
         <div class="space-y-4">
-            <div id="mainProductImageContainer" class="relative bg-[#FDF6E3] aspect-square rounded-lg overflow-hidden group cursor-zoom-in flex items-center justify-center p-4" onclick="openProductLightbox()">
-                <img id="mainProductImage" src="@varsayilanGaleriGorseli" data-default-src="@(varsayilanMedya?.ResimYolu ?? Model.AnaGorselUrl)" data-default-alt="@varsayilanGaleriAltMetni" data-product-name="@Model.Baslik" class="w-full h-full object-contain transition-transform duration-700 ease-out group-hover:scale-[2] main-product-image" alt="@varsayilanGaleriAltMetni" decoding="async" fetchpriority="high" onerror="this.onerror=null; this.src='@fallbackGorsel';">
+            <div id="mainProductImageContainer" class="relative bg-[#F8FAFC] aspect-square rounded-2xl border border-slate-200 shadow-sm overflow-hidden group cursor-zoom-in flex items-center justify-center p-4" onclick="openProductLightbox()">
+                <img id="mainProductImage" src="@varsayilanGaleriGorseli" data-default-src="@(varsayilanMedya?.ResimYolu ?? Model.AnaGorselUrl)" data-default-alt="@varsayilanGaleriAltMetni" data-product-name="@Model.Baslik" class="w-full h-full object-contain transition-transform duration-700 ease-out group-hover:scale-[1.8] main-product-image drop-shadow-[0_12px_24px_rgba(0,0,0,0.15)]" alt="@varsayilanGaleriAltMetni" decoding="async" fetchpriority="high" onerror="this.onerror=null; this.src='@fallbackGorsel';">
                 
-                <button type="button" class="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur-sm w-10 h-10 rounded-full shadow-sm text-[#1B2A4A] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white z-10" onclick="navigateGallery('prev', event)">
+                <button type="button" class="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm w-10 h-10 rounded-full shadow-md text-slate-800 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-[#00A4D3] hover:text-white z-10" onclick="navigateGallery('prev', event)">
                     <i class="fas fa-chevron-left"></i>
                 </button>
-                <button type="button" class="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur-sm w-10 h-10 rounded-full shadow-sm text-[#1B2A4A] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white z-10" onclick="navigateGallery('next', event)">
+                <button type="button" class="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm w-10 h-10 rounded-full shadow-md text-slate-800 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-[#00A4D3] hover:text-white z-10" onclick="navigateGallery('next', event)">
                     <i class="fas fa-chevron-right"></i>
                 </button>
 
-                <div class="absolute bottom-4 right-4 bg-white/80 backdrop-blur-sm w-10 h-10 rounded-full shadow-sm text-[#1B2A4A] flex items-center justify-center z-10">
+                <div class="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm w-10 h-10 rounded-full shadow-md text-slate-800 flex items-center justify-center z-10">
                     <i class="fas fa-search-plus"></i>
                 </div>
             </div>
@@ -397,8 +397,8 @@ ViewData["SeoTitle"] = !string.IsNullOrWhiteSpace(Model.SeoTitle) ? Model.SeoTit
                     @foreach (var resim in galeriMedyalari)
                     {
                         var altMetin = string.IsNullOrWhiteSpace(resim.AltMetin) ? Model.Baslik : resim.AltMetin;
-                        <button type="button" class="thumbnail-item flex-shrink-0 w-20 h-20 md:w-24 md:h-24 rounded border-2 @(string.Equals(resim.ResimYolu, varsayilanGaleriGorseli, StringComparison.OrdinalIgnoreCase) ? "border-[#1B2A4A]" : "border-transparent") overflow-hidden transition-colors bg-[#FFFBF0]" data-image="@resim.ResimYolu" data-alt="@altMetin" onclick="changeProductImage(this.dataset.image, this, this.dataset.alt)">
-                                            <img src="@resim.EtkinPosterYolu" class="w-full h-full object-cover" alt="@altMetin" loading="lazy" decoding="async" onerror="this.onerror=null; this.src='@fallbackGorsel';">
+                        <button type="button" class="thumbnail-item flex-shrink-0 w-20 h-20 md:w-24 md:h-24 rounded-xl border-2 @(string.Equals(resim.ResimYolu, varsayilanGaleriGorseli, StringComparison.OrdinalIgnoreCase) ? "border-[#00A4D3] ring-2 ring-[#00A4D3]/30" : "border-slate-200 hover:border-slate-400") overflow-hidden transition-all bg-[#F8FAFC]" data-image="@resim.ResimYolu" data-alt="@altMetin" onclick="changeProductImage(this.dataset.image, this, this.dataset.alt)">
+                            <img src="@resim.EtkinPosterYolu" class="w-full h-full object-cover" alt="@altMetin" loading="lazy" decoding="async" onerror="this.onerror=null; this.src='@fallbackGorsel';">
                         </button>
                     }
                 </div>
@@ -407,57 +407,56 @@ ViewData["SeoTitle"] = !string.IsNullOrWhiteSpace(Model.SeoTitle) ? Model.SeoTit
 
         <!-- Right: Product Info -->
         <div class="flex flex-col">
-            <h1 class="font-serif text-3xl md:text-4xl lg:text-5xl text-[#1B2A4A] mb-4">@Model.Baslik</h1>
+            <h1 class="font-serif text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-4 leading-tight">@Model.Baslik</h1>
             
             <div class="flex items-center gap-4 mb-6">
-                <div class="flex text-[#3A7CA5] text-sm">
+                <div class="flex text-amber-400 text-sm">
                     @for (int i = 1; i <= 5; i++)
                     {
                         if (i <= tamYildiz) { <i class="fas fa-star"></i> }
                         else if (i == tamYildiz + 1 && yarimYildiz) { <i class="fas fa-star-half-alt"></i> }
-                        else { <i class="far fa-star"></i> }
+                        else { <i class="far fa-star text-slate-300"></i> }
                     }
                 </div>
-                <span class="text-xs text-[#333333]">(@yorumSayisi değerlendirme)</span>
+                <span class="text-xs text-slate-500 font-medium">(@yorumSayisi değerlendirme)</span>
             </div>
 
-            <div class="flex items-end gap-4 mb-6">
-                <span id="priceDisplay" class="font-sans text-2xl font-medium tracking-tight text-[#1B2A4A]">@gosterilecekFiyat.ToString("N2") @currencySymbol</span>
+            <div class="flex items-baseline gap-4 mb-6">
+                <span id="priceDisplay" class="font-sans text-3xl sm:text-4xl font-extrabold tracking-tight text-[#E30613]">@gosterilecekFiyat.ToString("N2") @currencySymbol</span>
                 @if (gosterilecekEskiFiyat.HasValue)
                 {
-                    <span id="oldPriceDisplay" class="text-lg text-[#333333] line-through mb-1 font-sans">@gosterilecekEskiFiyat.Value.ToString("N2") @currencySymbol</span>
+                    <span id="oldPriceDisplay" class="text-lg text-slate-400 line-through mb-1 font-sans">@gosterilecekEskiFiyat.Value.ToString("N2") @currencySymbol</span>
                 }
                 else
                 {
-                    <span id="oldPriceDisplay" class="text-lg text-[#333333] line-through mb-1 hidden"></span>
+                    <span id="oldPriceDisplay" class="text-lg text-slate-400 line-through mb-1 hidden"></span>
                 }
                 @if (gosterilecekIndirimYuzdesi.HasValue)
                 {
-                    <span id="discountBadge" class="bg-[#3A7CA5] text-white text-xs px-2 py-1 rounded mb-1">%@gosterilecekIndirimYuzdesi.Value İndirim</span>
+                    <span id="discountBadge" class="bg-[#E30613] text-white text-xs font-bold px-2.5 py-1 rounded-full mb-1">%@gosterilecekIndirimYuzdesi.Value İndirim</span>
                 }
                 else
                 {
-                    <span id="discountBadge" class="bg-[#3A7CA5] text-white text-xs px-2 py-1 rounded mb-1 hidden"></span>
+                    <span id="discountBadge" class="bg-[#E30613] text-white text-xs font-bold px-2.5 py-1 rounded-full mb-1 hidden"></span>
                 }
             </div>
 
-
-            <div class="flex flex-wrap items-center gap-y-2 gap-x-6 text-xs text-[#333333] mb-6 border-y border-[#F5E6C8] py-4">
+            <div class="flex flex-wrap items-center gap-y-2 gap-x-6 text-xs text-slate-600 mb-6 border-y border-slate-200 py-4">
                 <span id="stockStatusText" class="flex items-center gap-2"><i class="@stokIkonClass"></i> @stokDurumuMetni</span>
-                <span class="flex items-center gap-2"><i class="fas fa-truck text-[#a09e99]"></i> @gosterilecekKargoSuresi iş günü içinde kargo</span>
+                <span class="flex items-center gap-2"><i class="fas fa-truck text-[#00A4D3]"></i> @gosterilecekKargoSuresi iş günü içinde kargo</span>
                 @if (gosterilecekUretimSuresi > 0)
                 {
-                    <span id="productionTimeText" class="flex items-center gap-2"><i class="fas fa-hammer text-[#a09e99]"></i> @gosterilecekUretimSuresi iş günü üretim</span>
+                    <span id="productionTimeText" class="flex items-center gap-2"><i class="fas fa-hammer text-[#00A4D3]"></i> @gosterilecekUretimSuresi iş günü üretim</span>
                 }
             </div>
 
-            <div id="variantSummaryText" class="text-sm text-[#333333] mb-6 @(string.IsNullOrWhiteSpace(seciliVaryantMetni) ? "hidden" : "")">
-                <i class="fas fa-layer-group mr-1.5"></i>@seciliVaryantMetni
+            <div id="variantSummaryText" class="text-sm text-slate-700 mb-6 font-medium @(string.IsNullOrWhiteSpace(seciliVaryantMetni) ? "hidden" : "")">
+                <i class="fas fa-layer-group text-[#00A4D3] mr-1.5"></i>@seciliVaryantMetni
             </div>
 
-@if (!string.IsNullOrWhiteSpace(Model.KisaAciklama))
+            @if (!string.IsNullOrWhiteSpace(Model.KisaAciklama))
             {
-                <p class="text-sm text-[#333333] mb-8 leading-relaxed">@Model.KisaAciklama</p>
+                <p class="text-sm text-slate-600 mb-8 leading-relaxed">@Model.KisaAciklama</p>
             }
 
             @if (secenekler.Any())
@@ -466,32 +465,32 @@ ViewData["SeoTitle"] = !string.IsNullOrWhiteSpace(Model.SeoTitle) ? Model.SeoTit
                     @if (ayrikLedSecimi)
                     {
                         <fieldset>
-                            <legend class="block text-xs uppercase tracking-widest text-[#1B2A4A] font-medium mb-3">Ebat Seçiniz</legend>
-                            <div class="flex flex-wrap gap-2">
+                            <legend class="block text-xs uppercase tracking-wider text-slate-900 font-bold mb-3">Ebat Seçiniz</legend>
+                            <div class="flex flex-wrap gap-2.5">
                                 @foreach (var olcu in olcuSecenekleri)
                                 {
                                     var olcuSatinAlinabilir = secenekler.Any(x => x.Olcu == olcu.Olcu && x.SatinAlinabilirMi);
-                                    <label class="relative rounded border border-[#F5E6C8] px-4 py-2 text-[#333333] transition-colors hover:border-[#3A7CA5] has-[:checked]:border-[#1B2A4A] has-[:checked]:bg-[#1B2A4A] has-[:checked]:text-white @(!olcuSatinAlinabilir ? "cursor-not-allowed opacity-50" : "cursor-pointer")">
+                                    <label class="relative rounded-xl border border-slate-200 px-4 py-2.5 text-slate-700 font-semibold transition-all hover:border-[#00A4D3] has-[:checked]:border-[#00A4D3] has-[:checked]:bg-[#00A4D3] has-[:checked]:text-white shadow-2xs @(!olcuSatinAlinabilir ? "cursor-not-allowed opacity-50" : "cursor-pointer")">
                                         <input type="radio" name="structuredVariantSize" value="@olcu.Olcu" class="variant-size-radio absolute h-0 w-0 opacity-0" checked="@(olcu.Olcu == varsayilanSecenek?.Olcu ? "checked" : null)" disabled="@(!olcuSatinAlinabilir ? "disabled" : null)" />
-                                        <span class="text-sm font-medium">@olcu.Olcu</span>
+                                        <span class="text-sm">@olcu.Olcu</span>
                                     </label>
                                 }
                             </div>
                         </fieldset>
 
                         <fieldset class="mt-6">
-                            <legend class="block text-xs uppercase tracking-widest text-[#1B2A4A] font-medium mb-3">Aydınlatma Seçeneği</legend>
+                            <legend class="block text-xs uppercase tracking-wider text-slate-900 font-bold mb-3">Aydınlatma Seçeneği</legend>
                             <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
                                 @foreach (var aydinlatma in aydinlatmaSecenekleri)
                                 {
-                                    <label class="relative cursor-pointer rounded border border-[#F5E6C8] bg-white px-4 py-3 text-[#333333] transition-colors hover:border-[#3A7CA5] has-[:checked]:border-[#3A7CA5] has-[:checked]:bg-[#f7f1e6] has-[:checked]:text-[#1B2A4A] has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-50">
+                                    <label class="relative cursor-pointer rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-700 transition-all hover:border-[#00A4D3] has-[:checked]:border-[#00A4D3] has-[:checked]:bg-sky-50 has-[:checked]:text-[#00A4D3] has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-50 shadow-2xs">
                                         <input type="radio" name="structuredVariantLighting" value="@aydinlatma.Anahtar" class="variant-lighting-radio absolute h-0 w-0 opacity-0" checked="@(aydinlatma.Anahtar == varsayilanAydinlatma ? "checked" : null)" />
                                         <span class="flex items-center gap-2 text-sm font-semibold">
                                             <span class="h-3 w-3 flex-none rounded-full shadow-sm @aydinlatma.NoktaClass"></span>
                                             <span>@aydinlatma.Baslik</span>
                                         </span>
-                                        <span class="mt-1 block text-xs text-[#77736b]">@aydinlatma.Aciklama</span>
-                                        <span class="lighting-price-difference mt-1 block text-xs font-medium text-[#3A7CA5]" data-lighting-price="@aydinlatma.Anahtar"></span>
+                                        <span class="mt-1 block text-xs text-slate-500">@aydinlatma.Aciklama</span>
+                                        <span class="lighting-price-difference mt-1 block text-xs font-semibold text-[#00A4D3]" data-lighting-price="@aydinlatma.Anahtar"></span>
                                     </label>
                                 }
                             </div>
@@ -512,8 +511,8 @@ ViewData["SeoTitle"] = !string.IsNullOrWhiteSpace(Model.SeoTitle) ? Model.SeoTit
                     }
                     else
                     {
-                        <label class="block text-xs uppercase tracking-widest text-[#1B2A4A] font-medium mb-3">Ebat Seçiniz</label>
-                        <div class="flex flex-wrap gap-2">
+                        <label class="block text-xs uppercase tracking-wider text-slate-900 font-bold mb-3">Ebat Seçiniz</label>
+                        <div class="flex flex-wrap gap-2.5">
                             @foreach (var varyant in secenekler)
                             {
                                 var varyantSatinAlinabilir = varyant.SatinAlinabilirMi;
@@ -527,9 +526,9 @@ ViewData["SeoTitle"] = !string.IsNullOrWhiteSpace(Model.SeoTitle) ? Model.SeoTit
                                 var checkedAttr = varyant.Id == varsayilanSecenek?.Id ? "checked" : null;
                                 var disabledAttr = !varyantSatinAlinabilir ? "disabled" : null;
 
-                                <label class="relative border border-[#F5E6C8] rounded px-4 py-2 cursor-pointer transition-colors hover:border-[#3A7CA5] has-[:checked]:border-[#1B2A4A] has-[:checked]:bg-[#1B2A4A] has-[:checked]:text-white @(!varyantSatinAlinabilir ? "opacity-50 cursor-not-allowed" : "text-[#333333]")">
+                                <label class="relative border border-slate-200 rounded-xl px-4 py-2.5 cursor-pointer font-semibold transition-all hover:border-[#00A4D3] has-[:checked]:border-[#00A4D3] has-[:checked]:bg-[#00A4D3] has-[:checked]:text-white shadow-2xs @(!varyantSatinAlinabilir ? "opacity-50 cursor-not-allowed" : "text-slate-700")">
                                     <input type="radio" id="variant-@varyant.Id" name="productVariant" value="@varyant.Id" class="variant-radio absolute opacity-0 w-0 h-0" checked="@checkedAttr" disabled="@disabledAttr" data-price="@varyant.SatisFiyati.ToString(System.Globalization.CultureInfo.InvariantCulture)" data-framed-price="@cerceveliFiyat.ToString(System.Globalization.CultureInfo.InvariantCulture)" data-oldprice="@(varyantOldPrice > 0 ? varyantOldPrice.ToString(System.Globalization.CultureInfo.InvariantCulture) : string.Empty)" data-stock="@varyant.StokAdedi" data-preorder="@varyant.OnSipariseAcikMi.ToString().ToLowerInvariant()" data-production="@varyantUretimSuresi" data-image="@varyantMedyaUrl" data-label="@cleanVb" data-olcu="@cleanVb">
-                                    <span class="text-sm font-medium">@cleanVb</span>
+                                    <span class="text-sm">@cleanVb</span>
                                 </label>
                             }
                         </div>
@@ -537,10 +536,10 @@ ViewData["SeoTitle"] = !string.IsNullOrWhiteSpace(Model.SeoTitle) ? Model.SeoTit
                 </div>
             }
 
-@if (cerceveSecimiGerekli)
+            @if (cerceveSecimiGerekli)
             {
                 <div id="frameSelectionBlock" class="mb-8">
-                    <label class="mb-3 block text-xs font-medium uppercase tracking-widest text-[#1B2A4A]">Çerçeve Rengi Seçiniz</label>
+                    <label class="mb-3 block text-xs font-bold uppercase tracking-wider text-slate-900">Çerçeve Rengi Seçiniz</label>
                     <div class="grid grid-cols-4 gap-3 sm:grid-cols-7">
                         @{
                             var cerceveMap = new Dictionary<string, (string image, string label)>
@@ -557,33 +556,33 @@ ViewData["SeoTitle"] = !string.IsNullOrWhiteSpace(Model.SeoTitle) ? Model.SeoTit
                         @foreach (var cerceve in cerceveModelleri)
                         {
                             var map = cerceveMap.GetValueOrDefault(cerceve, (image: string.Empty, label: cerceve));
-                            <label class="group relative cursor-pointer rounded-lg border-2 border-[#F5E6C8] bg-white p-2 text-center transition-all hover:border-[#3A7CA5] has-[:checked]:border-[#3A7CA5] has-[:checked]:bg-[#f7f1e6] has-[:checked]:shadow-sm"
+                            <label class="group relative cursor-pointer rounded-xl border-2 border-slate-200 bg-white p-2 text-center transition-all hover:border-[#00A4D3] has-[:checked]:border-[#00A4D3] has-[:checked]:bg-sky-50 has-[:checked]:shadow-sm"
                                    title="@map.label"
                                    onclick="selectFrameOption(this, '@cerceve'); updatePriceWithFrame();">
                                 <input type="radio" name="CerceveModeli" value="@cerceve" class="frame-radio absolute h-0 w-0 opacity-0" />
                                 <div class="mb-1.5 flex h-16 items-center justify-center">
                                     <img src="@map.image" alt="@map.label" class="max-h-full max-w-full object-contain" loading="lazy" onerror="this.style.display='none'" />
                                 </div>
-                                <span class="text-[11px] font-medium text-[#333333] group-has-[:checked]:text-[#1B2A4A]">@map.label</span>
-                                <div class="absolute -top-1.5 -right-1.5 hidden h-4 w-4 items-center justify-center rounded-full bg-[#3A7CA5] group-has-[:checked]:flex">
+                                <span class="text-[11px] font-semibold text-slate-700 group-has-[:checked]:text-[#00A4D3]">@map.label</span>
+                                <div class="absolute -top-1.5 -right-1.5 hidden h-4 w-4 items-center justify-center rounded-full bg-[#00A4D3] group-has-[:checked]:flex">
                                     <svg class="h-2.5 w-2.5 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
                                 </div>
                             </label>
                         }
                     </div>
-                    <p id="frameSelectionError" class="mt-2 hidden text-xs font-medium text-red-600">Çerçeve rengi seçilmelidir.</p>
+                    <p id="frameSelectionError" class="mt-2 hidden text-xs font-semibold text-red-600">Çerçeve rengi seçilmelidir.</p>
                 </div>
             }
 
             @if (stoktaVar)
             {
-                <div class="flex items-end gap-4 mb-8">
+                <div class="flex items-end gap-3 sm:gap-4 mb-8">
                     <div>
-                        <label class="block text-xs uppercase tracking-widest text-[#1B2A4A] font-medium mb-3">Adet</label>
-                        <div class="flex items-center border border-[#F5E6C8] rounded bg-white">
-                            <button type="button" class="w-10 h-12 flex items-center justify-center text-[#333333] hover:bg-[#FDF6E3] transition-colors" onclick="decreaseQuantity()">-</button>
-                            <input type="number" id="productQuantity" class="w-12 h-12 text-center text-sm border-none bg-transparent p-0 focus:ring-0 text-[#1B2A4A] font-semibold" value="@minSiparisAdedi" min="@minSiparisAdedi" max="@maxSiparisAdedi" readonly>
-                            <button type="button" class="w-10 h-12 flex items-center justify-center text-[#333333] hover:bg-[#FDF6E3] transition-colors" onclick="increaseQuantity()">+</button>
+                        <label class="block text-xs uppercase tracking-wider text-slate-900 font-bold mb-3">Adet</label>
+                        <div class="flex items-center border border-slate-200 rounded-xl bg-white shadow-2xs">
+                            <button type="button" class="w-10 h-12 flex items-center justify-center text-slate-700 hover:bg-slate-50 transition-colors rounded-l-xl font-bold" onclick="decreaseQuantity()">-</button>
+                            <input type="number" id="productQuantity" class="w-12 h-12 text-center text-sm border-none bg-transparent p-0 focus:ring-0 text-slate-900 font-bold" value="@minSiparisAdedi" min="@minSiparisAdedi" max="@maxSiparisAdedi" readonly>
+                            <button type="button" class="w-10 h-12 flex items-center justify-center text-slate-700 hover:bg-slate-50 transition-colors rounded-r-xl font-bold" onclick="increaseQuantity()">+</button>
                         </div>
                     </div>
                     
@@ -596,108 +595,108 @@ ViewData["SeoTitle"] = !string.IsNullOrWhiteSpace(Model.SeoTitle) ? Model.SeoTit
                         <input type="hidden" id="selectedFrameFarki" name="CerceveFarki" value="0" />
 
                         <div class="flex min-w-0 gap-2">
-                            <button type="button" id="ajaxSepetBtn" class="min-w-0 flex-1 h-12 px-3 bg-[#1B2A4A] text-white text-xs uppercase tracking-widest rounded hover:bg-[#1c2001] transition-colors flex items-center justify-center gap-2 whitespace-nowrap">
-                                <i class="fas fa-shopping-bag add-to-cart-icon flex-shrink-0"></i> <span class="add-to-cart-text truncate">Sepete Ekle</span>
+                            <button type="button" id="ajaxSepetBtn" class="min-w-0 flex-1 h-12 px-4 bg-[#E30613] hover:bg-[#DC2626] text-white text-xs sm:text-sm font-bold uppercase tracking-wider rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 whitespace-nowrap active:scale-[0.98]">
+                                <i class="fas fa-shopping-bag add-to-cart-icon flex-shrink-0 text-sm"></i> <span class="add-to-cart-text truncate">Sepete Ekle</span>
                             </button>
-                            <a href="/Sepet" class="flex-none w-12 sm:w-36 h-12 bg-[#3A7CA5] text-white text-xs uppercase tracking-widest rounded hover:bg-[#8e6a28] transition-colors flex items-center justify-center gap-2 whitespace-nowrap" aria-label="Sepete Git">
+                            <a href="/Sepet" class="flex-none w-12 sm:w-36 h-12 bg-[#00A4D3] hover:bg-[#0284C7] text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 whitespace-nowrap" aria-label="Sepete Git">
                                 <i class="fas fa-shopping-cart flex-shrink-0"></i> <span class="hidden sm:inline">Sepete Git</span>
                             </a>
                         </div>
                     </form>
-                    <button type="button" onclick="window.toggleFavori(this, @Model.Id)" class="group/btn h-12 w-12 flex-shrink-0 flex items-center justify-center border border-[#F5E6C8] rounded hover:border-[#3A7CA5] transition-colors bg-white" title="Favorilere Ekle">
-                        <i class="far fa-heart text-[#333333] group-hover/btn:text-red-500 transition-colors text-lg"></i>
+                    <button type="button" onclick="window.toggleFavori(this, @Model.Id)" class="group/btn h-12 w-12 flex-shrink-0 flex items-center justify-center border border-slate-200 rounded-xl hover:border-[#E30613] hover:text-[#E30613] transition-colors bg-white shadow-2xs" title="Favorilere Ekle">
+                        <i class="far fa-heart text-slate-500 group-hover/btn:text-[#E30613] transition-colors text-lg"></i>
                     </button>
                 </div>
 
-                <div id="selectionSummary" class="hidden mb-4 bg-gradient-to-r from-[#FFFBF0] to-[#f5f0e6] border-2 border-[#3A7CA5] rounded-xl px-3 py-3 sm:px-5 sm:py-4">
+                <div id="selectionSummary" class="hidden mb-4 bg-sky-50 border-2 border-[#00A4D3] rounded-xl px-4 py-3 sm:px-5 sm:py-3.5">
                     <div class="flex items-center justify-center gap-1.5 overflow-hidden text-center sm:gap-2">
                         <div class="flex shrink-0 items-center gap-1 sm:gap-2">
-                            <i class="fas fa-ruler-combined hidden sm:inline text-[#3A7CA5] text-sm sm:text-lg"></i>
-                            <span id="summaryOlcu" class="whitespace-nowrap text-sm sm:text-lg font-bold text-[#1B2A4A]">-</span>
+                            <i class="fas fa-ruler-combined hidden sm:inline text-[#00A4D3] text-sm sm:text-base"></i>
+                            <span id="summaryOlcu" class="whitespace-nowrap text-sm sm:text-base font-bold text-slate-900">-</span>
                         </div>
                         @if (cerceveSecimiGerekli)
                         {
-                            <span class="shrink-0 text-[#3A7CA5] text-sm sm:text-lg font-light">|</span>
+                            <span class="shrink-0 text-sky-300 text-sm sm:text-base font-light">|</span>
                             <div class="min-w-0 max-w-[42%] sm:max-w-none">
-                                <span id="summaryCerceve" class="block truncate text-sm sm:text-lg font-bold text-[#1B2A4A]">Çerçeve seçiniz</span>
+                                <span id="summaryCerceve" class="block truncate text-sm sm:text-base font-bold text-slate-900">Çerçeve seçiniz</span>
                             </div>
                         }
-                        <span class="shrink-0 text-[#3A7CA5] text-sm sm:text-lg font-light">|</span>
+                        <span class="shrink-0 text-sky-300 text-sm sm:text-base font-light">|</span>
                         <div class="flex shrink-0 items-center">
-                            <span id="summaryFiyat" class="whitespace-nowrap text-sm sm:text-xl font-extrabold text-[#1B2A4A]">0 @currencySymbol</span>
-                            <span id="summaryBirimFiyat" class="hidden sm:inline text-xs text-[#333333] font-normal ml-1"></span>
+                            <span id="summaryFiyat" class="whitespace-nowrap text-base sm:text-xl font-black text-[#E30613]">0 @currencySymbol</span>
+                            <span id="summaryBirimFiyat" class="hidden sm:inline text-xs text-slate-500 font-normal ml-1"></span>
                         </div>
                     </div>
                 </div>
 
-                <div class="mb-8 flex flex-wrap items-center gap-3 border-y border-[#F5E6C8] py-4">
-                <span class="mr-1 text-xs uppercase tracking-widest text-[#333333]">Paylaş</span>
-                <a href="https://www.facebook.com/sharer/sharer.php?u=@encodedProductUrl" target="_blank" rel="noopener noreferrer" aria-label="Facebook'ta paylaş" class="flex h-9 w-9 items-center justify-center rounded-full border border-[#F5E6C8] bg-white text-[#1B2A4A] transition-colors hover:border-[#3A7CA5] hover:text-[#3A7CA5]">
-                    <i class="fab fa-facebook-f text-sm"></i>
-                </a>
-                <a href="@(string.IsNullOrWhiteSpace(siteSettings.InstagramUrl) ? "https://www.instagram.com/" : siteSettings.InstagramUrl)" target="_blank" rel="noopener noreferrer" aria-label="Instagram'da aç" class="flex h-9 w-9 items-center justify-center rounded-full border border-[#F5E6C8] bg-white text-[#1B2A4A] transition-colors hover:border-[#3A7CA5] hover:text-[#3A7CA5]">
-                    <i class="fab fa-instagram text-sm"></i>
-                </a>
-                <a href="https://wa.me/?text=@encodedProductTitle%20@encodedProductUrl" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp ile paylaş" class="flex h-9 w-9 items-center justify-center rounded-full border border-[#F5E6C8] bg-white text-[#1B2A4A] transition-colors hover:border-[#3A7CA5] hover:text-[#3A7CA5]">
-                    <i class="fab fa-whatsapp text-sm"></i>
-                </a>
-                <button type="button" onclick="copyProductLink(this)" data-url="@productUrl" class="flex h-9 items-center gap-2 rounded-full border border-[#F5E6C8] bg-white px-4 text-xs uppercase tracking-widest text-[#1B2A4A] transition-colors hover:border-[#3A7CA5] hover:text-[#3A7CA5]">
-                    <i class="fas fa-link text-xs"></i>
-                    Linki Kopyala
-                </button>
-            </div>
+                <div class="mb-8 flex flex-wrap items-center gap-3 border-y border-slate-200 py-4">
+                    <span class="mr-1 text-xs uppercase tracking-wider text-slate-500 font-semibold">Paylaş</span>
+                    <a href="https://www.facebook.com/sharer/sharer.php?u=@encodedProductUrl" target="_blank" rel="noopener noreferrer" aria-label="Facebook'ta paylaş" class="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 transition-colors hover:border-[#00A4D3] hover:text-[#00A4D3]">
+                        <i class="fab fa-facebook-f text-sm"></i>
+                    </a>
+                    <a href="@(string.IsNullOrWhiteSpace(siteSettings.InstagramUrl) ? "https://www.instagram.com/" : siteSettings.InstagramUrl)" target="_blank" rel="noopener noreferrer" aria-label="Instagram'da aç" class="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 transition-colors hover:border-[#00A4D3] hover:text-[#00A4D3]">
+                        <i class="fab fa-instagram text-sm"></i>
+                    </a>
+                    <a href="https://wa.me/?text=@encodedProductTitle%20@encodedProductUrl" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp ile paylaş" class="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 transition-colors hover:border-[#00A4D3] hover:text-[#00A4D3]">
+                        <i class="fab fa-whatsapp text-sm"></i>
+                    </a>
+                    <button type="button" onclick="copyProductLink(this)" data-url="@productUrl" class="flex h-9 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-xs uppercase tracking-wider text-slate-700 font-semibold transition-colors hover:border-[#00A4D3] hover:text-[#00A4D3]">
+                        <i class="fas fa-link text-xs"></i>
+                        Linki Kopyala
+                    </button>
+                </div>
 
-            @if (!string.IsNullOrWhiteSpace(Model.MalzemeBilgisi) || !string.IsNullOrWhiteSpace(Model.PaketlemeBilgisi))
-            {
-                <div class="mb-8 border-l-2 border-[#3A7CA5] bg-[#FDF6E3] px-5 py-4">
-                    @if (!string.IsNullOrWhiteSpace(Model.MalzemeBilgisi))
-                    {
-                        <p class="mb-2 text-sm text-[#1B2A4A]"><span class="font-semibold">Malzeme:</span> @Model.MalzemeBilgisi</p>
-                    }
-                    @if (!string.IsNullOrWhiteSpace(Model.PaketlemeBilgisi))
-                    {
-                        <p class="text-sm text-[#333333]"><span class="font-semibold text-[#1B2A4A]">Paketleme:</span> @Model.PaketlemeBilgisi</p>
-                    }
-                </div>
-            }
+                @if (!string.IsNullOrWhiteSpace(Model.MalzemeBilgisi) || !string.IsNullOrWhiteSpace(Model.PaketlemeBilgisi))
+                {
+                    <div class="mb-8 border-l-4 border-[#00A4D3] bg-[#F8FAFC] px-5 py-4 rounded-r-xl">
+                        @if (!string.IsNullOrWhiteSpace(Model.MalzemeBilgisi))
+                        {
+                            <p class="mb-2 text-sm text-slate-900"><span class="font-bold">Malzeme:</span> @Model.MalzemeBilgisi</p>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(Model.PaketlemeBilgisi))
+                        {
+                            <p class="text-sm text-slate-600"><span class="font-bold text-slate-900">Paketleme:</span> @Model.PaketlemeBilgisi</p>
+                        }
+                    </div>
+                }
 
-            <div class="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <div class="border border-[#F5E6C8] bg-white px-4 py-3">
-                    <p class="mb-1 flex items-center gap-2 text-[10px] uppercase tracking-widest text-[#1B2A4A]"><i class="fas fa-industry text-[#3A7CA5]"></i> Üretim</p>
-                    <p id="productionCardText" class="text-sm text-[#333333]">@(gosterilecekUretimSuresi > 0 ? $"{gosterilecekUretimSuresi} iş günü" : "Siparişe özel hazırlanır")</p>
+                <div class="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    <div class="border border-slate-200 bg-white px-4 py-3 rounded-xl shadow-2xs">
+                        <p class="mb-1 flex items-center gap-2 text-[10px] uppercase tracking-wider text-slate-900 font-bold"><i class="fas fa-industry text-[#00A4D3]"></i> Üretim</p>
+                        <p id="productionCardText" class="text-sm text-slate-600">@(gosterilecekUretimSuresi > 0 ? $"{gosterilecekUretimSuresi} iş günü" : "Siparişe özel hazırlanır")</p>
+                    </div>
+                    <div class="border border-slate-200 bg-white px-4 py-3 rounded-xl shadow-2xs">
+                        <p class="mb-1 flex items-center gap-2 text-[10px] uppercase tracking-wider text-slate-900 font-bold"><i class="fas fa-box-open text-[#00A4D3]"></i> Paketleme</p>
+                        <p class="text-sm text-slate-600">Özenli ve korunaklı teslimat</p>
+                    </div>
+                    <div class="border border-slate-200 bg-white px-4 py-3 rounded-xl shadow-2xs">
+                        <p class="mb-1 flex items-center gap-2 text-[10px] uppercase tracking-wider text-slate-900 font-bold"><i class="fas fa-route text-[#00A4D3]"></i> Teslimat</p>
+                        <p class="text-sm text-slate-600">Tahmini @gosterilecekTeslimSuresi iş günü</p>
+                    </div>
                 </div>
-                <div class="border border-[#F5E6C8] bg-white px-4 py-3">
-                    <p class="mb-1 flex items-center gap-2 text-[10px] uppercase tracking-widest text-[#1B2A4A]"><i class="fas fa-box-open text-[#3A7CA5]"></i> Paketleme</p>
-                    <p class="text-sm text-[#333333]">Özenli ve korunaklı teslimat</p>
-                </div>
-                <div class="border border-[#F5E6C8] bg-white px-4 py-3">
-                    <p class="mb-1 flex items-center gap-2 text-[10px] uppercase tracking-widest text-[#1B2A4A]"><i class="fas fa-route text-[#3A7CA5]"></i> Teslimat</p>
-                    <p class="text-sm text-[#333333]">Tahmini @gosterilecekTeslimSuresi iş günü</p>
-                </div>
-            </div>
             }
             else
             {
-                <div class="bg-amber-50 border border-amber-200 text-amber-700 p-4 rounded text-sm mb-8">
+                <div class="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-xl text-sm mb-8">
                     Bu ürün şu anda satın almaya uygun değil. Stok bilgisi güncellendiğinde tekrar deneyin.
                 </div>
             }
 
-            <div class="grid grid-cols-3 gap-2 py-4 border-y border-[#F5E6C8]">
+            <div class="grid grid-cols-3 gap-2 py-4 border-y border-slate-200">
                 <div class="text-center">
-                    <i class="fas fa-shield-alt text-[#3A7CA5] mb-2 text-lg"></i>
-                    <p class="text-xs text-[#1B2A4A] font-semibold mb-1">Güvenli Ödeme</p>
-                    <p class="text-[10px] text-[#333333]">256-bit SSL</p>
+                    <i class="fas fa-shield-alt text-[#00A4D3] mb-2 text-xl"></i>
+                    <p class="text-xs text-slate-900 font-bold mb-1">Güvenli Ödeme</p>
+                    <p class="text-[10px] text-slate-500">256-bit SSL</p>
                 </div>
                 <div class="text-center">
-                    <i class="fas fa-truck text-[#3A7CA5] mb-2 text-lg"></i>
-                    <p class="text-xs text-[#1B2A4A] font-semibold mb-1">Ücretsiz Kargo</p>
-                    <p class="text-[10px] text-[#333333]">@gosterilecekKargoSuresi iş günü</p>
+                    <i class="fas fa-truck text-[#00A4D3] mb-2 text-xl"></i>
+                    <p class="text-xs text-slate-900 font-bold mb-1">Hızlı Teslimat</p>
+                    <p class="text-[10px] text-slate-500">@gosterilecekKargoSuresi iş günü kargo</p>
                 </div>
                 <div class="text-center">
-                    <i class="fas fa-undo-alt text-[#3A7CA5] mb-2 text-lg"></i>
-                    <p class="text-xs text-[#1B2A4A] font-semibold mb-1">İade Garantisi</p>
-                    <p class="text-[10px] text-[#333333]">@iadeSuresi gün içinde</p>
+                    <i class="fas fa-undo-alt text-[#00A4D3] mb-2 text-xl"></i>
+                    <p class="text-xs text-slate-900 font-bold mb-1">İade Garantisi</p>
+                    <p class="text-[10px] text-slate-500">@iadeSuresi gün içinde</p>
                 </div>
             </div>
             
@@ -705,16 +704,16 @@ ViewData["SeoTitle"] = !string.IsNullOrWhiteSpace(Model.SeoTitle) ? Model.SeoTit
     </div>
 
     <!-- Tabs Section -->
-    <div class="mt-20 border-t border-[#F5E6C8] pt-12">
+    <div class="mt-20 border-t border-slate-200 pt-12">
         <div class="flex flex-col lg:flex-row gap-12">
             
             <!-- Left: Description and Specs -->
             <div class="lg:w-2/3 space-y-12">
                 <div>
-                    <h2 class="font-serif text-2xl text-[#1B2A4A] mb-6 flex items-center gap-3">
-                        <i class="fas fa-file-alt text-[#3A7CA5]"></i> Ürün Açıklaması
+                    <h2 class="font-serif text-2xl font-bold text-slate-900 mb-6 flex items-center gap-3">
+                        <i class="fas fa-file-alt text-[#00A4D3]"></i> Ürün Açıklaması
                     </h2>
-                    <div class="prose prose-sm max-w-none text-[#333333] leading-relaxed">
+                    <div class="prose prose-sm max-w-none text-slate-600 leading-relaxed">
                         @Html.Raw(Model.Aciklama ?? "Bu ürün için açıklama girilmemiştir.")
                     </div>
                 </div>
@@ -722,17 +721,17 @@ ViewData["SeoTitle"] = !string.IsNullOrWhiteSpace(Model.SeoTitle) ? Model.SeoTit
                 @if (teknikTabloSatirlari.Any())
                 {
                     <div>
-                        <h2 class="font-serif text-2xl text-[#1B2A4A] mb-6 flex items-center gap-3">
-                            <i class="fas fa-cogs text-[#3A7CA5]"></i> Teknik Özellikler
+                        <h2 class="font-serif text-2xl font-bold text-slate-900 mb-6 flex items-center gap-3">
+                            <i class="fas fa-cogs text-[#00A4D3]"></i> Teknik Özellikler
                         </h2>
-                        <div class="bg-white border border-[#F5E6C8] rounded-lg overflow-hidden">
+                        <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-2xs">
                             <table class="w-full text-sm text-left">
-                                <tbody class="divide-y divide-[#F5E6C8]">
+                                <tbody class="divide-y divide-slate-200">
                                     @foreach (var satir in teknikTabloSatirlari)
                                     {
-                                        <tr class="hover:bg-[#FFFBF0]">
-                                            <th class="px-6 py-4 font-semibold text-[#1B2A4A] w-1/3 bg-[#FDF6E3]">@satir.Baslik</th>
-                                            <td class="px-6 py-4 text-[#333333]">@satir.Deger</td>
+                                        <tr class="hover:bg-slate-50 transition-colors">
+                                            <th class="px-6 py-4 font-bold text-slate-900 w-1/3 bg-[#F8FAFC]">@satir.Baslik</th>
+                                            <td class="px-6 py-4 text-slate-600">@satir.Deger</td>
                                         </tr>
                                     }
                                 </tbody>
@@ -744,18 +743,18 @@ ViewData["SeoTitle"] = !string.IsNullOrWhiteSpace(Model.SeoTitle) ? Model.SeoTit
                 @if (medyaVitriniVar)
                 {
                     <div>
-                        <h2 class="font-serif text-2xl text-[#1B2A4A] mb-6 flex items-center gap-3">
-                            <i class="fas fa-photo-video text-[#3A7CA5]"></i> Medya & Galeriler
+                        <h2 class="font-serif text-2xl font-bold text-slate-900 mb-6 flex items-center gap-3">
+                            <i class="fas fa-photo-video text-[#00A4D3]"></i> Medya & Galeriler
                         </h2>
                         
                         @if (videoMedyalari.Any())
                         {
                             <div class="mb-8">
-                                <h3 class="text-lg font-semibold text-[#1B2A4A] mb-4">Video Anlatımı</h3>
+                                <h3 class="text-lg font-bold text-slate-900 mb-4">Video Anlatımı</h3>
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     @foreach (var medya in videoMedyalari)
                                     {
-                                        <div class="bg-white border border-[#F5E6C8] rounded-lg overflow-hidden">
+                                        <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-2xs">
                                             <div class="aspect-video bg-black relative">
                                                 @if (!string.IsNullOrWhiteSpace(ProductMediaEmbedHelper.GetEmbedUrl(medya.EtkinKaynak)))
                                                 {
@@ -769,8 +768,8 @@ ViewData["SeoTitle"] = !string.IsNullOrWhiteSpace(Model.SeoTitle) ? Model.SeoTit
                                                 }
                                             </div>
                                             <div class="p-4">
-                                                <h5 class="text-sm font-semibold text-[#1B2A4A] mb-1">@medya.Baslik</h5>
-                                                <p class="text-xs text-[#333333]">@UrunMedyaCatalog.GetAreaLabel(medya.MedyaAlani)</p>
+                                                <h5 class="text-sm font-bold text-slate-900 mb-1">@medya.Baslik</h5>
+                                                <p class="text-xs text-slate-500">@UrunMedyaCatalog.GetAreaLabel(medya.MedyaAlani)</p>
                                             </div>
                                         </div>
                                     }
@@ -784,24 +783,24 @@ ViewData["SeoTitle"] = !string.IsNullOrWhiteSpace(Model.SeoTitle) ? Model.SeoTit
 
             <!-- Right: Reviews -->
             <div class="lg:w-1/3">
-                <h2 class="font-serif text-2xl text-[#1B2A4A] mb-6 flex items-center gap-3">
-                    <i class="fas fa-comments text-[#3A7CA5]"></i> Yorumlar
+                <h2 class="font-serif text-2xl font-bold text-slate-900 mb-6 flex items-center gap-3">
+                    <i class="fas fa-comments text-[#00A4D3]"></i> Değerlendirmeler
                 </h2>
                 
                 @if (yorumlar != null && yorumlar.Count > 0)
                 {
-                    <div class="bg-white border border-[#F5E6C8] rounded-lg p-6 text-center mb-8">
-                        <h3 class="font-serif text-5xl text-[#1B2A4A] mb-2">@ortalamaPuan.ToString("0.0")</h3>
-                        <div class="text-[#3A7CA5] mb-2">
+                    <div class="bg-white border border-slate-200 rounded-xl p-6 text-center mb-8 shadow-2xs">
+                        <h3 class="font-serif text-5xl font-bold text-slate-900 mb-2">@ortalamaPuan.ToString("0.0")</h3>
+                        <div class="text-amber-400 mb-2">
                             @for (int i = 1; i <= 5; i++)
                             {
                                 if (i <= tamYildiz) { <i class="fas fa-star"></i> }
                                 else if (i == tamYildiz + 1 && yarimYildiz) { <i class="fas fa-star-half-alt"></i> }
-                                else { <i class="far fa-star"></i> }
+                                else { <i class="far fa-star text-slate-300"></i> }
                             }
                         </div>
-                        <p class="text-sm text-[#333333] mb-4">Toplam @yorumSayisi değerlendirme</p>
-                        <button class="w-full border border-[#1B2A4A] text-[#1B2A4A] text-xs tracking-widest uppercase py-2.5 rounded hover:bg-[#1B2A4A] hover:text-white transition-colors" id="openCommentModalBtn">
+                        <p class="text-sm text-slate-500 mb-4">Toplam @yorumSayisi değerlendirme</p>
+                        <button class="w-full border border-[#00A4D3] text-[#00A4D3] text-xs font-bold tracking-wider uppercase py-2.5 rounded-xl hover:bg-[#00A4D3] hover:text-white transition-colors" id="openCommentModalBtn">
                             Yorum Yap
                         </button>
                     </div>
@@ -809,10 +808,10 @@ ViewData["SeoTitle"] = !string.IsNullOrWhiteSpace(Model.SeoTitle) ? Model.SeoTit
                     <div class="space-y-4">
                         @foreach (var yorum in yorumlar.Take(3))
                         {
-                            <div class="bg-white border border-[#F5E6C8] rounded-lg p-4">
+                            <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs">
                                 <div class="flex items-start justify-between mb-2">
                                     <div class="flex items-center gap-3">
-                                        <div class="w-10 h-10 rounded-full bg-[#FDF6E3] text-[#1B2A4A] flex items-center justify-center font-semibold text-sm">
+                                        <div class="w-10 h-10 rounded-full bg-sky-50 text-[#00A4D3] flex items-center justify-center font-bold text-sm">
                                             @{
                                                 var names = yorum.AdSoyad.Split(' ');
                                                 string initials = "";
@@ -823,17 +822,17 @@ ViewData["SeoTitle"] = !string.IsNullOrWhiteSpace(Model.SeoTitle) ? Model.SeoTit
                                             @initials
                                         </div>
                                         <div>
-                                            <h5 class="text-sm font-semibold text-[#1B2A4A]">@yorum.AdSoyad</h5>
-                                            <div class="text-[#3A7CA5] text-[10px]">
+                                            <h5 class="text-sm font-bold text-slate-900">@yorum.AdSoyad</h5>
+                                            <div class="text-amber-400 text-[10px]">
                                                 @for (int i = 0; i < yorum.Puan; i++) { <i class="fas fa-star"></i> }
                                             </div>
                                         </div>
                                     </div>
-                                    <span class="text-[10px] text-[#333333]">@yorum.OlusturulmaTarihi.ToTurkeyString("dd MMM yyyy")</span>
+                                    <span class="text-[10px] text-slate-400">@yorum.OlusturulmaTarihi.ToTurkeyString("dd MMM yyyy")</span>
                                 </div>
                                 @if (!string.IsNullOrWhiteSpace(yorum.YorumMetni))
                                 {
-                                    <p class="text-sm text-[#333333] mt-2">@yorum.YorumMetni</p>
+                                    <p class="text-sm text-slate-600 mt-2">@yorum.YorumMetni</p>
                                 }
                             </div>
                         }
@@ -841,11 +840,11 @@ ViewData["SeoTitle"] = !string.IsNullOrWhiteSpace(Model.SeoTitle) ? Model.SeoTit
                 }
                 else
                 {
-                    <div class="text-center py-12 bg-white border border-[#F5E6C8] rounded-lg">
-                        <i class="far fa-comments fa-3x text-[#F5E6C8] mb-4"></i>
-                        <h5 class="text-[#1B2A4A] font-semibold mb-2">Henüz yorum yapılmamış</h5>
-                        <p class="text-sm text-[#333333] mb-6">Bu ürün için ilk yorumu siz yapın!</p>
-                        <button class="bg-[#1B2A4A] text-white text-xs tracking-widest uppercase px-6 py-2.5 rounded hover:bg-[#1c2001] transition-colors" id="openCommentModalBtnEmpty">
+                    <div class="text-center py-12 bg-white border border-slate-200 rounded-xl shadow-2xs">
+                        <i class="far fa-comments fa-3x text-slate-300 mb-4"></i>
+                        <h5 class="text-slate-900 font-bold mb-2">Henüz yorum yapılmamış</h5>
+                        <p class="text-sm text-slate-500 mb-6">Bu ürün için ilk yorumu siz yapın!</p>
+                        <button class="bg-[#00A4D3] hover:bg-[#0284C7] text-white text-xs font-bold tracking-wider uppercase px-6 py-2.5 rounded-xl shadow-md transition-colors" id="openCommentModalBtnEmpty">
                             İlk Yorumu Yap
                         </button>
                     </div>
@@ -860,12 +859,12 @@ ViewData["SeoTitle"] = !string.IsNullOrWhiteSpace(Model.SeoTitle) ? Model.SeoTit
 }
 @if (benzerUrunler != null && benzerUrunler.Count > 0)
 {
-    <section class="py-16 bg-[#fafaf8]">
+    <section class="py-16 bg-[#F8FAFC] border-t border-slate-200">
         <div class="container mx-auto px-4">
             <div class="flex items-center justify-center mb-10">
-                <hr class="w-1/4 border-[#F5E6C8] hidden md:block"/>
-                <h2 class="font-serif text-3xl mx-8 text-center text-[#1B2A4A]">Benzer Ürünler</h2>
-                <hr class="w-1/4 border-[#F5E6C8] hidden md:block"/>
+                <hr class="w-1/4 border-slate-200 hidden md:block"/>
+                <h2 class="font-serif text-3xl font-bold mx-8 text-center text-slate-900">Benzer Ürünler</h2>
+                <hr class="w-1/4 border-slate-200 hidden md:block"/>
             </div>
             <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 md:gap-6">
                 @foreach (var item in benzerUrunler)
@@ -874,16 +873,16 @@ ViewData["SeoTitle"] = !string.IsNullOrWhiteSpace(Model.SeoTitle) ? Model.SeoTit
                     decimal? bEskiFiyat = (item.IndirimliFiyat != null && item.IndirimliFiyat < item.Fiyat) ? item.Fiyat : null;
                     string bProductUrl = !string.IsNullOrEmpty(item.Slug) ? $"/Urun/Detay/{item.Slug}-{item.Id}" : $"/Urun/Detay/{KanvasProje.Core.Helpers.SlugHelper.GenerateSlug(item.Baslik)}-{item.Id}";
                     string gorsel = !string.IsNullOrEmpty(item.AnaGorselUrl) ? item.AnaGorselUrl : "/img/products/placeholder.webp";
-                    <a href="@bProductUrl" class="group block">
-                        <div class="relative overflow-hidden mb-3 aspect-square bg-[#FDF6E3] rounded">
+                    <a href="@bProductUrl" class="group block bg-white p-3 rounded-xl border border-slate-200 hover:border-[#00A4D3] shadow-2xs hover:shadow-md transition-all">
+                        <div class="relative overflow-hidden mb-3 aspect-square bg-[#F8FAFC] rounded-lg">
                             <img alt="@item.Baslik" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src="@gorsel" loading="lazy" decoding="async" />
                         </div>
-                        <h3 class="text-xs font-semibold text-[#1B2A4A] tracking-wide line-clamp-2 mb-1">@item.Baslik</h3>
+                        <h3 class="text-xs font-bold text-slate-800 tracking-wide line-clamp-2 mb-1 group-hover:text-[#00A4D3] transition-colors">@item.Baslik</h3>
                         <div class="flex items-center gap-2">
-                            <span class="text-sm font-bold text-[#1B2A4A]">@itemFiyat.ToString("N2") TL</span>
+                            <span class="text-sm font-extrabold text-[#E30613]">@itemFiyat.ToString("N2") TL</span>
                             @if (bEskiFiyat != null)
                             {
-                                <span class="text-xs text-[#999] line-through">@bEskiFiyat?.ToString("N2") TL</span>
+                                <span class="text-xs text-slate-400 line-through">@bEskiFiyat?.ToString("N2") TL</span>
                             }
                         </div>
                     </a>
@@ -1146,13 +1145,13 @@ function changeProductImage(imageUrl, thumbnailElement, altText) {
     const thumbnails = document.querySelectorAll('.thumbnail-item');
     thumbnails.forEach(item => {
         if (item) {
-            item.classList.remove('border-[#1B2A4A]');
-            item.classList.add('border-transparent');
+            item.classList.remove('border-[#00A4D3]', 'ring-2', 'ring-[#00A4D3]/30');
+            item.classList.add('border-slate-200');
         }
     });
     if (thumbnailElement) {
-        thumbnailElement.classList.remove('border-transparent');
-        thumbnailElement.classList.add('border-[#1B2A4A]');
+        thumbnailElement.classList.remove('border-slate-200');
+        thumbnailElement.classList.add('border-[#00A4D3]', 'ring-2', 'ring-[#00A4D3]/30');
         thumbnailElement.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
     }
 

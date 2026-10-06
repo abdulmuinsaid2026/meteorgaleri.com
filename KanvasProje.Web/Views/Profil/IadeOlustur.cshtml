@@ -1,37 +1,37 @@
-﻿@model KanvasProje.Core.Varliklar.Siparis
+@model KanvasProje.Core.Varliklar.Siparis
 @{
     ViewData["Title"] = "İade Talebi Oluştur";
 }
 
-<div class="bg-[#FDF6E3] border-b border-[#F5E6C8] py-3">
-    <div class="container mx-auto px-4 flex items-center gap-2 text-xs text-[#333333]">
-        <a href="/" class="hover:text-[#1B2A4A] transition-colors">Ana Sayfa</a>
+<div class="bg-slate-50 border-b border-slate-200 py-3">
+    <div class="container mx-auto px-4 flex items-center gap-2 text-xs text-slate-500">
+        <a href="/" class="hover:text-[#00A4D3] transition-colors">Ana Sayfa</a>
         <span>/</span>
-        <a href="/Profil" class="hover:text-[#1B2A4A] transition-colors">Hesabım</a>
+        <a href="/Profil" class="hover:text-[#00A4D3] transition-colors">Hesabım</a>
         <span>/</span>
-        <a href="/Profil/Siparislerim" class="hover:text-[#1B2A4A] transition-colors">Siparişlerim</a>
+        <a href="/Profil/Siparislerim" class="hover:text-[#00A4D3] transition-colors">Siparişlerim</a>
         <span>/</span>
-        <span class="text-[#1B2A4A] font-medium">İade Talebi</span>
+        <span class="text-slate-800 font-semibold">İade Talebi</span>
     </div>
 </div>
 
 <div class="container mx-auto px-4 py-10 max-w-3xl">
-    <h1 class="font-serif text-3xl text-[#1B2A4A] mb-6">İade Talebi Oluştur</h1>
+    <h1 class="font-heading text-2xl sm:text-3xl font-extrabold text-slate-900 mb-6">İade Talebi Oluştur</h1>
     
-    <div class="bg-white border border-[#F5E6C8] rounded-lg p-6 mb-8">
-        <h3 class="font-bold text-[#1B2A4A] mb-4 border-b border-[#F5E6C8] pb-2">Sipariş Bilgileri</h3>
-        <p class="text-sm text-[#333333] mb-2"><strong>Sipariş No:</strong> @Model.SiparisNo</p>
-        <p class="text-sm text-[#333333] mb-2"><strong>Tarih:</strong> @Model.OlusturulmaTarihi.ToTurkeyString("dd.MM.yyyy")</p>
-        <p class="text-sm text-[#333333]"><strong>Tutar:</strong> @Model.ToplamTutar.ToString("N2") TL</p>
+    <div class="bg-white border border-slate-200/80 rounded-2xl p-6 mb-8 shadow-sm">
+        <h3 class="font-bold text-slate-900 mb-4 border-b border-slate-100 pb-2.5">Sipariş Bilgileri</h3>
+        <p class="text-sm text-slate-600 mb-2"><strong>Sipariş No:</strong> <span class="font-mono text-slate-900">#@Model.SiparisNo</span></p>
+        <p class="text-sm text-slate-600 mb-2"><strong>Tarih:</strong> @Model.OlusturulmaTarihi.ToTurkeyString("dd.MM.yyyy")</p>
+        <p class="text-sm text-slate-600"><strong>Tutar:</strong> <span class="font-bold text-[#E30613]">@Model.ToplamTutar.ToString("N2") TL</span></p>
     </div>
 
-    <form asp-action="IadeOlustur" method="post" class="space-y-6">
+    <form asp-action="IadeOlustur" method="post" class="bg-white border border-slate-200/80 rounded-2xl p-6 sm:p-8 space-y-6 shadow-sm">
         @Html.AntiForgeryToken()
         <input type="hidden" name="SiparisId" value="@Model.Id" />
         
         <div>
-            <label class="block text-xs uppercase tracking-widest text-[#1B2A4A] font-medium mb-2">İade Nedeni</label>
-            <select name="Neden" required class="w-full border border-[#F5E6C8] rounded px-4 py-3 text-sm focus:ring-1 focus:ring-[#C0392B] focus:border-[#C0392B] outline-none bg-[#FFFBF0]">
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-2">İade Nedeni</label>
+            <select name="Neden" required class="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#00A4D3] focus:border-[#00A4D3] outline-none bg-white transition-all text-slate-800">
                 <option value="">Seçiniz</option>
                 <option value="Hasarlı Ürün">Ürün hasarlı geldi</option>
                 <option value="Yanlış Ürün">Yanlış ürün gönderildi</option>
@@ -41,20 +41,20 @@
         </div>
 
         <div>
-            <label class="block text-xs uppercase tracking-widest text-[#1B2A4A] font-medium mb-2">Açıklama (İsteğe Bağlı)</label>
-            <textarea name="Aciklama" rows="4" class="w-full border border-[#F5E6C8] rounded px-4 py-3 text-sm focus:ring-1 focus:ring-[#C0392B] focus:border-[#C0392B] outline-none bg-[#FFFBF0] resize-none" placeholder="İade talebinizle ilgili eklemek istedikleriniz..."></textarea>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-2">Açıklama (İsteğe Bağlı)</label>
+            <textarea name="Aciklama" rows="4" class="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#00A4D3] focus:border-[#00A4D3] outline-none bg-white transition-all text-slate-800 resize-none" placeholder="İade talebinizle ilgili eklemek istedikleriniz..."></textarea>
         </div>
 
         <div>
-            <label class="block text-xs uppercase tracking-widest text-[#1B2A4A] font-medium mb-2">IBAN (İsteğe Bağlı)</label>
-            <input name="IBAN" class="w-full border border-[#F5E6C8] rounded px-4 py-3 text-sm focus:ring-1 focus:ring-[#C0392B] focus:border-[#C0392B] outline-none bg-[#FFFBF0]" placeholder="TR..." />
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-2">IBAN (İsteğe Bağlı)</label>
+            <input name="IBAN" class="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#00A4D3] focus:border-[#00A4D3] outline-none bg-white transition-all text-slate-800" placeholder="TR..." />
         </div>
 
-        <div class="flex gap-4">
-            <button type="submit" class="bg-[#1B2A4A] text-white px-8 py-3 text-xs tracking-widest uppercase rounded hover:bg-[#1c2001] transition-colors">
+        <div class="flex flex-wrap gap-4 pt-2">
+            <button type="submit" class="bg-[#00A4D3] text-white px-8 py-3.5 text-xs font-bold tracking-wider uppercase rounded-xl hover:bg-[#0284C7] transition-all shadow-md shadow-sky-500/20">
                 Talebi Gönder
             </button>
-            <a href="/Profil/Siparislerim" class="bg-white border border-[#F5E6C8] text-[#1B2A4A] px-8 py-3 text-xs tracking-widest uppercase rounded hover:bg-[#FFFBF0] transition-colors inline-flex items-center">
+            <a href="/Profil/Siparislerim" class="bg-white border border-slate-300 text-slate-700 px-8 py-3.5 text-xs font-bold tracking-wider uppercase rounded-xl hover:bg-slate-50 transition-colors inline-flex items-center">
                 İptal
             </a>
         </div>

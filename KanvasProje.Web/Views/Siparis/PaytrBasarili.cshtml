@@ -1,75 +1,77 @@
-﻿@{
-    ViewData["Title"] = "Ödeme Başarılı";
+@{
+    ViewData["Title"] = "Ödeme Başarılı - Meteor Galeri";
     var siparisNo = ViewBag.SiparisNo as string;
     var siparisId = ViewBag.SiparisId is int id ? id : 0;
     bool odemeBekliyor = ViewBag.OdemeBekliyor is bool bekliyor && bekliyor;
 }
 
-<div class="container mx-auto px-4 py-16 md:py-24">
-    <div class="max-w-xl mx-auto text-center">
-        @if (odemeBekliyor)
-        {
-            <!-- Ödeme henüz onaylanmadı -->
-            <div class="w-20 h-20 bg-[#FFFBF0] border-2 border-[#C0392B] rounded-full flex items-center justify-center mx-auto mb-8">
-                <i class="fas fa-clock text-4xl text-[#C0392B]"></i>
-            </div>
-            <h1 class="font-serif text-3xl md:text-5xl text-[#1B2A4A] mb-4">Ödeme İşleminiz Alındı</h1>
-            <p class="text-[#333333] mb-8 max-w-md mx-auto leading-relaxed">
-                Ödeme işleminiz başarıyla başlatıldı. Siparişiniz, ödemeniz onaylandıktan sonra hazırlanmaya başlayacaktır.
-                Onay süreci genellikle birkaç dakika içinde tamamlanır.
-            </p>
-        }
-        else
-        {
-            <!-- Ödeme onaylandı -->
-            <div class="w-20 h-20 bg-green-50 border-2 border-green-500 rounded-full flex items-center justify-center mx-auto mb-8">
-                <i class="fas fa-check text-4xl text-green-600"></i>
-            </div>
-            <h1 class="font-serif text-3xl md:text-5xl text-[#1B2A4A] mb-4">Ödemeniz Onaylandı!</h1>
-            <p class="text-[#333333] mb-4 max-w-md mx-auto leading-relaxed">
-                Siparişiniz başarıyla alındı ve ödemeniz onaylandı. Siparişiniz kısa süre içinde hazırlanmaya başlayacak.
-            </p>
-        }
-
-        <div class="bg-white border border-[#F5E6C8] rounded-lg p-6 mb-8">
-            <div class="text-xs uppercase tracking-widest text-[#333333] mb-2">Sipariş Numaranız</div>
-            <div class="text-2xl font-bold text-[#1B2A4A] tracking-tight">@siparisNo</div>
-        </div>
-
-        <div class="flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="/Profil/Siparislerim"
-               class="inline-flex items-center justify-center gap-2 bg-[#1B2A4A] text-white text-sm font-medium tracking-widest uppercase px-8 py-4 rounded hover:bg-[#1c2001] transition-colors">
-                <i class="fas fa-box"></i> Siparişlerim
-            </a>
-            <a href="/"
-               class="inline-flex items-center justify-center gap-2 border border-[#F5E6C8] text-[#1B2A4A] text-sm font-medium tracking-widest uppercase px-8 py-4 rounded hover:bg-[#FFFBF0] transition-colors">
-                <i class="fas fa-home"></i> Ana Sayfa
-            </a>
-        </div>
-
-        @if (odemeBekliyor)
-        {
-            <div class="mt-8 bg-[#FFFBF0] border border-[#F5E6C8] rounded-lg p-5 text-left">
-                <p class="text-sm text-[#333333] flex items-start gap-3">
-                    <i class="fas fa-info-circle text-[#C0392B] mt-0.5"></i>
-                    <span>
-                        Ödeme sonucu PayTR tarafından henüz kesin olarak bildirilmedi; bu aşamada tahsilat onaylanmış sayılmaz.
-                        Sayfayı yenileyerek güncel durumu kontrol edebilirsiniz.
-                        Kesinleşmeyen ödemeler <strong>24 saat</strong> içinde otomatik olarak iptal edilir.
-                    </span>
+<div class="min-h-[70vh] bg-[#F8FAFC] py-16 md:py-24">
+    <div class="container mx-auto px-4">
+        <div class="max-w-xl mx-auto text-center">
+            @if (odemeBekliyor)
+            {
+                <!-- Ödeme henüz onaylanmadı -->
+                <div class="w-20 h-20 bg-amber-50 border-2 border-amber-400 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
+                    <i class="fas fa-clock text-4xl text-amber-500"></i>
+                </div>
+                <h1 class="font-heading text-3xl md:text-4xl font-extrabold text-slate-900 mb-4 tracking-tight">Ödeme İşleminiz Alındı</h1>
+                <p class="text-slate-600 mb-8 max-w-md mx-auto leading-relaxed text-sm">
+                    Ödeme işleminiz başarıyla başlatıldı. Siparişiniz, ödemeniz onaylandıktan sonra hazırlanmaya başlayacaktır.
+                    Onay süreci genellikle birkaç dakika içinde tamamlanır.
                 </p>
-            </div>
-        }
+            }
+            else
+            {
+                <!-- Ödeme onaylandı -->
+                <div class="w-20 h-20 bg-emerald-50 border-2 border-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
+                    <i class="fas fa-check text-4xl text-emerald-600"></i>
+                </div>
+                <h1 class="font-heading text-3xl md:text-4xl font-extrabold text-slate-900 mb-4 tracking-tight">Ödemeniz Onaylandı!</h1>
+                <p class="text-slate-600 mb-8 max-w-md mx-auto leading-relaxed text-sm">
+                    Siparişiniz başarıyla alındı ve ödemeniz onaylandı. Tablonuz atölyemizde özenle hazırlanarak en kısa sürede kargoya teslim edilecektir.
+                </p>
+            }
 
-        <!-- Sipariş Detayı -->
-        @if (siparisId > 0)
-        {
-            <div class="mt-6">
-                <a href="/Profil/SiparisDetay/@siparisId"
-                   class="text-sm text-[#C0392B] hover:text-[#1B2A4A] transition-colors underline">
-                    <i class="fas fa-arrow-right mr-1"></i> Sipariş Detayını Görüntüle
+            <div class="bg-white border border-slate-200/80 rounded-2xl p-6 mb-8 shadow-sm">
+                <div class="text-xs uppercase tracking-wider text-slate-400 font-bold mb-1">Sipariş Numaranız</div>
+                <div class="text-2xl font-extrabold text-slate-900 font-mono">@siparisNo</div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                <a href="/Profil/Siparislerim"
+                   class="inline-flex items-center justify-center gap-2 bg-[#00A4D3] text-white text-xs font-bold tracking-wider uppercase px-8 py-3.5 rounded-xl hover:bg-[#0284C7] shadow-md shadow-sky-500/20 transition-all">
+                    <i class="fas fa-box"></i> Siparişlerim
+                </a>
+                <a href="/"
+                   class="inline-flex items-center justify-center gap-2 border border-slate-200 bg-white text-slate-700 text-xs font-bold tracking-wider uppercase px-8 py-3.5 rounded-xl hover:bg-slate-50 transition-all">
+                    <i class="fas fa-home"></i> Ana Sayfa
                 </a>
             </div>
-        }
+
+            @if (odemeBekliyor)
+            {
+                <div class="mt-8 bg-amber-50/80 border border-amber-200 rounded-2xl p-5 text-left">
+                    <p class="text-xs text-amber-900 flex items-start gap-3 leading-relaxed">
+                        <i class="fas fa-info-circle text-amber-600 mt-0.5 flex-shrink-0"></i>
+                        <span>
+                            Ödeme sonucu PayTR tarafından henüz kesin olarak bildirilmedi; bu aşamada tahsilat onaylanmış sayılmaz.
+                            Sayfayı yenileyerek güncel durumu kontrol edebilirsiniz.
+                            Kesinleşmeyen ödemeler <strong>24 saat</strong> içinde otomatik olarak iptal edilir.
+                        </span>
+                    </p>
+                </div>
+            }
+
+            <!-- Sipariş Detayı -->
+            @if (siparisId > 0)
+            {
+                <div class="mt-6">
+                    <a href="/Profil/SiparisDetay/@siparisId"
+                       class="text-xs font-bold uppercase tracking-wider text-[#00A4D3] hover:text-[#0284C7] transition-colors underline">
+                        <i class="fas fa-arrow-right mr-1"></i> Sipariş Detayını Görüntüle
+                    </a>
+                </div>
+            }
+        </div>
     </div>
 </div>

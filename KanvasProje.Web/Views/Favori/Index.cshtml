@@ -1,4 +1,4 @@
-﻿@model IEnumerable<KanvasProje.Core.Varliklar.Favori>
+@model IEnumerable<KanvasProje.Core.Varliklar.Favori>
 @inject KanvasProje.Service.Services.ISiteSettingsService SiteSettingsService
 @{
     ViewData["Title"] = "Favorilerim";
@@ -10,30 +10,32 @@
 </form>
 
 <!-- Breadcrumb -->
-<div class="bg-[#FDF6E3] border-b border-[#F5E6C8] py-3">
-    <div class="container mx-auto px-4 flex items-center gap-2 text-xs text-[#333333]">
-        <a href="/" class="hover:text-[#1B2A4A] transition-colors">Ana Sayfa</a>
+<div class="bg-slate-50 border-b border-slate-200 py-3">
+    <div class="container mx-auto px-4 flex items-center gap-2 text-xs text-slate-500">
+        <a href="/" class="hover:text-[#00A4D3] transition-colors">Ana Sayfa</a>
         <span>/</span>
-        <a href="/Profil" class="hover:text-[#1B2A4A] transition-colors">Hesabım</a>
+        <a href="/Profil" class="hover:text-[#00A4D3] transition-colors">Hesabım</a>
         <span>/</span>
-        <span class="text-[#1B2A4A] font-medium">Favorilerim</span>
+        <span class="text-slate-800 font-semibold">Favorilerim</span>
     </div>
 </div>
 
-<div class="container mx-auto px-4 py-16 max-w-6xl">
-    <div class="text-center mb-12">
-        <h1 class="font-serif text-3xl md:text-5xl text-[#1B2A4A] mb-4">Favori Koleksiyonum</h1>
-        <p class="text-sm text-[#333333]">Beğendiğiniz eserler burada sizi bekliyor.</p>
+<div class="container mx-auto px-4 py-12 max-w-6xl">
+    <div class="text-center mb-10">
+        <h1 class="font-heading text-3xl md:text-4xl font-extrabold text-slate-900 mb-2">Favorilerim</h1>
+        <p class="text-sm text-slate-600">Beğendiğiniz tablolar ve dekoratif ürünler burada sizi bekliyor.</p>
     </div>
 
     @if (!Model.Any())
     {
-        <div class="text-center py-16 bg-white border border-[#F5E6C8] rounded-lg">
-            <i class="far fa-heart text-6xl text-[#F5E6C8] mb-4"></i>
-            <h4 class="font-serif text-2xl text-[#1B2A4A] mb-2">Henüz favori ürününüz yok.</h4>
-            <p class="text-sm text-[#333333] mb-6">Koleksiyonumuzu keşfederek beğendiğiniz ürünleri favorilerinize ekleyebilirsiniz.</p>
-            <a href="/Urun" class="inline-block bg-[#1B2A4A] text-white px-8 py-3 text-xs tracking-widest uppercase rounded hover:bg-[#1c2001] transition-colors">
-                Koleksiyonu Keşfet
+        <div class="text-center py-16 bg-white border border-slate-200 rounded-2xl shadow-sm max-w-xl mx-auto px-6">
+            <div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300 text-3xl">
+                <i class="far fa-heart"></i>
+            </div>
+            <h4 class="font-heading text-xl font-bold text-slate-900 mb-2">Henüz favori ürününüz yok</h4>
+            <p class="text-sm text-slate-500 mb-6 leading-relaxed">Koleksiyonumuzu keşfederek beğendiğiniz tabloları favorilerinize ekleyebilirsiniz.</p>
+            <a href="/Urun" class="inline-block bg-[#00A4D3] text-white px-8 py-3.5 text-xs font-bold tracking-wider uppercase rounded-xl hover:bg-[#0284C7] transition-all shadow-md shadow-sky-500/20">
+                Tabloları Keşfet
             </a>
         </div>
     }
@@ -46,54 +48,54 @@
                 if (urun == null) continue;
                 var urlSlug = string.IsNullOrEmpty(urun.Slug) ? $"{KanvasProje.Core.Helpers.SlugHelper.GenerateSlug(urun.Baslik)}-{urun.Id}" : $"{urun.Slug}-{urun.Id}";
                 var bildirimAktif = favori.FiyatDustugundaBildir;
-                <div class="favori-item group relative flex flex-col bg-white border border-[#F5E6C8] hover:border-[#C0392B] transition-colors rounded-lg overflow-hidden">
-                    <div class="relative aspect-[4/5] bg-[#FFFBF0] overflow-hidden">
+                <div class="favori-item group relative flex flex-col bg-white border border-slate-200/90 hover:border-[#00A4D3] transition-all duration-300 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg">
+                    <div class="relative aspect-[4/5] bg-slate-50 overflow-hidden">
                         <a href="/Urun/Detay/@urlSlug" class="block w-full h-full">
-                    <img src="@urun.AnaGorselUrl" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="@urun.Baslik" loading="lazy" decoding="async">
+                            <img src="@urun.AnaGorselUrl" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="@urun.Baslik" loading="lazy" decoding="async">
                         </a>
 
-                        <button onclick="favoridenCikar(this, @urun.Id)" class="absolute top-3 right-3 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full text-red-500 flex items-center justify-center hover:bg-white transition-colors shadow-sm" title="Favorilerden Çıkar">
-                            <i class="fas fa-heart"></i>
+                        <button onclick="favoridenCikar(this, @urun.Id)" class="absolute top-3 right-3 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full text-[#E30613] flex items-center justify-center hover:bg-white hover:scale-110 transition-all shadow-sm" title="Favorilerden Çıkar">
+                            <i class="fas fa-heart text-sm"></i>
                         </button>
 
                         @if (urun.IndirimVarMi)
                         {
                             var indirimYuzde = Math.Round((1 - urun.EtkinFiyat / urun.Fiyat) * 100, 0);
-                            <span class="absolute top-3 left-3 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded">
+                            <span class="absolute top-3 left-3 bg-[#E30613] text-white text-[10px] font-extrabold px-2.5 py-1 rounded-full shadow-sm tracking-wider">
                                 %@indirimYuzde İNDİRİM
                             </span>
                         }
                     </div>
 
                     <div class="p-4 flex flex-col flex-1">
-                        <h6 class="font-semibold text-sm text-[#1B2A4A] mb-1 line-clamp-1">
-                            <a href="/Urun/Detay/@urlSlug" class="hover:text-[#C0392B] transition-colors">@urun.Baslik</a>
+                        <h6 class="font-semibold text-sm text-slate-800 mb-1 line-clamp-1">
+                            <a href="/Urun/Detay/@urlSlug" class="hover:text-[#00A4D3] transition-colors">@urun.Baslik</a>
                         </h6>
-                        <div class="mb-3">
+                        <div class="mb-3 flex items-baseline gap-2">
                             @if (urun.IndirimVarMi)
                             {
-                                <span class="text-xs text-[#999] line-through mr-1">@urun.Fiyat.ToString("N2") @currencySymbol</span>
-                                <span class="text-sm font-bold text-[#C0392B]">@urun.EtkinFiyat.ToString("N2") @currencySymbol</span>
+                                <span class="text-xs text-slate-400 line-through">@urun.Fiyat.ToString("N2") @currencySymbol</span>
+                                <span class="text-base font-extrabold text-[#E30613]">@urun.EtkinFiyat.ToString("N2") @currencySymbol</span>
                             }
                             else
                             {
-                                <span class="text-sm text-[#333333]">@urun.Fiyat.ToString("N2") @currencySymbol</span>
+                                <span class="text-base font-extrabold text-slate-900">@urun.Fiyat.ToString("N2") @currencySymbol</span>
                             }
                         </div>
 
                         <!-- Fiyat Düşüş Bildirimi Butonu -->
                         <button type="button"
-                                class="mb-2 w-full flex items-center justify-center gap-2 py-2 text-xs rounded transition-all duration-300
+                                class="mb-2.5 w-full flex items-center justify-center gap-1.5 py-2 text-xs font-medium rounded-xl transition-all duration-300
                                        @(bildirimAktif
-                                           ? "bg-emerald-50 border border-emerald-300 text-emerald-700 hover:bg-emerald-100"
-                                           : "bg-[#FFFBF0] border border-[#F5E6C8] text-[#333333] hover:border-[#C0392B] hover:text-[#C0392B]")"
+                                           ? "bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100"
+                                           : "bg-slate-50 border border-slate-200 text-slate-600 hover:border-[#00A4D3] hover:text-[#00A4D3]")"
                                 onclick="togglePriceNotification(this, @urun.Id)"
                                 title="@(bildirimAktif ? "Fiyat düşüş bildirimi açık" : "Fiyat düştüğünde bana haber ver")">
-                            <i class="fas @(bildirimAktif ? "fa-bell" : "fa-bell-slash") text-xs"></i>
+                            <i class="fas @(bildirimAktif ? "fa-bell text-emerald-600" : "fa-bell-slash text-slate-400") text-xs"></i>
                             <span>@(bildirimAktif ? "Bildirim Açık" : "Fiyat Düşünce Bildir")</span>
                         </button>
 
-                        <button type="button" class="mt-auto w-full border border-[#1B2A4A] text-[#1B2A4A] hover:bg-[#1B2A4A] hover:text-white py-2 text-xs tracking-widest uppercase rounded transition-colors" onclick="favoriSepeteEkle(this, @urun.Id)">
+                        <button type="button" class="mt-auto w-full bg-[#E30613] hover:bg-[#DC2626] text-white py-2.5 text-xs font-bold tracking-wider uppercase rounded-xl transition-all shadow-sm" onclick="favoriSepeteEkle(this, @urun.Id)">
                             Sepete Ekle
                         </button>
                     </div>
@@ -157,11 +159,11 @@
         .then(data => {
             if (data.success) {
                 if (data.isEnabled) {
-                    btn.className = 'mb-2 w-full flex items-center justify-center gap-2 py-2 text-xs rounded transition-all duration-300 bg-emerald-50 border border-emerald-300 text-emerald-700 hover:bg-emerald-100';
-                    btn.innerHTML = '<i class="fas fa-bell text-xs"></i> <span>Bildirim Açık</span>';
+                    btn.className = 'mb-2.5 w-full flex items-center justify-center gap-1.5 py-2 text-xs font-medium rounded-xl transition-all duration-300 bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100';
+                    btn.innerHTML = '<i class="fas fa-bell text-xs text-emerald-600"></i> <span>Bildirim Açık</span>';
                 } else {
-                    btn.className = 'mb-2 w-full flex items-center justify-center gap-2 py-2 text-xs rounded transition-all duration-300 bg-[#FFFBF0] border border-[#F5E6C8] text-[#333333] hover:border-[#C0392B] hover:text-[#C0392B]';
-                    btn.innerHTML = '<i class="fas fa-bell-slash text-xs"></i> <span>Fiyat Düşünce Bildir</span>';
+                    btn.className = 'mb-2.5 w-full flex items-center justify-center gap-1.5 py-2 text-xs font-medium rounded-xl transition-all duration-300 bg-slate-50 border border-slate-200 text-slate-600 hover:border-[#00A4D3] hover:text-[#00A4D3]';
+                    btn.innerHTML = '<i class="fas fa-bell-slash text-xs text-slate-400"></i> <span>Fiyat Düşünce Bildir</span>';
                 }
                 if (window.showToast) window.showToast(data.message, 'success');
             } else {
@@ -193,8 +195,9 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                btn.innerHTML = '<i class="fas fa-check"></i>';
-                btn.classList.add('bg-[#1B2A4A]', 'text-white');
+                btn.innerHTML = '<i class="fas fa-check"></i> Eklendi';
+                btn.classList.remove('bg-[#E30613]', 'hover:bg-[#DC2626]');
+                btn.classList.add('bg-emerald-600', 'text-white');
 
                 if (window.showToast) window.showToast('Ürün sepetinize eklendi.', 'success');
 
@@ -208,7 +211,8 @@
 
                 setTimeout(function () {
                     btn.innerHTML = originalHtml;
-                    btn.classList.remove('bg-[#1B2A4A]', 'text-white');
+                    btn.classList.remove('bg-emerald-600', 'text-white');
+                    btn.classList.add('bg-[#E30613]', 'hover:bg-[#DC2626]');
                     btn.disabled = false;
                 }, 2000);
             } else {

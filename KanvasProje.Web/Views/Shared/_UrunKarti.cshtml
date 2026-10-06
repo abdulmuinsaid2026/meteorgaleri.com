@@ -63,13 +63,13 @@
     var goruntulenecekGorsel = !string.IsNullOrWhiteSpace(gorsel) ? gorsel : fallbackGorsel;
 }
 
-<article class="group relative flex flex-col h-full bg-[#FAF8F5] rounded-2xl border border-[#EAE4D9] p-3 hover:border-[#C9A84C]/60 hover:shadow-[0_14px_36px_rgba(46,39,33,0.08)] hover:-translate-y-1 transition-all duration-300">
-    <!-- Görsel Alanı (Kavengo Sanat Galerisi / Duvara Asılı Tablo Hissiyatı) -->
-    <div class="relative w-full aspect-square rounded-xl overflow-hidden bg-[#F3EEE7] flex items-center justify-center p-3.5 mb-3 border border-[#E8E1D5]">
+<article class="group relative flex flex-col h-full bg-white rounded-2xl border border-slate-200/90 p-3 hover:border-[#00A4D3] hover:shadow-[0_12px_32px_rgba(0,164,211,0.12)] hover:-translate-y-1 transition-all duration-300">
+    <!-- Görsel Alanı (Duvarda Asılı Tablo Hissiyatı) -->
+    <div class="relative w-full aspect-square rounded-xl overflow-hidden bg-[#F8FAFC] flex items-center justify-center p-3.5 mb-3 border border-slate-100">
         <a href="@productUrl" class="block w-full h-full flex items-center justify-center">
             <img src="@goruntulenecekGorsel" 
                  alt="@Model.Baslik" 
-                 class="max-h-full max-w-full object-contain filter drop-shadow-[0_6px_14px_rgba(0,0,0,0.14)] group-hover:scale-106 transition-transform duration-700 ease-out select-none" 
+                 class="max-h-full max-w-full object-contain filter drop-shadow-[0_8px_18px_rgba(0,0,0,0.16)] group-hover:scale-105 transition-transform duration-500 ease-out select-none" 
                  loading="lazy" 
                  decoding="async"
                  onerror="this.onerror=null; this.src='@fallbackGorsel';" />
@@ -79,26 +79,26 @@
         <div class="absolute top-2.5 left-2.5 flex flex-col gap-1 z-10 pointer-events-none">
             @if (Model.YeniUrunMu)
             {
-                <span class="bg-[#2E2721] text-[#E8D08D] border border-[#C9A84C]/40 text-[9px] font-semibold uppercase tracking-widest px-2.5 py-0.5 rounded-full shadow-xs">Yeni</span>
+                <span class="bg-[#00A4D3] text-white text-[9px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow-xs">Yeni</span>
             }
             @if (indirimliMi && indirimYuzdesi > 0)
             {
-                <span class="bg-[#C9A84C] text-[#2E2721] text-[9px] font-bold tracking-wider px-2 py-0.5 rounded-full shadow-xs">-%@indirimYuzdesi</span>
+                <span class="bg-[#E30613] text-white text-[10px] font-bold tracking-wider px-2.5 py-0.5 rounded-full shadow-xs">-%@indirimYuzdesi</span>
             }
         </div>
 
         <!-- Favori Butonu -->
         <button type="button" 
                 onclick="window.toggleFavori(this, @Model.Id)" 
-                class="absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-white/95 hover:bg-[#2E2721] text-[#2E2721] hover:text-[#C9A84C] backdrop-blur-md shadow-xs border border-[#E8E1D5] flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95 z-20 cursor-pointer" 
+                class="absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-white/95 hover:bg-[#E30613] text-slate-700 hover:text-white backdrop-blur-md shadow-xs border border-slate-200 flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95 z-20 cursor-pointer" 
                 title="Favorilere Ekle">
             <i class="far fa-heart text-xs"></i>
         </button>
 
         <!-- Hover İncele Aksiyonu (Desktop) -->
         <a href="@productUrl" 
-           class="absolute inset-x-3 bottom-3 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300 hidden sm:flex items-center justify-center py-2 bg-[#2E2721]/95 hover:bg-[#C9A84C] text-white hover:text-[#2E2721] text-[11px] font-medium tracking-widest uppercase rounded-lg backdrop-blur-sm shadow-md">
-            <span>ESERİ İNCELE</span>
+           class="absolute inset-x-3 bottom-3 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300 hidden sm:flex items-center justify-center py-2.5 bg-[#00A4D3] hover:bg-[#0284C7] text-white text-[11px] font-bold tracking-wider uppercase rounded-lg shadow-md">
+            <span>ÜRÜNÜ İNCELE</span>
             <i class="fas fa-arrow-right ml-1.5 text-[9px]"></i>
         </a>
     </div>
@@ -106,20 +106,19 @@
     <!-- Metin ve Fiyat Alanı -->
     <div class="flex flex-col flex-grow justify-between px-0.5">
         <div>
-            <h3 class="font-serif text-[12.5px] sm:text-xs md:text-[13.5px] font-medium text-[#2E2721] leading-[1.38] line-clamp-2 min-h-[2.4rem] mb-2 group-hover:text-[#C9A84C] transition-colors" title="@Model.Baslik">
+            <h3 class="font-serif text-[13px] sm:text-[13.5px] font-semibold text-[#1E293B] leading-snug line-clamp-2 min-h-[2.4rem] mb-2 group-hover:text-[#00A4D3] transition-colors" title="@Model.Baslik">
                 <a href="@productUrl" title="@Model.Baslik">@Model.Baslik</a>
             </h3>
         </div>
-        <div class="pt-2 border-t border-[#EDE6DC] flex items-baseline justify-between gap-1">
+        <div class="pt-2 border-t border-slate-100 flex items-baseline justify-between gap-1">
             <div class="flex items-baseline gap-1.5 flex-wrap">
-                <span class="text-[11px] text-stone-500 font-light">Başlangıç:</span>
-                <span class="text-sm sm:text-base font-bold text-[#2E2721]">@Model.EtkinFiyat.ToString("N0") @currencySymbol</span>
+                <span class="text-sm sm:text-base font-extrabold text-[#E30613]">@Model.EtkinFiyat.ToString("N0") @currencySymbol</span>
                 @if (indirimliMi)
                 {
-                    <span class="text-[11px] text-stone-400 line-through font-normal">@Model.Fiyat.ToString("N0") @currencySymbol</span>
+                    <span class="text-[11px] text-slate-400 line-through font-normal">@Model.Fiyat.ToString("N0") @currencySymbol</span>
                 }
             </div>
-            <span class="text-[9px] font-medium text-[#6B6155] bg-[#EFE9DF] border border-[#DDD5C7] px-2 py-0.5 rounded-full whitespace-nowrap uppercase tracking-wider">
+            <span class="text-[9px] font-bold text-[#0284C7] bg-[#E0F2FE] border border-[#BAE6FD] px-2 py-0.5 rounded-full whitespace-nowrap uppercase tracking-wider">
                 Ücretsiz Kargo
             </span>
         </div>

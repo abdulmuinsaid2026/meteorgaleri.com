@@ -1,74 +1,76 @@
 @model KanvasProje.Core.Varliklar.Siparis
 @{
-    ViewData["Title"] = "Ödeme Başarılı - MeteorGaleri";
+    ViewData["Title"] = "Ödeme Başarılı - Meteor Galeri";
     var siparisNo = Model?.SiparisNo ?? ViewBag.SiparisNo as string ?? string.Empty;
 }
 
-<div class="container mx-auto px-4 py-12 md:py-20">
-    <div class="max-w-xl mx-auto text-center">
-        <!-- Başarı Rozeti -->
-        <div class="w-20 h-20 bg-emerald-50 border-2 border-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
-            <i class="fas fa-check text-3xl text-emerald-600"></i>
-        </div>
+<div class="min-h-[70vh] bg-[#F8FAFC] py-12 md:py-20">
+    <div class="container mx-auto px-4">
+        <div class="max-w-xl mx-auto text-center">
+            <!-- Başarı Rozeti -->
+            <div class="w-20 h-20 bg-emerald-50 border-2 border-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
+                <i class="fas fa-check text-3xl text-emerald-600"></i>
+            </div>
 
-        <span class="text-xs font-semibold uppercase tracking-widest text-[#3A7CA5] mb-2 inline-block">İyzico Güvenli Tahsilat</span>
-        <h1 class="font-serif text-3xl md:text-4xl text-[#1B2A4A] mb-3 font-bold">Ödemeniz Başarıyla Alındı!</h1>
-        <p class="text-[#4A5568] mb-8 leading-relaxed text-sm">
-            Tebrikler! Siparişiniz ve ödemeniz başarıyla alındı. Ürününüz atölyemizde özenle hazırlanıyor ve en kısa sürede kargoya teslim edilecektir.
-        </p>
+            <span class="text-xs font-bold uppercase tracking-wider text-[#00A4D3] mb-2 inline-block">İyzico Güvenli Tahsilat</span>
+            <h1 class="font-heading text-3xl md:text-4xl text-slate-900 mb-3 font-extrabold tracking-tight">Ödemeniz Başarıyla Alındı!</h1>
+            <p class="text-slate-600 mb-8 leading-relaxed text-sm">
+                Tebrikler! Siparişiniz ve ödemeniz başarıyla alındı. Tablonuz atölyemizde özenle hazırlanarak en kısa sürede kargoya teslim edilecektir.
+            </p>
 
-        <!-- Sipariş Özeti Kartı -->
-        <div class="bg-white border border-[#F5E6C8] rounded-2xl p-6 mb-8 shadow-sm text-left">
-            <div class="flex justify-between items-center pb-4 border-b border-[#F5E6C8]">
-                <div>
-                    <span class="text-[11px] uppercase tracking-wider text-gray-500 font-medium">Sipariş No</span>
-                    <div class="text-xl font-bold text-[#1B2A4A]">#@siparisNo</div>
+            <!-- Sipariş Özeti Kartı -->
+            <div class="bg-white border border-slate-200/80 rounded-2xl p-6 mb-8 shadow-sm text-left">
+                <div class="flex justify-between items-center pb-4 border-b border-slate-100">
+                    <div>
+                        <span class="text-xs uppercase tracking-wider text-slate-400 font-bold">Sipariş No</span>
+                        <div class="text-xl font-extrabold text-slate-900 font-mono mt-0.5">#@siparisNo</div>
+                    </div>
+                    @if (Model != null)
+                    {
+                        <div class="text-right">
+                            <span class="text-xs uppercase tracking-wider text-slate-400 font-bold">Toplam Tutar</span>
+                            <div class="text-xl font-extrabold text-[#E30613] mt-0.5">@Model.ToplamTutar.ToString("N2") TL</div>
+                        </div>
+                    }
                 </div>
+
                 @if (Model != null)
                 {
-                    <div class="text-right">
-                        <span class="text-[11px] uppercase tracking-wider text-gray-500 font-medium">Toplam Tutar</span>
-                        <div class="text-xl font-bold text-[#3A7CA5]">@Model.ToplamTutar.ToString("N2") TL</div>
+                    <div class="pt-4 space-y-2.5 text-xs text-slate-600">
+                        <div class="flex justify-between">
+                            <span>Teslim Alacak:</span>
+                            <strong class="text-slate-900">@Model.MusteriAdSoyad</strong>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Teslimat Adresi:</span>
+                            <span class="text-right text-slate-900 max-w-xs">@Model.Ilce, @Model.Sehir</span>
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(Model.Aciklama))
+                        {
+                            <div class="flex justify-between">
+                                <span>Ödeme Durumu:</span>
+                                <span class="text-xs text-slate-500">@Model.Aciklama</span>
+                            </div>
+                        }
                     </div>
                 }
             </div>
 
-            @if (Model != null)
-            {
-                <div class="pt-4 space-y-2 text-xs text-gray-600">
-                    <div class="flex justify-between">
-                        <span>Teslim Alacak:</span>
-                        <strong class="text-[#1B2A4A]">@Model.MusteriAdSoyad</strong>
-                    </div>
-                    <div class="flex justify-between">
-                        <span>Teslimat Adresi:</span>
-                        <span class="text-right text-[#1B2A4A] max-w-xs">@Model.Ilce, @Model.Sehir</span>
-                    </div>
-                    @if (!string.IsNullOrWhiteSpace(Model.Aciklama))
-                    {
-                        <div class="flex justify-between">
-                            <span>Ödeme Durumu:</span>
-                            <span class="text-xs text-gray-500">@Model.Aciklama</span>
-                        </div>
-                    }
-                </div>
-            }
-        </div>
+            <!-- Butonlar -->
+            <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                <a href="/Profil/Siparislerim"
+                   class="inline-flex items-center justify-center gap-2 bg-[#00A4D3] hover:bg-[#0284C7] text-white text-xs font-bold tracking-wider uppercase px-6 py-3.5 rounded-xl transition-all duration-300 shadow-md shadow-sky-500/20">
+                    <i class="fas fa-box"></i> Siparişlerimi Görüntüle
+                </a>
+                <a href="/"
+                   class="inline-flex items-center justify-center gap-2 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold tracking-wider uppercase px-6 py-3.5 rounded-xl transition-all duration-300">
+                    <i class="fas fa-home"></i> Alışverişe Devam Et
+                </a>
+            </div>
 
-        <!-- Butonlar -->
-        <div class="flex flex-col sm:flex-row gap-3 justify-center">
-            <a href="/Profil/Siparislerim"
-               class="inline-flex items-center justify-center gap-2 bg-[#1B2A4A] hover:bg-[#2C5E7A] text-white text-xs font-semibold tracking-wider uppercase px-6 py-3.5 rounded-xl transition-all duration-300 shadow-md">
-                <i class="fas fa-box"></i> Siparişlerimi Görüntüle
-            </a>
-            <a href="/"
-               class="inline-flex items-center justify-center gap-2 border border-[#F5E6C8] bg-[#FDF6E3] hover:bg-white text-[#1B2A4A] text-xs font-semibold tracking-wider uppercase px-6 py-3.5 rounded-xl transition-all duration-300">
-                <i class="fas fa-home"></i> Alışverişe Devam Et
-            </a>
-        </div>
-
-        <div class="mt-8 text-xs text-gray-500">
-            <i class="fas fa-envelope me-1 text-[#3A7CA5]"></i> Sipariş detaylarınız ve kargo takip bağlantısı e-posta adresinize gönderildi.
+            <div class="mt-8 text-xs text-slate-500">
+                <i class="fas fa-envelope me-1 text-[#00A4D3]"></i> Sipariş detaylarınız ve kargo takip bağlantısı e-posta adresinize gönderildi.
+            </div>
         </div>
     </div>
 </div>

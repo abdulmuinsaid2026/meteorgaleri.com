@@ -1,34 +1,36 @@
-﻿@{
+@{
     ViewData["Title"] = "Ödeme Başarısız";
 }
 
-<div class="min-h-[70vh] flex items-center justify-center py-16 px-4 bg-[#FFFBF0]">
+<div class="min-h-[70vh] flex items-center justify-center py-16 px-4 bg-[#F8FAFC]">
     <div class="w-full max-w-lg text-center">
-        <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-red-100 mb-6">
-            <i class="fas fa-times text-4xl text-red-600"></i>
+        <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-red-100 text-red-600 mb-6 shadow-sm">
+            <i class="fas fa-times text-4xl"></i>
         </div>
-        <h1 class="font-serif text-3xl tracking-widest text-red-700 uppercase mb-4">Ödeme Başarısız</h1>
+        <h1 class="font-heading text-3xl md:text-4xl font-extrabold text-slate-900 mb-4 tracking-tight">Ödeme Başarısız</h1>
         
         @if (ViewBag.Hata != null)
         {
-            <div class="bg-white border border-red-200 text-red-700 text-sm px-6 py-4 rounded-lg mb-8 shadow-sm">
-                <p class="font-medium">Hata Detayı:</p>
-                <p class="mt-1">@ViewBag.Hata</p>
+            <div class="bg-red-50 border border-red-200 text-red-700 text-sm px-6 py-4 rounded-2xl mb-8 shadow-sm text-left">
+                <p class="font-bold flex items-center gap-2">
+                    <i class="fas fa-circle-exclamation text-red-500"></i> Hata Detayı:
+                </p>
+                <p class="mt-1 font-mono text-xs leading-relaxed text-red-800">@ViewBag.Hata</p>
             </div>
         }
         else
         {
-            <p class="text-sm text-[#333333] mb-8 leading-relaxed">
-                Ödeme işleminiz sırasında bir sorun oluştu ve siparişiniz tamamlanamadı. Kredi kartı bilgilerinizde veya limitinizde bir sorun olabilir.
+            <p class="text-sm text-slate-600 mb-8 leading-relaxed">
+                Ödeme işleminiz sırasında bir sorun oluştu ve siparişiniz tamamlanamadı. Kredi kartı bilgilerinizde, limitinizde veya 3D Secure onayında bir sorun olabilir.
             </p>
         }
 
         <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <a href="/Sepet" class="w-full sm:w-auto bg-[#1B2A4A] text-white px-8 py-3 text-xs tracking-widest uppercase rounded hover:bg-[#1c2001] transition-colors">
-                Sepete Dön ve Tekrar Dene
+            <a href="/Sepet" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#00A4D3] text-white px-8 py-3.5 text-xs font-bold tracking-wider uppercase rounded-xl hover:bg-[#0284C7] shadow-md shadow-sky-500/20 transition-all">
+                <i class="fas fa-shopping-cart"></i> Sepete Dön ve Tekrar Dene
             </a>
-            <a href="/Kurumsal/Iletisim" class="w-full sm:w-auto bg-white border border-[#F5E6C8] text-[#1B2A4A] px-8 py-3 text-xs tracking-widest uppercase rounded hover:bg-[#FFFBF0] transition-colors">
-                Destek Al
+            <a href="/Kurumsal/Iletisim" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-700 px-8 py-3.5 text-xs font-bold tracking-wider uppercase rounded-xl hover:bg-slate-50 transition-all">
+                <i class="fas fa-headset"></i> Destek Al
             </a>
         </div>
     </div>
