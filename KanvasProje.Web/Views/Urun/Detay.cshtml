@@ -163,19 +163,11 @@
     string fallbackGorsel;
     if (katSlug.Contains("ayna") || katAd.Contains("ayna") || baslik.Contains("ayna"))
     {
-        var aynaPool = new[] { "/img/categories/ayna.jpg", "/img/products/kisiye-ozel-instagram-tasarimli-duvar-aynasi-isimli-ve-fotografli-ayna-1.webp" };
-        fallbackGorsel = aynaPool[Math.Abs(Model.Id) % aynaPool.Length];
+        fallbackGorsel = "/img/categories/ayna.jpg";
     }
     else if (katSlug.Contains("kesme") || katAd.Contains("kesme") || baslik.Contains("kesme") || baslik.Contains("tahta"))
     {
-        var kesmePool = new[] {
-            "/img/products/renkli-kokteyl-ve-tropikal-desenli-temperli-cam-kesme-tahtasi-20x30-cm-hijyenik-ve-dayanikli-1.webp",
-            "/img/products/renkli-tropikal-meyve-desenli-temperli-cam-kesme-tahtasi-20x30-cm-hijyenik-ve-modern-mutfak-aksesuari-1.webp",
-            "/img/products/gri-mermer-desenli-temperli-cam-kesme-tahtasi-20x30-cm-hijyenik-ve-dayanikli-mutfak-aksesuari-1.webp",
-            "/img/products/pastel-mavi-bej-desenli-temperli-cam-kesme-tahtasi-20x30-cm-hijyenik-ve-sik-mutfak-aksesuari-1.webp",
-            "/img/categories/cam-kesme-tahtasi.jpg"
-        };
-        fallbackGorsel = kesmePool[Math.Abs(Model.Id) % kesmePool.Length];
+        fallbackGorsel = "/img/categories/cam-kesme-tahtasi.jpg";
     }
     else if (katSlug.Contains("duvar") || katAd.Contains("duvar") || baslik.Contains("duvar kağıdı"))
     {
@@ -183,19 +175,7 @@
     }
     else
     {
-        var tabloPool = new[] {
-            "/img/categories/cam-tablo.jpg",
-            "/img/products/urgup-ucan-balon--1.webp",
-            "/img/products/kabe--1.webp",
-            "/img/products/altin-detayli-kugu-yatay-temperli-cam-tablo-luks-floral-duvar-sanati-modern-salon-dekoru-1.webp",
-            "/img/products/cicekler-arasinda-tavus-kusu-temperli-cam-tablo-zarif-ve-luks-cam-duvar-sanati-1.webp",
-            "/img/products/altin-gunesli-yasam-agaci-temperli-cam-tablo-modern-ve-anlamli-cam-duvar-sanati-1.webp",
-            "/img/products/kis-manzarali-beyaz-cicekler-temperli-cam-tablo-zarif-ve-huzur-veren-cam-duvar-sanati-1.webp",
-            "/img/banner/slider-1.webp",
-            "/img/banner/slider-2.webp",
-            "/img/banner/slider-3.webp"
-        };
-        fallbackGorsel = tabloPool[Math.Abs(Model.Id) % tabloPool.Length];
+        fallbackGorsel = "/img/categories/cam-tablo.jpg";
     }
 
     if (string.IsNullOrWhiteSpace(varsayilanGaleriGorseli))
