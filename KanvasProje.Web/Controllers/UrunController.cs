@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using KanvasProje.Service.Services;
 
 namespace KanvasProje.Web.Controllers
 {
@@ -15,11 +16,13 @@ namespace KanvasProje.Web.Controllers
     {
         private readonly UserManager<AppUser> _userManager;
         private readonly KanvasDbContext _context;
+        private readonly ISiteSettingsService _siteSettingsService;
 
-        public UrunController(UserManager<AppUser> userManager, KanvasDbContext context)
+        public UrunController(UserManager<AppUser> userManager, KanvasDbContext context, ISiteSettingsService siteSettingsService)
         {
             _userManager = userManager;
             _context = context;
+            _siteSettingsService = siteSettingsService;
         }
 
         [HttpGet]
@@ -432,6 +435,10 @@ namespace KanvasProje.Web.Controllers
                 .ToListAsync();
 
             ViewBag.BenzerUrunler = benzerUrunler;
+
+            var siteSettings = _siteSettingsService.GetSettings();
+            ViewBag.HaliMetrekareFiyati = siteSettings.HaliMetrekareFiyati;
+            ViewBag.DuvarKagidiMetrekareFiyati = siteSettings.DuvarKagidiMetrekareFiyati;
 
             return View(urun);
         }

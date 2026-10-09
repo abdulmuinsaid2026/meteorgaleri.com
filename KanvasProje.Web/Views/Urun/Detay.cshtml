@@ -8,7 +8,24 @@
     var brandName = string.IsNullOrWhiteSpace(siteSettings.MarkaAdi) ? siteSettings.SiteAdi : siteSettings.MarkaAdi;
     var currencySymbol = string.IsNullOrWhiteSpace(siteSettings.ParaBirimi) ? "TL" : siteSettings.ParaBirimi;
 
-    // --- VARYANT VE FÃ„Â°YAT HESAPLAMA ---
+    // --- ÖZEL ÖLÇÜ KONTROLÜ (Sadece Baskılı Halı ve Duvar Kağıdı için) ---
+    var isHali = Model.KategoriId == 34 || Model.Kategori?.Slug == "baskili-hali" || Model.UrunTipi == "BaskiliHali";
+    var isDuvarKagidi = Model.KategoriId == 31 || Model.Kategori?.Slug == "duvar-kagidi" || Model.UrunTipi == "DuvarKagidi";
+    var isOzelOlcuUrunu = isHali || isDuvarKagidi;
+
+    decimal metrekareBirimFiyati = 0;
+    if (isHali)
+    {
+        metrekareBirimFiyati = (ViewBag.HaliMetrekareFiyati as decimal?) ?? siteSettings.HaliMetrekareFiyati;
+        if (metrekareBirimFiyati <= 0) metrekareBirimFiyati = 1250;
+    }
+    else if (isDuvarKagidi)
+    {
+        metrekareBirimFiyati = (ViewBag.DuvarKagidiMetrekareFiyati as decimal?) ?? siteSettings.DuvarKagidiMetrekareFiyati;
+        if (metrekareBirimFiyati <= 0) metrekareBirimFiyati = 450;
+    }
+
+    // --- VARYANT VE FİYAT HESAPLAMA ---
     var secenekler = (ViewBag.Secenekler as List<KanvasProje.Core.Varliklar.UrunSecenek> ?? new List<KanvasProje.Core.Varliklar.UrunSecenek>())
         .OrderBy(x => x.Sira)
         .ThenBy(x => x.SatisFiyati)
@@ -439,9 +456,28 @@ ViewData["SeoTitle"] = !string.IsNullOrWhiteSpace(Model.SeoTitle) ? Model.SeoTit
                 <p class="text-sm text-slate-600 mb-8 leading-relaxed">@Model.KisaAciklama</p>
             }
 
-            @if (secenekler.Any())
+            @if (isOzelOlcuUrunu)
             {
-                <div class="mb-8">
+                <div class="mb-5">
+                    <label class="block text-xs uppercase tracking-wider text-slate-900 font-bold mb-2">
+                        <i class="fas fa-ruler-combined text-[#00A4D3] mr-1.5"></i>Ölçü Tipi Seçiniz
+                    </label>
+                    <div class="grid grid-cols-2 gap-2 p-1.5 bg-slate-100 rounded-2xl border border-slate-200">
+                        <button type="button" id="tabStandartOlcu" onclick="switchToStandardSize()" class="py-2.5 px-3 text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 bg-white text-slate-900 shadow-sm flex items-center justify-center gap-2">
+                            <i class="fas fa-list-check text-slate-500"></i>
+                            <span>Standart Ölçüler</span>
+                        </button>
+                        <button type="button" id="tabOzelOlcu" onclick="switchToCustomSize()" class="py-2.5 px-3 text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 text-slate-600 hover:text-slate-900 flex items-center justify-center gap-2">
+                            <i class="fas fa-wand-magic-sparkles text-amber-500"></i>
+                            <span>Özel Ölçü Girin ✨</span>
+                        </button>
+                    </div>
+                </div>
+            }
+
+            <div id="standardSizeContainer" class="mb-8">
+                @if (secenekler.Any())
+                {
                     @if (ayrikLedSecimi)
                     {
                         <fieldset>
@@ -513,6 +549,80 @@ ViewData["SeoTitle"] = !string.IsNullOrWhiteSpace(Model.SeoTitle) ? Model.SeoTit
                             }
                         </div>
                     }
+                }
+            </div>
+
+            @if (isOzelOlcuUrunu)
+            {
+                <div id="customSizeContainer" class="hidden mb-8">
+                    <div class="bg-gradient-to-br from-sky-50/70 via-white to-amber-50/30 border-2 border-[#00A4D3]/40 rounded-2xl p-5 shadow-sm">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 pb-3 border-b border-sky-100">
+                            <div class="flex items-center gap-2.5">
+                                <span class="w-8 h-8 rounded-xl bg-[#00A4D3] text-white flex items-center justify-center text-sm shadow-sm flex-shrink-0">
+                                    <i class="fas fa-ruler-combined"></i>
+                                </span>
+                                <div>
+                                    <h4 class="text-sm font-bold text-slate-900">@(isHali ? "Özel Ölçü Halı Hesaplayıcı" : "Özel Ölçü Duvar Kağıdı Hesaplayıcı")</h4>
+                                    <p class="text-xs text-slate-500">İstediğiniz En ve Boy değerlerini santimetre (cm) olarak giriniz</p>
+                                </div>
+                            </div>
+                            <span class="inline-flex items-center self-start sm:self-auto text-xs font-semibold px-2.5 py-1 bg-sky-100/90 text-sky-800 rounded-full">
+                                Birim: @metrekareBirimFiyati.ToString("N0") TL / m²
+                            </span>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label for="customWidthInput" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                                    En (Genişlik)
+                                </label>
+                                <div class="relative">
+                                    <input type="number" id="customWidthInput" min="50" max="600" step="1" value="160"
+                                           class="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-3 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-[#00A4D3] focus:border-[#00A4D3] transition-all pr-12 shadow-inner"
+                                           placeholder="160" />
+                                    <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">cm</span>
+                                </div>
+                                <span class="text-[11px] text-slate-400 mt-1 block">Min: 50 cm</span>
+                            </div>
+
+                            <div>
+                                <label for="customHeightInput" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                                    Boy (Uzunluk)
+                                </label>
+                                <div class="relative">
+                                    <input type="number" id="customHeightInput" min="50" max="800" step="1" value="230"
+                                           class="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-3 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-[#00A4D3] focus:border-[#00A4D3] transition-all pr-12 shadow-inner"
+                                           placeholder="230" />
+                                    <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">cm</span>
+                                </div>
+                                <span class="text-[11px] text-slate-400 mt-1 block">Min: 50 cm</span>
+                            </div>
+                        </div>
+
+                        <!-- Canlı Hesaplama Özeti -->
+                        <div class="bg-white/95 border border-sky-200/80 rounded-xl p-3.5 flex items-center justify-between gap-3 shadow-2xs">
+                            <div class="space-y-0.5">
+                                <div class="text-xs text-slate-600 font-medium">
+                                    Hesaplanan Alan:
+                                    <strong id="customAreaDisplay" class="text-slate-900 font-extrabold text-sm">3.68 m²</strong>
+                                </div>
+                                <div class="text-[11px] text-slate-400">
+                                    Formül: (<span id="calcEn">160</span> × <span id="calcBoy">230</span> cm) ÷ 10.000
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-[11px] text-slate-500 block font-medium">Özel Ölçü Tutarı</span>
+                                <span id="customPriceDisplay" class="text-lg sm:text-xl font-black text-[#E30613]">
+                                    @((Math.Round(3.68m * metrekareBirimFiyati, 2)).ToString("N2")) @currencySymbol
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="mt-3 flex items-center gap-2 text-xs text-slate-500">
+                            <i class="fas fa-circle-check text-green-600 flex-none"></i>
+                            <span>Özel ölçü ürünler atölyemizde milimetrik hassasiyetle size özel olarak üretilir.</span>
+                        </div>
+                    </div>
                 </div>
             }
 
@@ -573,6 +683,8 @@ ViewData["SeoTitle"] = !string.IsNullOrWhiteSpace(Model.SeoTitle) ? Model.SeoTit
                         <input type="hidden" id="selectedQuantity" name="Adet" value="@minSiparisAdedi" />
                         <input type="hidden" id="selectedFrameModel" name="CerceveModeli" value="@(cerceveSecimiGerekli ? "" : "Çerçevesiz")" />
                         <input type="hidden" id="selectedFrameFarki" name="CerceveFarki" value="0" />
+                        <input type="hidden" id="customEnInputHidden" name="ozelEn" value="" />
+                        <input type="hidden" id="customBoyInputHidden" name="ozelBoy" value="" />
 
                         <div class="flex min-w-0 gap-2">
                             <button type="button" id="ajaxSepetBtn" class="min-w-0 flex-1 h-12 px-4 bg-[#E30613] hover:bg-[#DC2626] text-white text-xs sm:text-sm font-bold uppercase tracking-wider rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 whitespace-nowrap active:scale-[0.98]">
@@ -876,6 +988,103 @@ ViewData["SeoTitle"] = !string.IsNullOrWhiteSpace(Model.SeoTitle) ? Model.SeoTit
 
 <script>
 const PRODUCT_CURRENCY = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(currencySymbol));
+const METREKARE_BIRIM_FIYATI = @(metrekareBirimFiyati.ToString(System.Globalization.CultureInfo.InvariantCulture));
+const IS_OZEL_OLCU_URUNU = @(isOzelOlcuUrunu ? "true" : "false");
+let isCustomSizeMode = false;
+
+function switchToStandardSize() {
+    isCustomSizeMode = false;
+    const stdContainer = document.getElementById('standardSizeContainer');
+    const customContainer = document.getElementById('customSizeContainer');
+    if (stdContainer) stdContainer.classList.remove('hidden');
+    if (customContainer) customContainer.classList.add('hidden');
+
+    const tabStd = document.getElementById('tabStandartOlcu');
+    const tabCustom = document.getElementById('tabOzelOlcu');
+    if (tabStd && tabCustom) {
+        tabStd.className = "py-2.5 px-3 text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 bg-white text-slate-900 shadow-sm flex items-center justify-center gap-2";
+        tabCustom.className = "py-2.5 px-3 text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 text-slate-600 hover:text-slate-900 flex items-center justify-center gap-2";
+    }
+
+    const hiddenEn = document.getElementById('customEnInputHidden');
+    const hiddenBoy = document.getElementById('customBoyInputHidden');
+    if (hiddenEn) hiddenEn.value = '';
+    if (hiddenBoy) hiddenBoy.value = '';
+
+    updatePriceWithFrame();
+}
+
+function switchToCustomSize() {
+    isCustomSizeMode = true;
+    const stdContainer = document.getElementById('standardSizeContainer');
+    const customContainer = document.getElementById('customSizeContainer');
+    if (stdContainer) stdContainer.classList.add('hidden');
+    if (customContainer) customContainer.classList.remove('hidden');
+
+    const tabStd = document.getElementById('tabStandartOlcu');
+    const tabCustom = document.getElementById('tabOzelOlcu');
+    if (tabStd && tabCustom) {
+        tabCustom.className = "py-2.5 px-3 text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 bg-[#00A4D3] text-white shadow-sm flex items-center justify-center gap-2";
+        tabStd.className = "py-2.5 px-3 text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 text-slate-600 hover:text-slate-900 flex items-center justify-center gap-2";
+    }
+
+    calculateCustomSizePrice();
+}
+
+function calculateCustomSizePrice() {
+    if (!IS_OZEL_OLCU_URUNU) return;
+
+    const widthEl = document.getElementById('customWidthInput');
+    const heightEl = document.getElementById('customHeightInput');
+    const en = parseInt(widthEl?.value) || 0;
+    const boy = parseInt(heightEl?.value) || 0;
+
+    const rawM2 = (en * boy) / 10000;
+    const m2 = Math.round(rawM2 * 100) / 100;
+    const effectiveM2 = Math.max(0.25, m2);
+    const adet = parseInt(document.getElementById('productQuantity')?.value) || 1;
+    const birimCustomPrice = Math.round(effectiveM2 * METREKARE_BIRIM_FIYATI * 100) / 100;
+    const totalCustomPrice = Math.round(birimCustomPrice * adet * 100) / 100;
+
+    const areaDisplay = document.getElementById('customAreaDisplay');
+    if (areaDisplay) areaDisplay.innerText = m2.toFixed(2) + ' m²';
+
+    const calcEn = document.getElementById('calcEn');
+    const calcBoy = document.getElementById('calcBoy');
+    if (calcEn) calcEn.innerText = en;
+    if (calcBoy) calcBoy.innerText = boy;
+
+    const customPriceDisplay = document.getElementById('customPriceDisplay');
+    if (customPriceDisplay) customPriceDisplay.innerText = totalCustomPrice.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + PRODUCT_CURRENCY;
+
+    const priceDisplay = document.getElementById('priceDisplay');
+    if (priceDisplay) priceDisplay.innerText = totalCustomPrice.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + PRODUCT_CURRENCY;
+
+    const summaryOlcu = document.getElementById('summaryOlcu');
+    if (summaryOlcu) summaryOlcu.innerText = en + 'x' + boy + ' cm (' + m2.toFixed(2) + ' m²)';
+
+    const summaryFiyat = document.getElementById('summaryFiyat');
+    if (summaryFiyat) summaryFiyat.innerText = totalCustomPrice.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + PRODUCT_CURRENCY;
+
+    const summaryBirimFiyat = document.getElementById('summaryBirimFiyat');
+    if (summaryBirimFiyat) {
+        summaryBirimFiyat.innerText = adet > 1 ? `(birim: ${birimCustomPrice.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ${PRODUCT_CURRENCY})` : '';
+    }
+
+    const selectionSummary = document.getElementById('selectionSummary');
+    if (selectionSummary) selectionSummary.classList.remove('hidden');
+
+    const variantSummaryText = document.getElementById('variantSummaryText');
+    if (variantSummaryText) {
+        variantSummaryText.innerHTML = '<i class="fas fa-layer-group text-[#00A4D3] mr-1.5"></i>Özel Ölçü: ' + en + 'x' + boy + ' cm (' + m2.toFixed(2) + ' m²)';
+        variantSummaryText.classList.remove('hidden');
+    }
+
+    const hiddenEn = document.getElementById('customEnInputHidden');
+    const hiddenBoy = document.getElementById('customBoyInputHidden');
+    if (hiddenEn) hiddenEn.value = en;
+    if (hiddenBoy) hiddenBoy.value = boy;
+}
 
 // Modal event listeners
 document.addEventListener('DOMContentLoaded', function() {
@@ -973,6 +1182,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
             updateStarDisplay(parseInt(hiddenInput?.value, 10) || 5);
         }
+    }
+
+    const widthInput = document.getElementById('customWidthInput');
+    const heightInput = document.getElementById('customHeightInput');
+    if (widthInput && heightInput) {
+        widthInput.addEventListener('input', calculateCustomSizePrice);
+        heightInput.addEventListener('input', calculateCustomSizePrice);
     }
 
     setTimeout(updateSelectionSummary, 100);
@@ -1145,6 +1361,11 @@ function resolveFramePrice(selectedVariant, cerceve) {
 }
 
 function updateSelectionSummary() {
+    if (isCustomSizeMode) {
+        calculateCustomSizePrice();
+        return;
+    }
+
     var selectedVariant = document.querySelector('.variant-radio:checked');
     var selectedFrame = document.querySelector('.frame-radio:checked');
     var summary = document.getElementById('selectionSummary');
@@ -1183,6 +1404,11 @@ function updateSelectionSummary() {
 }
 
 function updatePriceWithFrame() {
+    if (isCustomSizeMode) {
+        calculateCustomSizePrice();
+        return;
+    }
+
     var selectedVariant = document.querySelector('.variant-radio:checked');
     var selectedFrame = document.querySelector('.frame-radio:checked');
     if (!selectedVariant) return;
@@ -1385,7 +1611,7 @@ if (ajaxSepetBtn) {
         const frameSelectionBlock = document.getElementById('frameSelectionBlock');
         const selectedFrame = document.querySelector('input[name="CerceveModeli"]:checked');
 
-        if (frameSelectionBlock && !selectedFrame) {
+        if (!isCustomSizeMode && frameSelectionBlock && !selectedFrame) {
             const frameSelectionError = document.getElementById('frameSelectionError');
             if (frameSelectionError) frameSelectionError.classList.remove('hidden');
             frameSelectionBlock.classList.add('ring-2', 'ring-red-400', 'ring-offset-2');
@@ -1404,15 +1630,33 @@ if (ajaxSepetBtn) {
         const urunId = form.querySelector('input[name="UrunId"]')?.value;
         const adet = form.querySelector('input[name="Adet"]')?.value;
         const secenekId = document.getElementById('selectedVariantId')?.value;
-        const cerceveModeli = selectedFrame?.value;
+        const cerceveModeli = isCustomSizeMode ? '' : selectedFrame?.value;
         const cerceveFarki = document.getElementById('selectedFrameFarki')?.value;
         
         const params = new URLSearchParams();
         params.append('UrunId', urunId);
         params.append('Adet', adet || '1');
-        if (secenekId) params.append('SecenekId', secenekId);
-        if (cerceveModeli) params.append('CerceveModeli', cerceveModeli);
-        if (cerceveFarki && cerceveFarki !== '0') params.append('CerceveFarki', cerceveFarki);
+
+        if (isCustomSizeMode) {
+            const ozelEn = parseInt(document.getElementById('customWidthInput')?.value) || 0;
+            const ozelBoy = parseInt(document.getElementById('customHeightInput')?.value) || 0;
+
+            if (ozelEn < 50 || ozelBoy < 50) {
+                if (window.showToast) {
+                    window.showToast('Lütfen geçerli En ve Boy ölçüsü giriniz (En az 50 cm).', 'error');
+                } else {
+                    alert('Lütfen geçerli En ve Boy ölçüsü giriniz (En az 50 cm).');
+                }
+                return;
+            }
+
+            params.append('ozelEn', ozelEn);
+            params.append('ozelBoy', ozelBoy);
+        } else {
+            if (secenekId) params.append('SecenekId', secenekId);
+            if (cerceveModeli) params.append('CerceveModeli', cerceveModeli);
+            if (cerceveFarki && cerceveFarki !== '0') params.append('CerceveFarki', cerceveFarki);
+        }
         
         const originalHtml = this.innerHTML;
         this.innerHTML = '<i class="fas fa-check"></i> Eklendi!';

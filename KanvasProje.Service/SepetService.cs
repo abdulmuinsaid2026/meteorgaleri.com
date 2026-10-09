@@ -3,6 +3,7 @@ using KanvasProje.Core.Helpers;
 using KanvasProje.Core.Interfaces;
 using KanvasProje.Core.Varliklar;
 using KanvasProje.Data;
+using KanvasProje.Service.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -12,11 +13,13 @@ namespace KanvasProje.Service
     {
         private readonly KanvasDbContext _context;
         private readonly ILogger<SepetService> _logger;
+        private readonly ISiteSettingsService _siteSettingsService;
 
-        public SepetService(KanvasDbContext context, ILogger<SepetService> logger)
+        public SepetService(KanvasDbContext context, ILogger<SepetService> logger, ISiteSettingsService siteSettingsService)
         {
             _context = context;
             _logger = logger;
+            _siteSettingsService = siteSettingsService;
         }
 
         public async Task<Sepet> GetOrCreateSepetAsync(string? userId, string sessionId)
@@ -60,7 +63,7 @@ namespace KanvasProje.Service
             return sepet;
         }
 
-        public async Task<bool> SepeteEkleAsync(string? userId, string sessionId, int urunId, int? urunSecenekId, int adet, string? cerceveModeli = null, string? musteriNotu = null, decimal? cerceveFarki = null)
+        public async Task<bool> SepeteEkleAsync(string? userId, string sessionId, int urunId, int? urunSecenekId, int adet, string? cerceveModeli = null, string? musteriNotu = null, decimal? cerceveFarki = null, int? ozelEn = null, int? ozelBoy = null)
         {
             try
             {
@@ -77,14 +80,29 @@ namespace KanvasProje.Service
                     return false;
                 }
 
-                var secenek = ResolveSelectedVariant(urun, urunSecenekId);
-                if (urunSecenekId.HasValue && secenek == null)
+                // Özel ölçü kontrolü (Sadece Baskılı Halı ve Duvar Kağıdı için geçerli)
+                bool isOzelOlcu = ozelEn.HasValue && ozelBoy.HasValue && ozelEn.Value > 0 && ozelBoy.Value > 0;
+                bool isHali = urun.KategoriId == 34 || urun.Kategori?.Slug == "baskili-hali" || urun.UrunTipi == "BaskiliHali";
+                bool isDuvarKagidi = urun.KategoriId == 31 || urun.Kategori?.Slug == "duvar-kagidi" || urun.UrunTipi == "DuvarKagidi";
+
+                if (isOzelOlcu && !isHali && !isDuvarKagidi)
                 {
+                    // Halı veya Duvar Kağıdı dışındaki ürünlerde özel ölçü izin verilmez
                     return false;
                 }
 
-                var requiresFrameSelection = RequiresFrameSelection(urun);
-                var normalizedCerceveModeli = NormalizeFrameModel(cerceveModeli);
+                UrunSecenek? secenek = null;
+                if (!isOzelOlcu)
+                {
+                    secenek = ResolveSelectedVariant(urun, urunSecenekId);
+                    if (urunSecenekId.HasValue && secenek == null)
+                    {
+                        return false;
+                    }
+                }
+
+                var requiresFrameSelection = !isOzelOlcu && RequiresFrameSelection(urun);
+                var normalizedCerceveModeli = isOzelOlcu ? string.Empty : NormalizeFrameModel(cerceveModeli);
                 if (requiresFrameSelection && string.IsNullOrWhiteSpace(normalizedCerceveModeli))
                 {
                     normalizedCerceveModeli = "Çerçevesiz";
@@ -92,15 +110,54 @@ namespace KanvasProje.Service
 
                 var hedefSecenekId = secenek?.Id;
                 var normalizedMusteriNotu = NormalizeCustomerNote(musteriNotu);
-                var mevcutItem = sepet.SepetItems.FirstOrDefault(i =>
-                    i.UrunId == urunId &&
-                    i.UrunSecenekId == hedefSecenekId &&
-                    i.CerceveModeli == normalizedCerceveModeli &&
-                    NormalizeCustomerNote(i.MusteriNotu) == normalizedMusteriNotu &&
-                    !i.SilindiMi);
+
+                decimal fiyat;
+                string secenekAdi;
+
+                if (isOzelOlcu)
+                {
+                    decimal enMetre = (decimal)ozelEn!.Value / 100m;
+                    decimal boyMetre = (decimal)ozelBoy!.Value / 100m;
+                    decimal metrekare = Math.Round(enMetre * boyMetre, 2);
+                    if (metrekare < 0.25m) metrekare = 0.25m; // Min 0.25 m²
+
+                    var settings = _siteSettingsService.GetSettings();
+                    decimal m2BirimFiyat = isHali ? settings.HaliMetrekareFiyati : settings.DuvarKagidiMetrekareFiyati;
+                    if (m2BirimFiyat <= 0)
+                    {
+                        m2BirimFiyat = isHali ? 1250m : 450m;
+                    }
+
+                    fiyat = Math.Round(metrekare * m2BirimFiyat, 2);
+                    secenekAdi = $"Özel Ölçü: {ozelEn.Value}x{ozelBoy.Value} cm ({metrekare:0.##} m²)";
+                }
+                else
+                {
+                    fiyat = ResolveCartPrice(urun, secenek, normalizedCerceveModeli, cerceveFarki);
+                    secenekAdi = BuildCartOptionLabel(secenek != null ? BuildVariantLabel(secenek) : null, normalizedCerceveModeli);
+                }
+
+                SepetItem? mevcutItem;
+                if (isOzelOlcu)
+                {
+                    mevcutItem = sepet.SepetItems.FirstOrDefault(i =>
+                        i.UrunId == urunId &&
+                        i.SecenekAdi == secenekAdi &&
+                        NormalizeCustomerNote(i.MusteriNotu) == normalizedMusteriNotu &&
+                        !i.SilindiMi);
+                }
+                else
+                {
+                    mevcutItem = sepet.SepetItems.FirstOrDefault(i =>
+                        i.UrunId == urunId &&
+                        i.UrunSecenekId == hedefSecenekId &&
+                        i.CerceveModeli == normalizedCerceveModeli &&
+                        NormalizeCustomerNote(i.MusteriNotu) == normalizedMusteriNotu &&
+                        !i.SilindiMi);
+                }
 
                 var toplamAdet = (mevcutItem?.Adet ?? 0) + adet;
-                if (!CanAddQuantity(urun, secenek, toplamAdet))
+                if (!isOzelOlcu && !CanAddQuantity(urun, secenek, toplamAdet))
                 {
                     return false;
                 }
@@ -111,8 +168,6 @@ namespace KanvasProje.Service
                 }
                 else
                 {
-                    var fiyat = ResolveCartPrice(urun, secenek, normalizedCerceveModeli, cerceveFarki);
-                    var secenekAdi = secenek != null ? BuildVariantLabel(secenek) : null;
                     var gorsel = secenek != null && !string.IsNullOrWhiteSpace(secenek.GorselUrl)
                         ? secenek.GorselUrl
                         : urun.AnaGorselUrl;
@@ -121,12 +176,12 @@ namespace KanvasProje.Service
                     {
                         SepetId = sepet.Id,
                         UrunId = urunId,
-                        UrunSecenekId = hedefSecenekId,
+                        UrunSecenekId = isOzelOlcu ? null : hedefSecenekId,
                         Adet = adet,
                         Fiyat = fiyat,
                         UrunBaslik = urun.Baslik,
                         UrunResimUrl = gorsel,
-                        SecenekAdi = BuildCartOptionLabel(secenekAdi, normalizedCerceveModeli),
+                        SecenekAdi = secenekAdi,
                         CerceveModeli = normalizedCerceveModeli,
                         MusteriNotu = normalizedMusteriNotu,
                         OlusturulmaTarihi = DateTime.UtcNow,

@@ -20,6 +20,7 @@ namespace KanvasProje.Core.Varliklar
         [ForeignKey("UrunId")]
         public Urun Urun { get; set; } = default!;
         public string CerceveModeli { get; set; } = string.Empty;
+        public string? SecenekAdi { get; set; }
 
         [MaxLength(500)]
         public string? MusteriNotu { get; set; }

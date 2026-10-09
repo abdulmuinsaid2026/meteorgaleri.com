@@ -98,6 +98,8 @@ namespace KanvasProje.Service.Services
                 existing.UcretsizKargoLimiti = normalized.UcretsizKargoLimiti;
                 existing.StokUyariLimiti = normalized.StokUyariLimiti;
                 existing.StoktaYokSatisIzni = normalized.StoktaYokSatisIzni;
+                existing.HaliMetrekareFiyati = normalized.HaliMetrekareFiyati;
+                existing.DuvarKagidiMetrekareFiyati = normalized.DuvarKagidiMetrekareFiyati;
                 existing.PaytrAktifMi = normalized.PaytrAktifMi;
                 existing.PaytrTestModu = normalized.PaytrTestModu;
                 existing.PaytrMerchantId = normalized.PaytrMerchantId;
@@ -229,6 +231,8 @@ namespace KanvasProje.Service.Services
             settings.KargoBedeli = Math.Max(0, settings.KargoBedeli);
             settings.UcretsizKargoLimiti = Math.Max(0, settings.UcretsizKargoLimiti);
             settings.StokUyariLimiti = Math.Max(0, settings.StokUyariLimiti);
+            settings.HaliMetrekareFiyati = settings.HaliMetrekareFiyati <= 0 ? 1250 : settings.HaliMetrekareFiyati;
+            settings.DuvarKagidiMetrekareFiyati = settings.DuvarKagidiMetrekareFiyati <= 0 ? 450 : settings.DuvarKagidiMetrekareFiyati;
             settings.PaytrMerchantId = settings.PaytrMerchantId?.Trim() ?? string.Empty;
             settings.PaytrMerchantKeyProtected = settings.PaytrMerchantKeyProtected?.Trim() ?? string.Empty;
             settings.PaytrMerchantSaltProtected = settings.PaytrMerchantSaltProtected?.Trim() ?? string.Empty;

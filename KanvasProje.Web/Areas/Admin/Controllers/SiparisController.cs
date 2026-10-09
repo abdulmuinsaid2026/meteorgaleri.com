@@ -122,13 +122,18 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
                 var urun = item.Urun ?? (secenek?.Urun);
                 if (urun == null) return (dynamic?)null;
 
+                var varyasyonMetni = !string.IsNullOrWhiteSpace(item.SecenekAdi)
+                    ? item.SecenekAdi
+                    : (string.IsNullOrWhiteSpace(secenek?.VaryantBasligi) ? "Varsayılan varyasyon" : secenek.VaryantBasligi);
+                var olcuMetni = !string.IsNullOrWhiteSpace(item.SecenekAdi) ? item.SecenekAdi : secenek?.Olcu;
+
                 return new
                 {
                     Baslik = urun.Baslik,
                     Resim = !string.IsNullOrWhiteSpace(secenek?.GorselUrl) ? secenek.GorselUrl : urun.AnaGorselUrl,
-                    Olcu = secenek?.Olcu,
+                    Olcu = olcuMetni,
                     Cerceve = secenek?.CerceveTipi,
-                    Secenek = string.IsNullOrWhiteSpace(secenek?.VaryantBasligi) ? "Varsayılan varyasyon" : secenek.VaryantBasligi,
+                    Secenek = varyasyonMetni,
                     SecenekDetay = secenek?.VaryantOzeti,
                     CerceveModeli = item.CerceveModeli,
                     Adet = item.Adet,

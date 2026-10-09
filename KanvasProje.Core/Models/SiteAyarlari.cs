@@ -36,6 +36,10 @@ namespace KanvasProje.Core.Models
         public int StokUyariLimiti { get; set; } = 5;
         public bool StoktaYokSatisIzni { get; set; } = false;
 
+        // Özel Ölçü Metrekare Birim Fiyatları
+        public decimal HaliMetrekareFiyati { get; set; } = 1250;
+        public decimal DuvarKagidiMetrekareFiyati { get; set; } = 450;
+
         public bool PaytrAktifMi { get; set; } = false;
         public bool PaytrTestModu { get; set; } = true;
         public string PaytrMerchantId { get; set; } = string.Empty;

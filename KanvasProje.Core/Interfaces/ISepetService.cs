@@ -15,7 +15,7 @@ namespace KanvasProje.Core.Interfaces
         /// <summary>
         /// Sepete ürün ekler
         /// </summary>
-        Task<bool> SepeteEkleAsync(string? userId, string sessionId, int urunId, int? urunSecenekId, int adet, string? cerceveModeli = null, string? musteriNotu = null, decimal? cerceveFarki = null);
+        Task<bool> SepeteEkleAsync(string? userId, string sessionId, int urunId, int? urunSecenekId, int adet, string? cerceveModeli = null, string? musteriNotu = null, decimal? cerceveFarki = null, int? ozelEn = null, int? ozelBoy = null);
 
         /// <summary>
         /// Sepetteki ürün adedini günceller

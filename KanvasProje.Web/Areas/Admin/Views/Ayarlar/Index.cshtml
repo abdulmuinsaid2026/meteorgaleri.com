@@ -420,6 +420,25 @@
                                         <label class="ca-label">İade Hakkı Süresi (Gün)</label>
                                         <input asp-for="IadeHakkiGun" type="number" class="ca-input" />
                                     </div>
+                                    <div class="col-12 mt-4 pt-3 border-top">
+                                        <div class="d-flex align-items-center gap-2 mb-2">
+                                            <i class="fas fa-ruler-combined text-primary"></i>
+                                            <h6 class="mb-0 fw-bold">Özel Ölçü / Dinamik m² Fiyatlandırma</h6>
+                                        </div>
+                                        <p class="small text-muted mb-3">
+                                            Baskılı Halı ve Duvar Kağıdı ürünlerinde müşterinin En (cm) ve Boy (cm) girerek sipariş verebilmesi için kullanılan metrekare (m²) birim fiyatlarıdır. Ürün detay sayfasında otomatik olarak bu birim fiyatla hesaplama yapılır.
+                                        </p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="ca-label">Baskılı Halı m² Fiyatı (TL/m²)</label>
+                                        <input asp-for="HaliMetrekareFiyati" type="number" step="0.01" min="0" class="ca-input" placeholder="1250.00" />
+                                        <small class="text-muted d-block mt-1">Örn: 1250 TL/m² (Müşteri 160x230 cm halı seçerse: 3.68 m² × 1250 = 4.600 TL)</small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="ca-label">Duvar Kağıdı m² Fiyatı (TL/m²)</label>
+                                        <input asp-for="DuvarKagidiMetrekareFiyati" type="number" step="0.01" min="0" class="ca-input" placeholder="450.00" />
+                                        <small class="text-muted d-block mt-1">Örn: 450 TL/m² (Müşteri 300x260 cm duvar seçerse: 7.8 m² × 450 = 3.510 TL)</small>
+                                    </div>
                                 </div>
                             </div>
                         </div>

@@ -1,4 +1,4 @@
-﻿@using KanvasProje.Core.Varliklar
+@using KanvasProje.Core.Varliklar
 @model IReadOnlyList<Siparis>
 @{
     Layout = null;
@@ -253,7 +253,7 @@
                         @foreach (var item in urunler)
                         {
                             var urunAdi = item.Urun?.Baslik ?? "Ürün bilgisi yok";
-                            var varyasyon = item.UrunSecenek?.VaryantBasligi ?? item.UrunSecenek?.Olcu;
+                            var varyasyon = !string.IsNullOrWhiteSpace(item.SecenekAdi) ? item.SecenekAdi : (item.UrunSecenek?.VaryantBasligi ?? item.UrunSecenek?.Olcu);
                             <tr>
                                 <td>
                                     @urunAdi

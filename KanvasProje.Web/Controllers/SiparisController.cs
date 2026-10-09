@@ -223,6 +223,7 @@ namespace KanvasProje.Web.Controllers
                         OlusturulmaTarihi = DateTime.UtcNow,
                         UrunId = item.UrunId,
                         CerceveModeli = item.CerceveModeli,
+                        SecenekAdi = item.SecenekAdi,
                         MusteriNotu = item.MusteriNotu,
                         SilindiMi = false
                     });
@@ -900,6 +901,11 @@ namespace KanvasProje.Web.Controllers
                 return item.UrunSecenekId.Value;
             }
 
+            if (!string.IsNullOrWhiteSpace(item.SecenekAdi) && item.SecenekAdi.Contains("Özel Ölçü", StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
             var varsayilan = await _context.UrunSecenekleri
                 .AsNoTracking()
                 .Where(x =>
@@ -1125,17 +1131,24 @@ namespace KanvasProje.Web.Controllers
         private static string BuildOrderLineDetail(SiparisDetay item)
         {
             var details = new List<string>();
-            var variant = item.UrunSecenek;
-            if (variant != null)
+            if (!string.IsNullOrWhiteSpace(item.SecenekAdi))
             {
-                var variantText = string.IsNullOrWhiteSpace(variant.VaryantBasligi)
-                    ? variant.Olcu
-                    : variant.VaryantBasligi;
-
-                if (!string.IsNullOrWhiteSpace(variantText) &&
-                    !variantText.Contains("Standart", StringComparison.OrdinalIgnoreCase))
+                details.Add(item.SecenekAdi);
+            }
+            else
+            {
+                var variant = item.UrunSecenek;
+                if (variant != null)
                 {
-                    details.Add(variantText);
+                    var variantText = string.IsNullOrWhiteSpace(variant.VaryantBasligi)
+                        ? variant.Olcu
+                        : variant.VaryantBasligi;
+
+                    if (!string.IsNullOrWhiteSpace(variantText) &&
+                        !variantText.Contains("Standart", StringComparison.OrdinalIgnoreCase))
+                    {
+                        details.Add(variantText);
+                    }
                 }
             }
 

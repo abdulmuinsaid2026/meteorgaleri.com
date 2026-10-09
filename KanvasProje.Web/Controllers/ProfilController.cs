@@ -119,9 +119,11 @@ namespace KanvasProje.Web.Controllers
                     Baslik = x.Urun.Baslik,
                     Olcu = x.UrunSecenek?.Olcu ?? string.Empty,
                     Cerceve = x.UrunSecenek?.CerceveTipi ?? string.Empty,
-                    Secenek = x.UrunSecenek == null
-                        ? "Standart urun"
-                        : (string.IsNullOrWhiteSpace(x.UrunSecenek.VaryantBasligi) ? "Varsayilan varyasyon" : x.UrunSecenek.VaryantBasligi),
+                    Secenek = !string.IsNullOrWhiteSpace(x.SecenekAdi)
+                        ? x.SecenekAdi
+                        : (x.UrunSecenek == null
+                            ? "Standart urun"
+                            : (string.IsNullOrWhiteSpace(x.UrunSecenek.VaryantBasligi) ? "Varsayilan varyasyon" : x.UrunSecenek.VaryantBasligi)),
                     SecenekDetay = x.UrunSecenek?.VaryantOzeti ?? string.Empty,
                     CerceveModeli = x.CerceveModeli,
                     Adet = x.Adet,
