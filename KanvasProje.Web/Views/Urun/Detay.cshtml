@@ -40,10 +40,8 @@
             .ThenBy(x => x.Sira)
             .ThenBy(x => x.SatisFiyati)
             .FirstOrDefault();
-    decimal gosterilecekFiyat = varsayilanSecenek != null ? varsayilanSecenek.SatisFiyati : Model.EtkinFiyat;
-    // --- YORUM VERÃ„Â°LERÃ„Â° ---
-    // Varyant fiyatı ürünün genel fiyatından bağımsızdır; sahte indirim göstermemelidir.
-    decimal? gosterilecekEskiFiyat = varsayilanSecenek == null && Model.IndirimVarMi ? Model.Fiyat : null;
+    decimal gosterilecekFiyat = varsayilanSecenek != null ? varsayilanSecenek.EtkinFiyat : Model.EtkinFiyat;
+    decimal? gosterilecekEskiFiyat = varsayilanSecenek != null ? varsayilanSecenek.EskiFiyat : (Model.IndirimVarMi ? Model.Fiyat : null);
     int? gosterilecekIndirimYuzdesi = gosterilecekEskiFiyat.HasValue && gosterilecekEskiFiyat.Value > gosterilecekFiyat
         ? (int)Math.Round((1 - (gosterilecekFiyat / gosterilecekEskiFiyat.Value)) * 100)
         : null;
@@ -518,10 +516,11 @@ ViewData["SeoTitle"] = !string.IsNullOrWhiteSpace(Model.SeoTitle) ? Model.SeoTit
                                 var varyantSatinAlinabilir = varyant.SatinAlinabilirMi;
                                 var varyantMedyaUrl = !string.IsNullOrWhiteSpace(varyant.GorselUrl) ? varyant.GorselUrl : (varyantMedyaHaritasi.TryGetValue(varyant.Id, out var eslesen) ? eslesen : string.Empty);
                                 var varyantUretimSuresi = varyant.UretimSuresiGun > 0 ? varyant.UretimSuresiGun : Model.UretimSuresiGun;
-                                var cerceveliFiyat = KanvasProje.Core.Helpers.KanvasFiyatListesi.TryGetFiyat(varyant.Olcu, out var kanvasFiyati) ? kanvasFiyati.CerceveliKargoDahil : 0;
+                                var cerceveliBase = KanvasProje.Core.Helpers.KanvasFiyatListesi.TryGetFiyat(varyant.Olcu, out var kanvasFiyati) ? kanvasFiyati.CerceveliKargoDahil : 0;
+                                var cerceveliFiyat = cerceveliBase > 0 ? Math.Round(cerceveliBase * 0.80m, 0) : 0;
                                 var aydinlatmaAnahtari = AydinlatmaAnahtari(varyant);
                                 var varyantEtiketi = $"{varyant.Olcu} / {AydinlatmaBasligi(aydinlatmaAnahtari)}";
-                                <input type="radio" id="variant-@varyant.Id" name="productVariant" value="@varyant.Id" class="variant-radio" checked="@(varyant.Id == varsayilanSecenek?.Id ? "checked" : null)" disabled="@(!varyantSatinAlinabilir ? "disabled" : null)" data-price="@varyant.SatisFiyati.ToString(System.Globalization.CultureInfo.InvariantCulture)" data-framed-price="@cerceveliFiyat.ToString(System.Globalization.CultureInfo.InvariantCulture)" data-oldprice="" data-stock="@varyant.StokAdedi" data-preorder="@varyant.OnSipariseAcikMi.ToString().ToLowerInvariant()" data-production="@varyantUretimSuresi" data-image="@varyantMedyaUrl" data-label="@varyantEtiketi" data-olcu="@varyant.Olcu" data-size="@varyant.Olcu" data-lighting="@aydinlatmaAnahtari" />
+                                <input type="radio" id="variant-@varyant.Id" name="productVariant" value="@varyant.Id" class="variant-radio" checked="@(varyant.Id == varsayilanSecenek?.Id ? "checked" : null)" disabled="@(!varyantSatinAlinabilir ? "disabled" : null)" data-price="@varyant.EtkinFiyat.ToString(System.Globalization.CultureInfo.InvariantCulture)" data-framed-price="@cerceveliFiyat.ToString(System.Globalization.CultureInfo.InvariantCulture)" data-oldprice="@varyant.EskiFiyat.ToString(System.Globalization.CultureInfo.InvariantCulture)" data-framed-oldprice="@cerceveliBase.ToString(System.Globalization.CultureInfo.InvariantCulture)" data-stock="@varyant.StokAdedi" data-preorder="@varyant.OnSipariseAcikMi.ToString().ToLowerInvariant()" data-production="@varyantUretimSuresi" data-image="@varyantMedyaUrl" data-label="@varyantEtiketi" data-olcu="@varyant.Olcu" data-size="@varyant.Olcu" data-lighting="@aydinlatmaAnahtari" />
                             }
                         </div>
                     }
@@ -532,18 +531,20 @@ ViewData["SeoTitle"] = !string.IsNullOrWhiteSpace(Model.SeoTitle) ? Model.SeoTit
                             @foreach (var varyant in secenekler)
                             {
                                 var varyantSatinAlinabilir = varyant.SatinAlinabilirMi;
-                                var varyantOldPrice = 0m;
+                                var varyantEtkinFiyat = varyant.EtkinFiyat;
+                                var varyantOldPrice = varyant.EskiFiyat;
                                 var varyantMedyaUrl = !string.IsNullOrWhiteSpace(varyant.GorselUrl) ? varyant.GorselUrl : (varyantMedyaHaritasi.TryGetValue(varyant.Id, out var eslesen) ? eslesen : string.Empty);
                                 var rawVb = string.IsNullOrWhiteSpace(varyant.VaryantBasligi) ? varyant.Olcu : varyant.VaryantBasligi;
                                 var cleanVb = string.Join(" / ", rawVb.Split(new[] { " / " }, StringSplitOptions.RemoveEmptyEntries).Where(x => !x.Contains("Standart", StringComparison.OrdinalIgnoreCase) && !x.Contains("Bask", StringComparison.OrdinalIgnoreCase)));
                                 if (string.IsNullOrWhiteSpace(cleanVb)) cleanVb = rawVb.Split('/')[0].Trim();
                                 var varyantUretimSuresi = varyant.UretimSuresiGun > 0 ? varyant.UretimSuresiGun : Model.UretimSuresiGun;
-                                var cerceveliFiyat = KanvasProje.Core.Helpers.KanvasFiyatListesi.TryGetFiyat(varyant.Olcu, out var kanvasFiyati) ? kanvasFiyati.CerceveliKargoDahil : 0;
+                                var cerceveliBase = KanvasProje.Core.Helpers.KanvasFiyatListesi.TryGetFiyat(varyant.Olcu, out var kanvasFiyati) ? kanvasFiyati.CerceveliKargoDahil : 0;
+                                var cerceveliFiyat = cerceveliBase > 0 ? Math.Round(cerceveliBase * 0.80m, 0) : 0;
                                 var checkedAttr = varyant.Id == varsayilanSecenek?.Id ? "checked" : null;
                                 var disabledAttr = !varyantSatinAlinabilir ? "disabled" : null;
 
                                 <label class="relative border border-slate-200 rounded-xl px-4 py-2.5 cursor-pointer font-semibold transition-all hover:border-[#00A4D3] has-[:checked]:border-[#00A4D3] has-[:checked]:bg-[#00A4D3] has-[:checked]:text-white shadow-2xs @(!varyantSatinAlinabilir ? "opacity-50 cursor-not-allowed" : "text-slate-700")">
-                                    <input type="radio" id="variant-@varyant.Id" name="productVariant" value="@varyant.Id" class="variant-radio absolute opacity-0 w-0 h-0" checked="@checkedAttr" disabled="@disabledAttr" data-price="@varyant.SatisFiyati.ToString(System.Globalization.CultureInfo.InvariantCulture)" data-framed-price="@cerceveliFiyat.ToString(System.Globalization.CultureInfo.InvariantCulture)" data-oldprice="@(varyantOldPrice > 0 ? varyantOldPrice.ToString(System.Globalization.CultureInfo.InvariantCulture) : string.Empty)" data-stock="@varyant.StokAdedi" data-preorder="@varyant.OnSipariseAcikMi.ToString().ToLowerInvariant()" data-production="@varyantUretimSuresi" data-image="@varyantMedyaUrl" data-label="@cleanVb" data-olcu="@cleanVb">
+                                    <input type="radio" id="variant-@varyant.Id" name="productVariant" value="@varyant.Id" class="variant-radio absolute opacity-0 w-0 h-0" checked="@checkedAttr" disabled="@disabledAttr" data-price="@varyantEtkinFiyat.ToString(System.Globalization.CultureInfo.InvariantCulture)" data-framed-price="@cerceveliFiyat.ToString(System.Globalization.CultureInfo.InvariantCulture)" data-oldprice="@varyantOldPrice.ToString(System.Globalization.CultureInfo.InvariantCulture)" data-framed-oldprice="@cerceveliBase.ToString(System.Globalization.CultureInfo.InvariantCulture)" data-stock="@varyant.StokAdedi" data-preorder="@varyant.OnSipariseAcikMi.ToString().ToLowerInvariant()" data-production="@varyantUretimSuresi" data-image="@varyantMedyaUrl" data-label="@cleanVb" data-olcu="@cleanVb">
                                     <span class="text-sm">@cleanVb</span>
                                 </label>
                             }
@@ -1043,8 +1044,10 @@ function calculateCustomSizePrice() {
     const m2 = Math.round(rawM2 * 100) / 100;
     const effectiveM2 = Math.max(0.25, m2);
     const adet = parseInt(document.getElementById('productQuantity')?.value) || 1;
-    const birimCustomPrice = Math.round(effectiveM2 * METREKARE_BIRIM_FIYATI * 100) / 100;
+    const birimCustomBasePrice = Math.round(effectiveM2 * METREKARE_BIRIM_FIYATI * 100) / 100;
+    const birimCustomPrice = Math.round(birimCustomBasePrice * 0.80 * 100) / 100;
     const totalCustomPrice = Math.round(birimCustomPrice * adet * 100) / 100;
+    const totalCustomOldPrice = Math.round(birimCustomBasePrice * adet * 100) / 100;
 
     const areaDisplay = document.getElementById('customAreaDisplay');
     if (areaDisplay) areaDisplay.innerText = m2.toFixed(2) + ' m²';
@@ -1055,10 +1058,21 @@ function calculateCustomSizePrice() {
     if (calcBoy) calcBoy.innerText = boy;
 
     const customPriceDisplay = document.getElementById('customPriceDisplay');
-    if (customPriceDisplay) customPriceDisplay.innerText = totalCustomPrice.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + PRODUCT_CURRENCY;
+    if (customPriceDisplay) customPriceDisplay.innerText = totalCustomPrice.toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + ' ' + PRODUCT_CURRENCY;
 
     const priceDisplay = document.getElementById('priceDisplay');
-    if (priceDisplay) priceDisplay.innerText = totalCustomPrice.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + PRODUCT_CURRENCY;
+    if (priceDisplay) priceDisplay.innerText = totalCustomPrice.toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + ' ' + PRODUCT_CURRENCY;
+
+    const oldPriceDisplay = document.getElementById('oldPriceDisplay');
+    const discountBadge = document.getElementById('discountBadge');
+    if (oldPriceDisplay) {
+        oldPriceDisplay.innerHTML = `${totalCustomOldPrice.toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} ${PRODUCT_CURRENCY}`;
+        oldPriceDisplay.classList.remove('hidden');
+    }
+    if (discountBadge) {
+        discountBadge.innerHTML = '%20 İndirim';
+        discountBadge.classList.remove('hidden');
+    }
 
     const summaryOlcu = document.getElementById('summaryOlcu');
     if (summaryOlcu) summaryOlcu.innerText = en + 'x' + boy + ' cm (' + m2.toFixed(2) + ' m²)';
@@ -1360,6 +1374,13 @@ function resolveFramePrice(selectedVariant, cerceve) {
     return parseFloat(selectedVariant?.getAttribute('data-framed-price')) || basePrice;
 }
 
+function resolveFrameOldPrice(selectedVariant, cerceve) {
+    var baseOldPrice = parseFloat(selectedVariant?.getAttribute('data-oldprice')) || 0;
+    if (!cerceve || cerceve === 'Çerçevesiz') return baseOldPrice;
+
+    return parseFloat(selectedVariant?.getAttribute('data-framed-oldprice')) || baseOldPrice;
+}
+
 function updateSelectionSummary() {
     if (isCustomSizeMode) {
         calculateCustomSizePrice();
@@ -1423,6 +1444,25 @@ function updatePriceWithFrame() {
         priceDisplay.innerHTML = `${newPrice.toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} @currencySymbol`;
     }
 
+    var oldPrice = resolveFrameOldPrice(selectedVariant, cerceve || 'Çerçevesiz');
+    var oldPriceDisplay = document.getElementById('oldPriceDisplay');
+    var discountBadge = document.getElementById('discountBadge');
+
+    if (oldPrice > newPrice) {
+        if (oldPriceDisplay) {
+            oldPriceDisplay.innerHTML = `${oldPrice.toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} @currencySymbol`;
+            oldPriceDisplay.classList.remove('hidden');
+        }
+        if (discountBadge) {
+            var discount = Math.round((1 - (newPrice / oldPrice)) * 100);
+            discountBadge.innerHTML = `%${discount} İndirim`;
+            discountBadge.classList.remove('hidden');
+        }
+    } else {
+        if (oldPriceDisplay) oldPriceDisplay.classList.add('hidden');
+        if (discountBadge) discountBadge.classList.add('hidden');
+    }
+
     var frameFarkiInput = document.getElementById('selectedFrameFarki');
     if (frameFarkiInput) {
         frameFarkiInput.value = cerceveFarki.toFixed(2);
@@ -1446,24 +1486,6 @@ document.querySelectorAll('.variant-radio').forEach(radio => {
             if (selectedVariantId) selectedVariantId.value = this.value;
 
             updatePriceWithFrame();
-            
-            const oldPriceDisplay = document.getElementById('oldPriceDisplay');
-            const discountBadge = document.getElementById('discountBadge');
-            
-            if (oldPrice > price) {
-                if (oldPriceDisplay) {
-                    oldPriceDisplay.innerHTML = `${oldPrice.toLocaleString('tr-TR', {minimumFractionDigits: 2})} ${PRODUCT_CURRENCY}`;
-                    oldPriceDisplay.classList.remove('hidden');
-                }
-                if (discountBadge) {
-                    const discount = Math.round((1 - (price / oldPrice)) * 100);
-                    discountBadge.innerHTML = `%${discount} İndirim`;
-                    discountBadge.classList.remove('hidden');
-                }
-            } else {
-                if (oldPriceDisplay) oldPriceDisplay.classList.add('hidden');
-                if (discountBadge) discountBadge.classList.add('hidden');
-            }
             
             if (imageUrl) {
                 changeProductImage(imageUrl, null, label);

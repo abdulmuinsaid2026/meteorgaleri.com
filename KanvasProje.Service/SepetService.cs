@@ -128,7 +128,7 @@ namespace KanvasProje.Service
                         m2BirimFiyat = isHali ? 1250m : 450m;
                     }
 
-                    fiyat = Math.Round(metrekare * m2BirimFiyat, 2);
+                    fiyat = Math.Round(metrekare * m2BirimFiyat * 0.80m, 2);
                     secenekAdi = $"Özel Ölçü: {ozelEn.Value}x{ozelBoy.Value} cm ({metrekare:0.##} m²)";
                 }
                 else
@@ -573,11 +573,12 @@ namespace KanvasProje.Service
 
         private static decimal ResolveCartPrice(Urun urun, UrunSecenek? secenek, string cerceveModeli, decimal? cerceveFarki)
         {
-            var basePrice = secenek?.SatisFiyati > 0 ? secenek.SatisFiyati : urun.EtkinFiyat;
+            var basePrice = secenek != null ? secenek.EtkinFiyat : urun.EtkinFiyat;
 
             if (RequiresFrameSelection(urun) && secenek != null && KanvasFiyatListesi.TryGetFiyat(secenek.Olcu, out var fiyat))
             {
-                return cerceveModeli == "Çerçevesiz" ? fiyat.CercevesizKargoDahil : fiyat.CerceveliKargoDahil;
+                var kanvasFiyat = cerceveModeli == "Çerçevesiz" ? fiyat.CercevesizKargoDahil : fiyat.CerceveliKargoDahil;
+                return Math.Round(kanvasFiyat * 0.80m, 0);
             }
 
             return basePrice + (cerceveFarki ?? 0);
