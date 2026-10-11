@@ -107,7 +107,7 @@ Orijinal Railway veritabanına zarar vermeden aşağıdaki veriler yerel `meteor
 ### Adım 6: Yetkilendirme ve Canlı Testler
 1. **Sistem Yöneticisi (Admin) Hesabı:**
    * E-posta: `meteor_medya@hotmail.com`
-   * Şifre: `MeteorAdmin2024!`
+   * Şifre: `MeteorAdmin2026-37!`
    * Headless Playwright ile `/Hesap/GirisYap` üzerinden giriş test edildi. `/Admin` yönetim paneline başarıyla erişildi, 14.499 ürünün listelendiği doğrulandı.
 2. **Test Müşteri Hesabı:**
    * E-posta: `musteri@meteorgaleri.com`
@@ -174,7 +174,7 @@ pg_restore -U postgres -d meteorgaleridb -v meteorgaleridb_clean.dump
   "AdminSettings": {
     "SeedDefaultAdmin": true,
     "Email": "meteor_medya@hotmail.com",
-    "Password": "MeteorAdmin2024!"
+    "Password": "MeteorAdmin2026-37!"
   },
   "EmailSettings": {
     "FromEmail": "meteor_medya@hotmail.com",
@@ -198,7 +198,7 @@ dotnet watch run
 ### 5. Adım: Giriş Bilgileriyle Test Edin
 * **Yönetici Girişi:** `http://localhost:5002/Hesap/GirisYap`
   * E-posta: `meteor_medya@hotmail.com`
-  * Şifre: `MeteorAdmin2024!`
+  * Şifre: `MeteorAdmin2026-37!`
   * Panel URL: `http://localhost:5002/Admin`
 * **Müşteri Girişi:**
   * E-posta: `musteri@meteorgaleri.com`
@@ -254,7 +254,7 @@ GITHUB REPO: https://github.com/abdulmuinsaid2026/meteorgalericom (master branch
 TEMİZ DB DUMP: meteorgaleridb_clean.dump (14.499 ürün, 223.856 seçenek, 5.143 yorum hazır)
 TEMA: Retro / Vintage (#FFFBF0 krem, #1B2A4A lacivert, #C0392B kiremit kırmızısı)
 TEST HESAPLARI:
-- Admin: meteor_medya@hotmail.com / MeteorAdmin2024!
+- Admin: meteor_medya@hotmail.com / MeteorAdmin2026-37!
 - Müşteri: musteri@meteorgaleri.com / MeteorUser2024!
 
 Kaldığımız yerden devam etmek için proje_tanitimi.md dosyasını incele ve sıradaki adımları yürütelim.
