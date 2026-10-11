@@ -6,7 +6,6 @@
     var kargoFirmalari = ViewBag.KargoFirmalari as List<KargoFirmasi> ?? new List<KargoFirmasi>();
     var paytrMerchantKeyKayitli = ViewBag.PaytrMerchantKeyKayitli as bool? ?? false;
     var paytrMerchantSaltKayitli = ViewBag.PaytrMerchantSaltKayitli as bool? ?? false;
-    var iyzicoSecretKeyKayitli = ViewBag.IyzicoSecretKeyKayitli as bool? ?? false;
 }
 
 <style>
@@ -445,76 +444,13 @@
                     </section>
 
                     <section class="ca-settings-panel" id="panel-odeme">
-                        <!-- İyzico Ödeme Ayarları (Varsayılan ve Birincil) -->
-                        <div class="ca-card mb-4 border-start border-4 border-primary">
-                            <div class="ca-card-body">
-                                <div class="ca-section-heading">
-                                    <i class="fas fa-credit-card text-primary"></i>
-                                    <div>
-                                        <h2 class="text-primary">İyzico Ödeme Ayarları (Varsayılan Altyapı)</h2>
-                                        <p>İyzico Checkout Form, 3D Secure, taksit seçenekleri ve API entegrasyonu.</p>
-                                    </div>
-                                </div>
-                                <div class="ca-alert ca-alert-info mb-3">
-                                    <i class="fas fa-shield-halved"></i>
-                                    <span>İyzico Secret Key DataProtection ile şifrelenir ve gizli saklanır. Boş bırakırsanız mevcut kayıtlı anahtar korunur.</span>
-                                </div>
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label class="ca-label">İyzico Durumu</label>
-                                        <div class="ca-toggle-box">
-                                            <div class="form-check form-switch d-flex align-items-center w-100 ps-0">
-                                                <span>
-                                                    <strong>İyzico ile ödeme al (Aktif)</strong><br>
-                                                    <small class="text-muted">Müşteriler sepetten İyzico Checkout Form ile ödeme yapar.</small>
-                                                </span>
-                                                <input asp-for="IyzicoAktifMi" class="form-check-input ms-auto" type="checkbox" style="width:3em; height:1.5em;">
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="ca-label">Test (Sandbox) Modu</label>
-                                        <div class="ca-toggle-box">
-                                            <div class="form-check form-switch d-flex align-items-center w-100 ps-0">
-                                                <span>
-                                                    <strong>İyzico Sandbox (Test) modunda çalışsın</strong><br>
-                                                    <small class="text-muted">Canlı merchant anahtarları girilene kadar açık olmalıdır.</small>
-                                                </span>
-                                                <input asp-for="IyzicoTestModu" class="form-check-input ms-auto" type="checkbox" style="width:3em; height:1.5em;">
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="ca-label">İyzico API Key</label>
-                                        <input asp-for="IyzicoApiKey" class="ca-input" autocomplete="off" placeholder="sandbox-... veya live-..." />
-                                        <small class="text-muted">İyzico kontrol panelinden aldığınız API anahtarı.</small>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="ca-label">İyzico Secret Key</label>
-                                        <input name="iyzicoSecretKey" class="ca-input" type="password" autocomplete="new-password" placeholder="@(iyzicoSecretKeyKayitli ? "Kayıtlı gizli anahtarı korumak için boş bırakın" : "İyzico Secret Key girin")" />
-                                        <small class="text-muted">@(iyzicoSecretKeyKayitli ? "Gizli anahtar kayıtlı ve korumalı." : "Gizli anahtar henüz girilmedi.")</small>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="ca-label">İyzico Base URL</label>
-                                        <input asp-for="IyzicoBaseUrl" class="ca-input" placeholder="https://sandbox-api.iyzipay.com veya https://api.iyzipay.com" />
-                                        <small class="text-muted">Test için: <code>https://sandbox-api.iyzipay.com</code> | Canlı için: <code>https://api.iyzipay.com</code></small>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="ca-label">Callback URL (Opsiyonel Özel)</label>
-                                        <input asp-for="IyzicoCallbackUrl" class="ca-input" placeholder="Otomatik: https://www.meteorgaleri.com/Siparis/IyzicoCallback" />
-                                        <small class="text-muted">Boş bırakılırsa sistem varsayılan callback adresini kullanır.</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- PayTR Ödeme Ayarları (Yedek) -->
+                        <!-- PayTR Ödeme Ayarları (Birincil Altyapı) -->
                         <div class="ca-card">
                             <div class="ca-card-body">
                                 <div class="ca-section-heading">
                                     <i class="fas fa-credit-card"></i>
                                     <div>
-                                        <h2>PayTR Ödeme Ayarları (Yedek Altyapı)</h2>
+                                        <h2 class="text-primary">PayTR Ödeme Ayarları</h2>
                                         <p>PayTR POS bilgileri ve dönüş adresleri burada yönetilir.</p>
                                     </div>
                                 </div>

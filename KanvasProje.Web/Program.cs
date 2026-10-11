@@ -253,8 +253,7 @@ builder.Services.AddScoped<ISiteSettingsService, SiteSettingsService>();
 builder.Services.AddScoped<IHomePageSettingsService, HomePageSettingsService>();
 builder.Services.AddScoped<IHomePageSectionService, HomePageSectionService>();
 builder.Services.AddScoped<IFavoriService, FavoriService>();
-builder.Services.AddScoped<IPaymentService, IyzicoPaymentService>();
-builder.Services.AddScoped<IyzicoPaymentService>();
+builder.Services.AddScoped<IPaymentService, PaytrPaymentService>();
 builder.Services.AddScoped<PaytrPaymentService>();
 builder.Services.AddHttpClient("Paytr", client =>
 {

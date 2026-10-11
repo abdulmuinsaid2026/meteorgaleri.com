@@ -23,7 +23,6 @@ namespace KanvasProje.Web.Controllers
         private readonly ISepetService _sepetService;
         private readonly ISiteSettingsService _siteSettingsService;
         private readonly IPaymentService _paymentService;
-        private readonly PaytrPaymentService _paytrPaymentService;
         private readonly ILogger<SiparisController> _logger;
         private readonly IWebHostEnvironment _env;
 
@@ -35,7 +34,6 @@ namespace KanvasProje.Web.Controllers
             ISepetService sepetService,
             ISiteSettingsService siteSettingsService,
             IPaymentService paymentService,
-            PaytrPaymentService paytrPaymentService,
             ILogger<SiparisController> logger,
             IWebHostEnvironment env)
         {
@@ -46,7 +44,6 @@ namespace KanvasProje.Web.Controllers
             _sepetService = sepetService;
             _siteSettingsService = siteSettingsService;
             _paymentService = paymentService;
-            _paytrPaymentService = paytrPaymentService;
             _logger = logger;
             _env = env;
         }
@@ -146,17 +143,11 @@ namespace KanvasProje.Web.Controllers
 
             // --- KARGO HESAPLAMA VE KAYDETME ---
             var settings = _siteSettingsService.GetSettings();
-            if (settings.IyzicoAktifMi)
-            {
-                siparis.OdemeSaglayici = "Iyzico";
-                siparis.OdemeDurumu = "Bekliyor";
-                siparis.Aciklama = "İyzico ile güvenli ödeme bekleniyor.";
-            }
-            else if (settings.PaytrAktifMi)
+            if (settings.PaytrAktifMi)
             {
                 siparis.OdemeSaglayici = "PayTR";
                 siparis.OdemeDurumu = "Bekliyor";
-                siparis.Aciklama = "PayTR ile ödeme bekleniyor.";
+                siparis.Aciklama = "PayTR ile güvenli ödeme bekleniyor.";
             }
             else
             {
@@ -259,211 +250,17 @@ namespace KanvasProje.Web.Controllers
                 siparis.ToplamTutar,
                 siparis.OdemeSaglayici);
 
-            // 1. İyzico aktifse İyzico Checkout Form sayfasına yönlendir
-            if (_siteSettingsService.GetSettings().IyzicoAktifMi)
-            {
-                return RedirectToAction(nameof(IyzicoOdeme), new { siparisNo = siparis.SiparisNo });
-            }
-
-            // 2. PayTR aktifse PayTR ödeme sayfasına yönlendir
+            // PayTR aktifse PayTR ödeme sayfasına yönlendir
             if (_siteSettingsService.GetSettings().PaytrAktifMi)
             {
                 return RedirectToAction(nameof(PaytrOdeme), new { siparisNo = siparis.SiparisNo });
             }
 
-            // 3. Hiçbiri aktif değilse siparişi beklemede oluştur
+            // Hiçbiri aktif değilse siparişi beklemede oluştur
             await SendAdminOrderNotificationEmailAsync(siparis);
             await SendCustomerOrderConfirmationEmailAsync(siparis);
 
             return RedirectToAction(nameof(Beklemede), new { siparisNo = siparis.SiparisNo });
-        }
-
-        /// <summary>
-        /// İyzico ödeme sayfası — İyzico Checkout Form (3D Secure, taksit ve responsive form).
-        /// </summary>
-        [HttpGet]
-        public async Task<IActionResult> IyzicoOdeme(string siparisNo)
-        {
-            var siparis = await _context.Siparisler
-                .Include(x => x.SiparisDetaylari)
-                    .ThenInclude(x => x.Urun)
-                .FirstOrDefaultAsync(x => x.SiparisNo == siparisNo && !x.SilindiMi);
-
-            if (siparis == null)
-            {
-                return RedirectToAction("Index", "Sepet");
-            }
-
-            if (siparis.OdemeTamamlandiMi)
-            {
-                return RedirectToAction(nameof(IyzicoBasarili), new { siparisNo = siparis.SiparisNo });
-            }
-
-            if (string.Equals(siparis.OdemeDurumu, "Basarisiz", StringComparison.OrdinalIgnoreCase) ||
-                siparis.Durum == SiparisDurumHelper.IptalEdildi)
-            {
-                return RedirectToAction(nameof(IyzicoBasarisiz), new { siparisNo = siparis.SiparisNo });
-            }
-
-            var settings = _siteSettingsService.GetSettings();
-            var request = HttpContext.Request;
-            var baseUrl = $"{request.Scheme}://{request.Host}";
-
-            var sepetItems = siparis.SiparisDetaylari
-                .Where(x => !x.SilindiMi)
-                .Select(x => new PaymentBasketItem
-                {
-                    Name = x.Urun?.Baslik ?? $"Tablo #{x.UrunId}",
-                    Price = x.BirimFiyat,
-                    Quantity = x.Adet
-                })
-                .ToList();
-
-            var initRequest = new PaymentInitRequest
-            {
-                OrderId = siparis.SiparisNo,
-                TotalPrice = siparis.ToplamTutar,
-                BasketPrice = Math.Max(0, siparis.ToplamTutar - siparis.KargoUcreti),
-                CallbackUrl = $"{baseUrl}/Siparis/IyzicoCallback",
-                BuyerName = siparis.MusteriAdSoyad,
-                BuyerEmail = siparis.Eposta,
-                BuyerPhone = siparis.Telefon,
-                BuyerAddress = $"{siparis.AcikAdres}, {siparis.Ilce}/{siparis.Sehir}",
-                BuyerCity = siparis.Sehir,
-                BuyerIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1",
-                BasketItems = sepetItems
-            };
-
-            var result = await _paymentService.InitializeCheckoutAsync(initRequest);
-
-            if (!result.Success || (string.IsNullOrWhiteSpace(result.CheckoutFormContent) && string.IsNullOrWhiteSpace(result.Token)))
-            {
-                _logger.LogWarning(
-                    "İyzico baslatilamadi. SiparisNo={SiparisNo}, Hata={Hata}",
-                    siparisNo, result.ErrorMessage);
-
-                ViewBag.Hata = result.ErrorMessage ?? "İyzico ödeme sayfası başlatılamadı. Lütfen yönetici ile iletişime geçin.";
-                ViewBag.SiparisNo = siparis.SiparisNo;
-                ViewBag.ToplamTutar = siparis.ToplamTutar;
-                return View("IyzicoOdeme");
-            }
-
-            ViewBag.CheckoutFormContent = result.CheckoutFormContent;
-            ViewBag.Token = result.Token;
-            ViewBag.PaymentPageUrl = result.PaymentPageUrl;
-            ViewBag.SiparisNo = siparis.SiparisNo;
-            ViewBag.ToplamTutar = siparis.ToplamTutar;
-
-            return View();
-        }
-
-        /// <summary>
-        /// İyzico Callback / Dönüş URL'i — Ödeme sonucu İyzico tarafından bu adrese POST edilir.
-        /// </summary>
-        [HttpPost]
-        [HttpGet]
-        [IgnoreAntiforgeryToken]
-        [AllowAnonymous]
-        public async Task<IActionResult> IyzicoCallback()
-        {
-            var token = string.Empty;
-            if (HttpContext.Request.HasFormContentType)
-            {
-                token = HttpContext.Request.Form["token"].FirstOrDefault() ?? string.Empty;
-            }
-            if (string.IsNullOrWhiteSpace(token))
-            {
-                token = HttpContext.Request.Query["token"].FirstOrDefault() ?? string.Empty;
-            }
-
-            _logger.LogInformation("İyzico callback alindi. Token={Token}", token);
-
-            if (string.IsNullOrWhiteSpace(token))
-            {
-                return RedirectToAction(nameof(IyzicoBasarisiz), new { hata = "İyzico doğrulama anahtarı (token) eksik." });
-            }
-
-            var verifyResult = await _paymentService.VerifyPaymentAsync(new PaymentVerifyRequest { Token = token });
-
-            var orderId = verifyResult.OrderId;
-            var siparis = !string.IsNullOrWhiteSpace(orderId)
-                ? await _context.Siparisler.FirstOrDefaultAsync(x => x.SiparisNo == orderId && !x.SilindiMi)
-                : null;
-
-            if (siparis == null)
-            {
-                _logger.LogWarning("İyzico callback sipariş bulunamadı. Token={Token}, OrderId={OrderId}", token, orderId);
-                return RedirectToAction(nameof(IyzicoBasarisiz), new { hata = "Ödeme ile ilişkili sipariş bulunamadı." });
-            }
-
-            if (verifyResult.PaymentSuccessful)
-            {
-                siparis.OdemeDurumu = "Basarili";
-                siparis.OdemeTamamlandiMi = true;
-                siparis.OdemeOnayTarihi = DateTime.UtcNow;
-                siparis.OdemeHataKodu = null;
-                siparis.OdemeHataMesaji = null;
-                siparis.Durum = SiparisDurumHelper.UretimHazirlaniyor;
-                siparis.Aciklama = $"İyzico ile ödeme başarıyla tamamlandı. İşlem No: {verifyResult.TransactionId ?? token}";
-
-                await _context.SaveChangesAsync();
-
-                _logger.LogInformation(
-                    "İyzico ödeme başarılı. SiparisNo={SiparisNo}, Tutar={Tutar}, IslemNo={IslemNo}",
-                    siparis.SiparisNo, verifyResult.PaidPrice, verifyResult.TransactionId ?? token);
-
-                await SendAdminOrderNotificationEmailAsync(siparis);
-                await SendCustomerOrderConfirmationEmailAsync(siparis);
-
-                return RedirectToAction(nameof(IyzicoBasarili), new { siparisNo = siparis.SiparisNo });
-            }
-            else
-            {
-                siparis.OdemeDurumu = "Basarisiz";
-                siparis.OdemeTamamlandiMi = false;
-                siparis.OdemeHataMesaji = verifyResult.ErrorMessage;
-                siparis.Durum = SiparisDurumHelper.IptalEdildi;
-                siparis.Aciklama = $"İyzico ödemesi başarısız: {verifyResult.ErrorMessage}";
-
-                await _context.SaveChangesAsync();
-
-                _logger.LogWarning(
-                    "İyzico ödeme başarısız. SiparisNo={SiparisNo}, Hata={Hata}",
-                    siparis.SiparisNo, verifyResult.ErrorMessage);
-
-                return RedirectToAction(nameof(IyzicoBasarisiz), new { siparisNo = siparis.SiparisNo, hata = verifyResult.ErrorMessage });
-            }
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> IyzicoBasarili(string siparisNo)
-        {
-            var siparis = await _context.Siparisler
-                .Include(x => x.SiparisDetaylari)
-                    .ThenInclude(x => x.Urun)
-                .FirstOrDefaultAsync(x => x.SiparisNo == siparisNo && !x.SilindiMi);
-
-            if (siparis == null)
-            {
-                return RedirectToAction("Index", "Home");
-            }
-
-            return View(siparis);
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> IyzicoBasarisiz(string? siparisNo, string? hata)
-        {
-            ViewBag.Hata = hata ?? "Ödeme işlemi bankanız veya İyzico tarafından onaylanmadı.";
-            ViewBag.SiparisNo = siparisNo;
-
-            if (!string.IsNullOrWhiteSpace(siparisNo))
-            {
-                var siparis = await _context.Siparisler.FirstOrDefaultAsync(x => x.SiparisNo == siparisNo && !x.SilindiMi);
-                return View(siparis);
-            }
-
-            return View();
         }
 
         /// <summary>
@@ -525,7 +322,7 @@ namespace KanvasProje.Web.Controllers
                 BasketItems = sepetItems
             };
 
-            var result = await _paytrPaymentService.InitializeCheckoutAsync(initRequest);
+            var result = await _paymentService.InitializeCheckoutAsync(initRequest);
 
             if (!result.Success || string.IsNullOrWhiteSpace(result.Token))
             {
@@ -581,7 +378,7 @@ namespace KanvasProje.Web.Controllers
                 Hash = hash
             };
 
-            var verifyResult = await _paytrPaymentService.VerifyPaymentAsync(verifyRequest);
+            var verifyResult = await _paymentService.VerifyPaymentAsync(verifyRequest);
 
             if (!verifyResult.SignatureValid)
             {

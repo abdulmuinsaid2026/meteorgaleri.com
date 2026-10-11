@@ -10,7 +10,6 @@
   </ItemGroup>
   
   <ItemGroup>
-    <PackageReference Include="Iyzipay" Version="2.1.80" />
     <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
   </ItemGroup>
 
