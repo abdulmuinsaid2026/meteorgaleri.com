@@ -23,6 +23,7 @@ namespace KanvasProje.Web.Controllers
         private readonly ISepetService _sepetService;
         private readonly ISiteSettingsService _siteSettingsService;
         private readonly IPaymentService _paymentService;
+        private readonly PaytrPaymentService _paytrPaymentService;
         private readonly ILogger<SiparisController> _logger;
         private readonly IWebHostEnvironment _env;
 
@@ -34,6 +35,7 @@ namespace KanvasProje.Web.Controllers
             ISepetService sepetService,
             ISiteSettingsService siteSettingsService,
             IPaymentService paymentService,
+            PaytrPaymentService paytrPaymentService,
             ILogger<SiparisController> logger,
             IWebHostEnvironment env)
         {
@@ -44,6 +46,7 @@ namespace KanvasProje.Web.Controllers
             _sepetService = sepetService;
             _siteSettingsService = siteSettingsService;
             _paymentService = paymentService;
+            _paytrPaymentService = paytrPaymentService;
             _logger = logger;
             _env = env;
         }
@@ -510,7 +513,7 @@ namespace KanvasProje.Web.Controllers
                 OrderId = siparis.SiparisNo,
                 TotalPrice = siparis.ToplamTutar,
                 BasketPrice = siparis.ToplamTutar,
-                CallbackUrl = settings.PaytrCallbackUrl,
+                CallbackUrl = !string.IsNullOrWhiteSpace(settings.PaytrCallbackUrl) ? settings.PaytrCallbackUrl : $"{baseUrl}/Siparis/PaytrBildirim",
                 OkUrl = $"{baseUrl}/Siparis/PaytrBasarili?siparisNo={siparis.SiparisNo}",
                 FailUrl = $"{baseUrl}/Siparis/PaytrBasarisiz",
                 BuyerName = siparis.MusteriAdSoyad,
@@ -522,7 +525,7 @@ namespace KanvasProje.Web.Controllers
                 BasketItems = sepetItems
             };
 
-            var result = await _paymentService.InitializeCheckoutAsync(initRequest);
+            var result = await _paytrPaymentService.InitializeCheckoutAsync(initRequest);
 
             if (!result.Success || string.IsNullOrWhiteSpace(result.Token))
             {
@@ -578,7 +581,7 @@ namespace KanvasProje.Web.Controllers
                 Hash = hash
             };
 
-            var verifyResult = await _paymentService.VerifyPaymentAsync(verifyRequest);
+            var verifyResult = await _paytrPaymentService.VerifyPaymentAsync(verifyRequest);
 
             if (!verifyResult.SignatureValid)
             {
