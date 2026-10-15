@@ -113,15 +113,16 @@ if (!string.IsNullOrWhiteSpace(googleClientId) && !string.IsNullOrWhiteSpace(goo
         });
 }
 
-// Facebook ile GiriÅŸ (sadece AppId tanÄ±mlÄ±ysa aktif)
+// Facebook ile GiriÅŸ (sadece AppId ve AppSecret tanımlıysa aktif)
 var facebookAppId = builder.Configuration["Authentication:Facebook:AppId"] ?? "";
-if (!string.IsNullOrWhiteSpace(facebookAppId))
+var facebookAppSecret = builder.Configuration["Authentication:Facebook:AppSecret"] ?? "";
+if (!string.IsNullOrWhiteSpace(facebookAppId) && !string.IsNullOrWhiteSpace(facebookAppSecret))
 {
     builder.Services.AddAuthentication()
         .AddFacebook(options =>
         {
             options.AppId = facebookAppId;
-            options.AppSecret = builder.Configuration["Authentication:Facebook:AppSecret"] ?? "";
+            options.AppSecret = facebookAppSecret;
             options.Scope.Add("email");
             options.Scope.Add("public_profile");
         });

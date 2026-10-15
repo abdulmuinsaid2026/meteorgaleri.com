@@ -18,26 +18,26 @@ namespace KanvasProje.Web.Controllers
         private readonly SignInManager<AppUser> _signInManager;
         private readonly KanvasDbContext _context;
         private readonly IEmailService _emailService;
-        private readonly ISiteSettingsService _siteSettingsService;
         private readonly IAdminSessionStateService _adminSessionStateService;
         private readonly IAdminSecurityAuditService _adminSecurityAuditService;
+        private readonly IConfiguration _configuration;
 
         public HesapController(
             UserManager<AppUser> userManager,
             SignInManager<AppUser> signInManager,
             KanvasDbContext context,
             IEmailService emailService,
-            ISiteSettingsService siteSettingsService,
             IAdminSessionStateService adminSessionStateService,
-            IAdminSecurityAuditService adminSecurityAuditService)
+            IAdminSecurityAuditService adminSecurityAuditService,
+            IConfiguration configuration)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _context = context;
             _emailService = emailService;
-            _siteSettingsService = siteSettingsService;
             _adminSessionStateService = adminSessionStateService;
             _adminSecurityAuditService = adminSecurityAuditService;
+            _configuration = configuration;
         }
 
         [HttpGet]
@@ -61,7 +61,8 @@ namespace KanvasProje.Web.Controllers
                 UserName = model.Eposta,
                 Email = model.Eposta,
                 AdSoyad = model.AdSoyad,
-                Sehir = model.Sehir
+                Sehir = model.Sehir,
+                EmailConfirmed = true
             };
 
             var result = await _userManager.CreateAsync(user, model.Sifre);
@@ -76,30 +77,20 @@ namespace KanvasProje.Web.Controllers
             }
 
             await _userManager.AddToRoleAsync(user, AdminSecurityRoles.Uye);
-
-            var settings = _siteSettingsService.GetSettings();
-            var brandName = string.IsNullOrWhiteSpace(settings.MarkaAdi) ? settings.SiteAdi : settings.MarkaAdi;
-            var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-            var confirmationLink = Url.Action("EpostaDogrula", "Hesap", new { userId = user.Id, token }, Request.Scheme) ?? string.Empty;
+            await _signInManager.SignInAsync(user, isPersistent: true);
 
             try
             {
-                await _emailService.SendTemplateMailAsync(
-                    user.Email ?? string.Empty,
-                    "Hesab\u0131n\u0131z\u0131 do\u011Frulay\u0131n",
-                    user.AdSoyad,
-                    $"{brandName} hesab\u0131n\u0131z olu\u015Fturuldu. Hesab\u0131n\u0131z\u0131 g\u00FCvenli \u015Fekilde kullanabilmek i\u00E7in e-posta adresinizi do\u011Frulaman\u0131z gerekiyor.",
-                    confirmationLink,
-                    "Hesab\u0131m\u0131 Do\u011Frula");
-
-                TempData["Basari"] = "Üyeliğiniz oluşturuldu. Doğrulama bağlantısı e-posta adresinize gönderildi.";
+                var sessionId = HttpContext.Session.Id;
+                var sepetService = HttpContext.RequestServices.GetRequiredService<ISepetService>();
+                await sepetService.MergeSepetlerAsync(sessionId, user.Id);
             }
-            catch (Exception ex)
+            catch
             {
-                TempData["Hata"] = "Üyeliğiniz oluşturuldu ancak doğrulama e-postası gönderilemedi: " + ex.Message;
             }
 
-            return RedirectToAction("EpostaOnayBilgilendirme");
+            TempData["Basari"] = "Üyeliğiniz oluşturuldu. Hoş geldiniz!";
+            return RedirectToAction("Index", "Home");
         }
 
         [HttpGet]
@@ -146,13 +137,6 @@ namespace KanvasProje.Web.Controllers
             var user = await _userManager.FindByEmailAsync(eposta);
             if (user != null)
             {
-                if (!await _userManager.IsEmailConfirmedAsync(user))
-                {
-                    ViewBag.Hata = "Lütfen önce e-posta adresinize gönderilen bağlantı ile hesabınızı doğrulayın.";
-                    TempData["Hata"] = ViewBag.Hata;
-                    return View();
-                }
-
                 var result = await _signInManager.PasswordSignInAsync(user, sifre, isPersistent: true, lockoutOnFailure: true);
                 if (result.Succeeded)
                 {
@@ -378,10 +362,35 @@ namespace KanvasProje.Web.Controllers
             return RedirectToAction("Index", "Home");
         }
 
+        private bool IsExternalProviderConfigured(string? provider)
+        {
+            return provider switch
+            {
+                "Google" => !string.IsNullOrWhiteSpace(_configuration["Authentication:Google:ClientId"])
+                    && !string.IsNullOrWhiteSpace(_configuration["Authentication:Google:ClientSecret"]),
+                "Facebook" => !string.IsNullOrWhiteSpace(_configuration["Authentication:Facebook:AppId"])
+                    && !string.IsNullOrWhiteSpace(_configuration["Authentication:Facebook:AppSecret"]),
+                _ => false
+            };
+        }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult ExternalLogin(string provider, string? returnUrl = null)
         {
+            if (!IsExternalProviderConfigured(provider))
+            {
+                TempData["Hata"] = "Sosyal giriş şu anda aktif değil. Lütfen e-posta ve şifrenizle devam edin.";
+                if (Uri.TryCreate(Request.Headers.Referer.ToString(), UriKind.Absolute, out var referer)
+                    && referer.Host == Request.Host.Host
+                    && referer.LocalPath.Contains("KayitOl", StringComparison.OrdinalIgnoreCase))
+                {
+                    return RedirectToAction("KayitOl");
+                }
+
+                return RedirectToAction("GirisYap");
+            }
+
             var redirectUrl = Url.Action("ExternalLoginCallback", "Hesap", new { returnUrl });
             var properties = _signInManager.ConfigureExternalAuthenticationProperties(provider, redirectUrl);
             return Challenge(properties, provider);

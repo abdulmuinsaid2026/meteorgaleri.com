@@ -57,32 +57,7 @@
         </div>
 
         <!-- Sosyal Giriş Butonları -->
-        <div class="mt-6">
-            <div class="relative mb-6">
-                <div class="absolute inset-0 flex items-center">
-                    <div class="w-full border-t border-slate-200"></div>
-                </div>
-                <div class="relative flex justify-center">
-                    <span class="bg-[#F8FAFC] px-4 text-xs text-slate-400 uppercase tracking-widest font-semibold">veya</span>
-                </div>
-            </div>
-            <div class="grid grid-cols-2 gap-2 sm:gap-3">
-                <form asp-action="ExternalLogin" method="post" class="block">
-                    @Html.AntiForgeryToken()
-                    <input type="hidden" name="provider" value="Google" />
-                    <button type="submit" class="w-full h-11 border border-slate-200 rounded-xl text-xs uppercase tracking-wider text-slate-700 hover:border-[#00A4D3] hover:text-[#00A4D3] transition-colors flex items-center justify-center gap-1 sm:gap-2 bg-white font-semibold shadow-2xs">
-                        <i class="fab fa-google text-sm text-[#E30613]"></i><span class="hidden sm:inline">Google ile </span>Giriş
-                    </button>
-                </form>
-                <form asp-action="ExternalLogin" method="post" class="block">
-                    @Html.AntiForgeryToken()
-                    <input type="hidden" name="provider" value="Facebook" />
-                    <button type="submit" class="w-full h-11 border border-slate-200 rounded-xl text-xs uppercase tracking-wider text-slate-700 hover:border-[#00A4D3] hover:text-[#00A4D3] transition-colors flex items-center justify-center gap-1 sm:gap-2 bg-white font-semibold shadow-2xs">
-                        <i class="fab fa-facebook-f text-sm text-[#00A4D3]"></i><span class="hidden sm:inline">Facebook ile </span>Giriş
-                    </button>
-                </form>
-            </div>
-        </div>
+        <partial name="_SosyalGirisButonlari" model='"Giriş"' />
 
         <!-- Kayıt Linki -->
         <p class="text-center text-sm text-slate-600 mt-6">
