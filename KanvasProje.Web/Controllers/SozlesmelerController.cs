@@ -17,6 +17,35 @@ namespace KanvasProje.Web.Controllers
             return View("~/Views/Kurumsal/Detay.cshtml", MesafeliSatisSayfasi());
         }
 
+        [HttpGet]
+        public IActionResult VeriSilme()
+        {
+            return View("~/Views/Kurumsal/Detay.cshtml", VeriSilmeSayfasi());
+        }
+
+        private static KurumsalSayfa VeriSilmeSayfasi()
+        {
+            return new KurumsalSayfa
+            {
+                Baslik = "Veri Silme Talebi",
+                Icerik = """
+                    <p>MeteorGaleri olarak kişisel verilerinizin korunmasına önem veriyoruz. Hesabınızla ilişkili kişisel verilerinizin silinmesini istediğinizde aşağıdaki adımları izleyebilirsiniz. Talepleriniz, yasal saklama yükümlülükleri saklı kalmak kaydıyla en geç 30 gün içinde sonuçlandırılır.</p>
+
+                    <h2>1. Veri Silme Talebi Nasıl Oluşturulur?</h2>
+                    <p>Kayıtlı e-posta adresinizden <a href="/Kurumsal/Iletisim">İletişim</a> sayfasındaki kanallar aracılığıyla bize ulaşarak veri silme talebinizi iletebilirsiniz. Talebinizde ad-soyad ve kayıtlı e-posta adresinizi belirtmeniz, kimlik doğrulaması ve işlem hızı açısından önemlidir.</p>
+
+                    <h2>2. Hangi Veriler Silinir?</h2>
+                    <p>Talebiniz onaylandığında üyelik hesabınız kapatılır ve hesabınıza bağlı kişisel veriler (ad-soyad, e-posta, telefon, adres bilgileri, favoriler ve sepet kayıtları) silinir veya anonim hale getirilir. Vergi ve ticaret mevzuatı gereği saklanması zorunlu olan sipariş ve fatura kayıtları, yasal süreler boyunca yalnızca mevzuata uygun şekilde muhafaza edilir.</p>
+
+                    <h2>3. Facebook ile Giriş Yapan Kullanıcılar</h2>
+                    <p>Facebook hesabınızla giriş yaptıysanız, dilerseniz Facebook tarafındaki uygulama bağlantısını da kaldırabilirsiniz: Facebook → Ayarlar → Uygulamalar ve İnternet Siteleri → MeteorGaleri → Kaldır. Bu işlem, Facebook'un kendi sistemlerinde tuttuğu uygulama bağlantı kaydını kaldırır. MeteorGaleri tarafındaki verilerinizin silinmesi için yukarıdaki 1. adımdaki talebi de iletmeniz gerekir.</p>
+
+                    <h2>4. Gizlilik Politikası</h2>
+                    <p>Verilerin işlenmesine ilişkin detaylı bilgi için <a href="/Sozlesmeler/Gizlilik">Gizlilik Politikası</a> sayfasını inceleyebilirsiniz.</p>
+                    """
+            };
+        }
+
         private static KurumsalSayfa MesafeliSatisSayfasi()
         {
             return new KurumsalSayfa
