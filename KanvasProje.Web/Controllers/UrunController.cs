@@ -1,5 +1,6 @@
 using KanvasProje.Core.Varliklar;
 using KanvasProje.Core.DTOs;
+using KanvasProje.Core.Helpers;
 using KanvasProje.Data;
 using KanvasProje.Service.Helpers;
 using KanvasProje.Web.Models;
@@ -7,6 +8,7 @@ using KanvasProje.Web.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using KanvasProje.Service.Services;
 
@@ -37,6 +39,8 @@ namespace KanvasProje.Web.Controllers
             [FromQuery(Name = "sirala")] string? eskiSort = null,
             [FromQuery(Name = "sayfa")] int? eskiPage = null)
         {
+            var settings = _siteSettingsService.GetSettings();
+
             if (string.IsNullOrWhiteSpace(sort) && !string.IsNullOrWhiteSpace(eskiSort))
             {
                 sort = eskiSort;
@@ -58,7 +62,7 @@ namespace KanvasProje.Web.Controllers
             ViewBag.Kategoriler = kategoriler;
             ViewBag.KategoriUrunSayilari = kategoriUrunSayilari;
             ViewBag.ToplamAktifUrunSayisi = kategoriUrunSayilari
-                .Where(x => kategoriler.Any(k => k.Id == x.Key && !k.ParentKategoriId.HasValue))
+                .Where(x => kategoriler.Any(kat => kat.Id == x.Key && !kat.ParentKategoriId.HasValue))
                 .Sum(x => x.Value);
 
             var query = _context.Urunler
@@ -91,26 +95,36 @@ namespace KanvasProje.Web.Controllers
 
             if (!string.IsNullOrWhiteSpace(s))
             {
-                var aramaTerimi = s.Trim().ToLowerInvariant();
+                var aramaDeseni = $"%{s.Trim()}%";
                 query = query.Where(x =>
-                    (x.Baslik ?? string.Empty).ToLower().Contains(aramaTerimi) ||
-                    (x.KisaAd ?? string.Empty).ToLower().Contains(aramaTerimi) ||
-                    (x.SKU ?? string.Empty).ToLower().Contains(aramaTerimi) ||
-                    (x.Barkod ?? string.Empty).ToLower().Contains(aramaTerimi) ||
-                    (x.Marka ?? string.Empty).ToLower().Contains(aramaTerimi) ||
-                    (x.Etiketler ?? string.Empty).ToLower().Contains(aramaTerimi));
+                    EF.Functions.ILike(x.Baslik ?? string.Empty, aramaDeseni) ||
+                    EF.Functions.ILike(x.KisaAd ?? string.Empty, aramaDeseni) ||
+                    EF.Functions.ILike(x.SKU ?? string.Empty, aramaDeseni) ||
+                    EF.Functions.ILike(x.Barkod ?? string.Empty, aramaDeseni) ||
+                    EF.Functions.ILike(x.Marka ?? string.Empty, aramaDeseni) ||
+                    EF.Functions.ILike(x.Etiketler ?? string.Empty, aramaDeseni));
                 ViewBag.Search = s.Trim();
             }
 
+            var genelCarpan = (100m - Math.Clamp(settings.GenelIndirimYuzdesi, 0m, 95m)) / 100m;
+
             if (min.HasValue)
             {
-                query = query.Where(x => (x.IndirimliFiyat ?? x.Fiyat) >= min.Value);
+                var minVal = min.Value;
+                query = query.Where(x =>
+                    (x.IndirimliFiyat.HasValue && x.IndirimliFiyat > 0 && x.IndirimliFiyat < x.Fiyat
+                        ? x.IndirimliFiyat.Value
+                        : Math.Round(x.Fiyat * ((100m - (x.Kategori != null && x.Kategori.IndirimYuzdesi.HasValue ? x.Kategori.IndirimYuzdesi.Value : settings.GenelIndirimYuzdesi)) / 100m), 0)) >= minVal);
                 ViewBag.Min = min.Value;
             }
 
             if (max.HasValue)
             {
-                query = query.Where(x => (x.IndirimliFiyat ?? x.Fiyat) <= max.Value);
+                var maxVal = max.Value;
+                query = query.Where(x =>
+                    (x.IndirimliFiyat.HasValue && x.IndirimliFiyat > 0 && x.IndirimliFiyat < x.Fiyat
+                        ? x.IndirimliFiyat.Value
+                        : Math.Round(x.Fiyat * ((100m - (x.Kategori != null && x.Kategori.IndirimYuzdesi.HasValue ? x.Kategori.IndirimYuzdesi.Value : settings.GenelIndirimYuzdesi)) / 100m), 0)) <= maxVal);
                 ViewBag.Max = max.Value;
             }
 
@@ -137,10 +151,16 @@ namespace KanvasProje.Web.Controllers
             switch (sort)
             {
                 case "fiyat_artan":
-                    query = query.OrderBy(x => x.IndirimliFiyat ?? x.Fiyat).ThenBy(x => x.Sira);
+                    query = query.OrderBy(x =>
+                        x.IndirimliFiyat.HasValue && x.IndirimliFiyat > 0 && x.IndirimliFiyat < x.Fiyat
+                            ? x.IndirimliFiyat.Value
+                            : x.Fiyat * genelCarpan).ThenBy(x => x.Sira);
                     break;
                 case "fiyat_azalan":
-                    query = query.OrderByDescending(x => x.IndirimliFiyat ?? x.Fiyat).ThenBy(x => x.Sira);
+                    query = query.OrderByDescending(x =>
+                        x.IndirimliFiyat.HasValue && x.IndirimliFiyat > 0 && x.IndirimliFiyat < x.Fiyat
+                            ? x.IndirimliFiyat.Value
+                            : x.Fiyat * genelCarpan).ThenBy(x => x.Sira);
                     break;
                 case "cok_satan":
                 case "popularity":
@@ -219,95 +239,50 @@ namespace KanvasProje.Web.Controllers
                 return Json(null);
             }
 
-            var aramaTerimi = q.Trim().ToLowerInvariant();
-            if (aramaTerimi.Length < 2)
+            var temiz = q.Trim();
+            if (temiz.Length < 2)
             {
                 return Json(null);
             }
 
-            var sonuclar = await _context.Urunler
+            _ = _siteSettingsService.GetSettings();
+            var aramaDeseni = $"%{temiz}%";
+
+            var adaylar = await _context.Urunler
                 .AsNoTracking()
+                .Include(x => x.Kategori)
                 .Where(x =>
                     x.AktifMi &&
                     !x.SilindiMi &&
-                    ((x.Baslik ?? string.Empty).ToLower().Contains(aramaTerimi) ||
-                     (x.KisaAd ?? string.Empty).ToLower().Contains(aramaTerimi) ||
-                     (x.SKU ?? string.Empty).ToLower().Contains(aramaTerimi) ||
-                     (x.Marka ?? string.Empty).ToLower().Contains(aramaTerimi)))
+                    x.Kategori != null &&
+                    x.Kategori.AktifMi &&
+                    (EF.Functions.ILike(x.Baslik ?? string.Empty, aramaDeseni) ||
+                     EF.Functions.ILike(x.KisaAd ?? string.Empty, aramaDeseni) ||
+                     EF.Functions.ILike(x.SKU ?? string.Empty, aramaDeseni) ||
+                     EF.Functions.ILike(x.Barkod ?? string.Empty, aramaDeseni) ||
+                     EF.Functions.ILike(x.Marka ?? string.Empty, aramaDeseni) ||
+                     EF.Functions.ILike(x.Etiketler ?? string.Empty, aramaDeseni)))
                 .OrderByDescending(x => x.GoruntulenmeSayisi)
                 .ThenByDescending(x => x.OlusturulmaTarihi)
-                .Take(5)
-                .Select(x => new
+                .Take(9)
+                .ToListAsync();
+
+            var sonuclar = adaylar.Select(x =>
+            {
+                var slugPart = string.IsNullOrWhiteSpace(x.Slug)
+                    ? SlugHelper.GenerateSlug(x.Baslik)
+                    : x.Slug;
+                return new
                 {
                     id = x.Id,
+                    slug = $"{slugPart}-{x.Id}",
                     baslik = x.Baslik,
                     gorsel = x.AnaGorselUrl,
-                    fiyat = (x.IndirimliFiyat.HasValue && x.IndirimliFiyat > 0 && x.IndirimliFiyat < x.Fiyat ? x.IndirimliFiyat.Value : x.Fiyat).ToString("N2") + " TL"
-                })
-                .ToListAsync();
+                    fiyat = x.EtkinFiyat.ToString("N0") + " TL"
+                };
+            }).ToList();
 
             return Json(sonuclar);
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> Secenekler(int id)
-        {
-            var urun = await _context.Urunler
-                .AsNoTracking()
-                .FirstOrDefaultAsync(x => x.Id == id && !x.SilindiMi);
-
-            if (urun == null)
-            {
-                return NotFound();
-            }
-
-            var secenekler = await _context.UrunSecenekleri
-                .AsNoTracking()
-                .Where(x =>
-                    x.UrunId == id &&
-                    !x.SilindiMi &&
-                    x.AktifMi &&
-                    (!x.TukeninceGizle || x.StokAdedi > 0 || x.OnSipariseAcikMi))
-                .OrderByDescending(x => x.VarsayilanMi)
-                .ThenBy(x => x.Sira)
-                .ThenBy(x => x.SatisFiyati)
-                .ToListAsync();
-
-            ViewBag.UrunBaslik = urun.Baslik;
-            ViewBag.UrunId = id;
-
-            return View(secenekler);
-        }
-
-        [HttpPost]
-        [Authorize(Policy = AdminPolicyNames.AdminPanelAccess)]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> SecenekEkle(UrunSecenek secenek)
-        {
-            if (secenek.SatisFiyati <= 0)
-            {
-                return RedirectToAction("Secenekler", new { id = secenek.UrunId });
-            }
-
-            _context.UrunSecenekleri.Add(secenek);
-            await _context.SaveChangesAsync();
-            return RedirectToAction("Secenekler", new { id = secenek.UrunId });
-        }
-
-        [HttpPost]
-        [Authorize(Policy = AdminPolicyNames.AdminPanelAccess)]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> SecenekSil(int id)
-        {
-            var secenek = await _context.UrunSecenekleri.FirstOrDefaultAsync(x => x.Id == id);
-            if (secenek != null)
-            {
-                secenek.SilindiMi = true;
-                await _context.SaveChangesAsync();
-                return RedirectToAction("Secenekler", new { id = secenek.UrunId });
-            }
-
-            return RedirectToAction("Index");
         }
 
         public async Task<IActionResult> Detay(string? id)
@@ -317,7 +292,10 @@ namespace KanvasProje.Web.Controllers
                 return NotFound();
             }
 
+            _ = _siteSettingsService.GetSettings();
+
             var detaySorgusu = _context.Urunler
+                .AsNoTracking()
                 .Include(x => x.Kategori!)
                     .ThenInclude(x => x.ParentKategori)
                 .Include(x => x.UrunResimleri)
@@ -331,23 +309,23 @@ namespace KanvasProje.Web.Controllers
                     x.Kategori.AktifMi)
                 .AsSplitQuery();
 
-            Urun? urun;
+            Urun? urun = null;
             if (int.TryParse(id, out var urunId))
             {
                 urun = await detaySorgusu.FirstOrDefaultAsync(x => x.Id == urunId);
             }
-            else
+            else if (id.Contains('-'))
+            {
+                var lastDash = id.LastIndexOf('-');
+                if (lastDash > 0 && int.TryParse(id[(lastDash + 1)..], out var cikarilanId))
+                {
+                    urun = await detaySorgusu.FirstOrDefaultAsync(x => x.Id == cikarilanId);
+                }
+            }
+
+            if (urun == null)
             {
                 urun = await detaySorgusu.FirstOrDefaultAsync(x => x.Slug == id);
-
-                if (urun == null && id.Contains("-"))
-                {
-                    var parcalar = id.Split('-');
-                    if (int.TryParse(parcalar[^1], out var cikarilanId))
-                    {
-                        urun = await detaySorgusu.FirstOrDefaultAsync(x => x.Id == cikarilanId);
-                    }
-                }
             }
 
             if (urun == null)
@@ -355,8 +333,19 @@ namespace KanvasProje.Web.Controllers
                 return NotFound();
             }
 
-            urun.GoruntulenmeSayisi += 1;
-            await _context.SaveChangesAsync();
+            var beklenenSlug = string.IsNullOrWhiteSpace(urun.Slug)
+                ? SlugHelper.GenerateSlug(urun.Baslik)
+                : urun.Slug;
+            var canonicalParam = $"{beklenenSlug}-{urun.Id}";
+
+            if (!string.Equals(id, canonicalParam, StringComparison.OrdinalIgnoreCase))
+            {
+                return RedirectToActionPermanent(nameof(Detay), new { id = canonicalParam });
+            }
+
+            await _context.Urunler
+                .Where(x => x.Id == urun.Id)
+                .ExecuteUpdateAsync(s => s.SetProperty(u => u.GoruntulenmeSayisi, u => u.GoruntulenmeSayisi + 1));
 
             var tumMedya = urun.UrunResimleri
                 .Where(x => !x.SilindiMi)
@@ -406,13 +395,13 @@ namespace KanvasProje.Web.Controllers
                 .OrderByDescending(x => x.OlusturulmaTarihi)
                 .ToListAsync();
 
-            var ortalamaPuan = yorumlar.Count == 0 ? 5 : yorumlar.Average(x => x.Puan);
+            var ortalamaPuan = yorumlar.Count == 0 ? 0.0 : yorumlar.Average(x => x.Puan);
 
             ViewBag.Yorumlar = yorumlar;
             ViewBag.OrtalamaPuan = ortalamaPuan;
             ViewBag.YorumSayisi = yorumlar.Count;
 
-            // Benzer ürünler - aynı kategoriden
+            // Benzer ürünler - önce aynı kategori, yetersizse üst/kardeş kategoriden tamamla
             var benzerUrunler = await _context.Urunler
                 .AsNoTracking()
                 .Where(x =>
@@ -430,9 +419,41 @@ namespace KanvasProje.Web.Controllers
                     Slug = x.Slug,
                     AnaGorselUrl = x.AnaGorselUrl,
                     Fiyat = x.Fiyat,
-                    IndirimliFiyat = x.IndirimliFiyat
+                    IndirimliFiyat = x.IndirimliFiyat,
+                    KategoriId = x.KategoriId
                 })
                 .ToListAsync();
+
+            if (benzerUrunler.Count < 6 && urun.Kategori?.ParentKategoriId != null)
+            {
+                var mevcutIdler = benzerUrunler.Select(b => b.Id).Append(urun.Id).ToHashSet();
+                var ustKatId = urun.Kategori.ParentKategoriId.Value;
+                var ekBenzerler = await _context.Urunler
+                    .AsNoTracking()
+                    .Where(x =>
+                        x.AktifMi &&
+                        !x.SilindiMi &&
+                        x.Kategori != null &&
+                        x.Kategori.AktifMi &&
+                        (x.KategoriId == ustKatId || x.Kategori.ParentKategoriId == ustKatId) &&
+                        !mevcutIdler.Contains(x.Id))
+                    .OrderByDescending(x => x.SatisSayisi)
+                    .ThenByDescending(x => x.GoruntulenmeSayisi)
+                    .Take(6 - benzerUrunler.Count)
+                    .Select(x => new BenzerUrunDto
+                    {
+                        Id = x.Id,
+                        Baslik = x.Baslik,
+                        Slug = x.Slug,
+                        AnaGorselUrl = x.AnaGorselUrl,
+                        Fiyat = x.Fiyat,
+                        IndirimliFiyat = x.IndirimliFiyat,
+                        KategoriId = x.KategoriId
+                    })
+                    .ToListAsync();
+
+                benzerUrunler.AddRange(ekBenzerler);
+            }
 
             ViewBag.BenzerUrunler = benzerUrunler;
 
@@ -445,12 +466,32 @@ namespace KanvasProje.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [EnableRateLimiting("auth")]
         public async Task<IActionResult> YorumYap([Bind("UrunId,Puan,YorumMetni,AdSoyad")] Yorum yorum)
         {
-            var urunVarMi = await _context.Urunler.AnyAsync(x => x.Id == yorum.UrunId && x.AktifMi && !x.SilindiMi);
-            if (!urunVarMi)
+            var urun = await _context.Urunler
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == yorum.UrunId && x.AktifMi && !x.SilindiMi);
+            if (urun == null)
             {
                 return NotFound();
+            }
+
+            var canonicalId = $"{(string.IsNullOrWhiteSpace(urun.Slug) ? SlugHelper.GenerateSlug(urun.Baslik) : urun.Slug)}-{urun.Id}";
+
+            yorum.YorumMetni = (yorum.YorumMetni ?? string.Empty).Trim();
+            yorum.AdSoyad = (yorum.AdSoyad ?? string.Empty).Trim();
+            yorum.Puan = Math.Clamp(yorum.Puan, 1, 5);
+
+            if (string.IsNullOrWhiteSpace(yorum.YorumMetni) || yorum.YorumMetni.Length < 2)
+            {
+                TempData["Hata"] = "Lütfen geçerli bir yorum metni girin.";
+                return RedirectToAction(nameof(Detay), new { id = canonicalId });
+            }
+
+            if (yorum.YorumMetni.Length > 2000)
+            {
+                yorum.YorumMetni = yorum.YorumMetni[..2000];
             }
 
             if (User.Identity?.IsAuthenticated == true)
@@ -461,13 +502,19 @@ namespace KanvasProje.Web.Controllers
                     yorum.AppUserId = user.Id;
                     if (string.IsNullOrWhiteSpace(yorum.AdSoyad))
                     {
-                        yorum.AdSoyad = user.AdSoyad;
+                        yorum.AdSoyad = string.IsNullOrWhiteSpace(user.AdSoyad) ? "Değerli Müşterimiz" : user.AdSoyad.Trim();
                     }
                 }
             }
-            else if (string.IsNullOrWhiteSpace(yorum.AdSoyad))
+
+            if (string.IsNullOrWhiteSpace(yorum.AdSoyad))
             {
-                yorum.AdSoyad = "Misafir Kullanici";
+                yorum.AdSoyad = "Misafir Kullanıcı";
+            }
+
+            if (yorum.AdSoyad.Length > 50)
+            {
+                yorum.AdSoyad = yorum.AdSoyad[..50];
             }
 
             yorum.OlusturulmaTarihi = DateTime.UtcNow;
@@ -477,8 +524,8 @@ namespace KanvasProje.Web.Controllers
             _context.Yorumlar.Add(yorum);
             await _context.SaveChangesAsync();
 
-            TempData["Basari"] = "Yorumunuz alindi, onaylandiktan sonra yayinlanacaktir.";
-            return RedirectToAction("Detay", new { id = yorum.UrunId });
+            TempData["Basari"] = "Yorumunuz alındı, onaylandıktan sonra yayınlanacaktır.";
+            return RedirectToAction(nameof(Detay), new { id = canonicalId });
         }
 
         private static Dictionary<int, string> ParseFeatureFilters(IEnumerable<string>? filters)

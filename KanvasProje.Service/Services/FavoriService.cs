@@ -26,7 +26,12 @@ namespace KanvasProje.Service.Services
             return await _context.Favoriler
                 .Include(f => f.Urun)
                 .Include(f => f.AppUser)
-                .Where(f => f.FiyatDustugundaBildir && !f.SilindiMi && f.AppUser.EmailConfirmed)
+                .Where(f => f.FiyatDustugundaBildir &&
+                            !f.SilindiMi &&
+                            f.Urun != null &&
+                            f.Urun.AktifMi &&
+                            !f.Urun.SilindiMi &&
+                            f.AppUser.EmailConfirmed)
                 .ToListAsync();
         }
 
@@ -42,49 +47,33 @@ namespace KanvasProje.Service.Services
             var favori = await _context.Favoriler.FindAsync(id);
             if (favori != null)
             {
-                // Yeni fiyatı EskiFiyat olarak kaydet
                 if (favori.EskiFiyat != yeniFiyat)
                 {
-                    // Önceki fiyatı kaydet (eğer null ise Urun'den al)
-                    if (!favori.EskiFiyat.HasValue)
-                    {
-                        var urun = await _context.Urunler.FindAsync(favori.UrunId);
-                        if (urun != null)
-                        {
-                            favori.EskiFiyat = urun.IndirimliFiyat ?? urun.Fiyat;
-                        }
-                    }
-                    else
-                    {
-                        favori.EskiFiyat = favori.EskiFiyat;
-                    }
+                    favori.EskiFiyat = yeniFiyat;
+                    await _context.SaveChangesAsync();
                 }
-                await _context.SaveChangesAsync();
             }
         }
 
         public async Task<bool> TogglePriceNotificationAsync(string userId, int urunId)
         {
             var favori = await _context.Favoriler
-                .FirstOrDefaultAsync(f => f.AppUserId == userId && f.UrunId == urunId);
+                .FirstOrDefaultAsync(f => f.AppUserId == userId && f.UrunId == urunId && !f.SilindiMi);
 
             if (favori == null) return false;
 
-            // Toggle the notification flag
             favori.FiyatDustugundaBildir = !favori.FiyatDustugundaBildir;
 
-            // If enabling, capture current price as EskiFiyat
             if (favori.FiyatDustugundaBildir)
             {
                 var urun = await _context.Urunler.FindAsync(urunId);
                 if (urun != null)
                 {
-                    favori.EskiFiyat = urun.IndirimliFiyat ?? urun.Fiyat;
+                    favori.EskiFiyat = urun.EtkinFiyat;
                 }
             }
             else
             {
-                // If disabling, clear the price tracking fields
                 favori.EskiFiyat = null;
                 favori.SonBildirimTarihi = null;
             }

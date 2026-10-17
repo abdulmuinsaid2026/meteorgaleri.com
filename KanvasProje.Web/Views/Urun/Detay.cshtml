@@ -9,9 +9,19 @@
     var currencySymbol = string.IsNullOrWhiteSpace(siteSettings.ParaBirimi) ? "TL" : siteSettings.ParaBirimi;
 
     // --- ÖZEL ÖLÇÜ KONTROLÜ (Sadece Baskılı Halı ve Duvar Kağıdı için) ---
-    var isHali = Model.KategoriId == 34 || Model.Kategori?.Slug == "baskili-hali" || Model.UrunTipi == "BaskiliHali";
-    var isDuvarKagidi = Model.KategoriId == 31 || Model.Kategori?.Slug == "duvar-kagidi" || Model.UrunTipi == "DuvarKagidi";
+    var isHali = Model.KategoriId == 34
+        || string.Equals(Model.Kategori?.Slug, "baskili-hali", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(Model.Kategori?.ParentKategori?.Slug, "baskili-hali", StringComparison.OrdinalIgnoreCase)
+        || (Model.Kategori?.Ad?.Contains("halı", StringComparison.OrdinalIgnoreCase) ?? false)
+        || string.Equals(Model.UrunTipi, "BaskiliHali", StringComparison.OrdinalIgnoreCase);
+    var isDuvarKagidi = Model.KategoriId == 31
+        || string.Equals(Model.Kategori?.Slug, "duvar-kagidi", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(Model.Kategori?.ParentKategori?.Slug, "duvar-kagidi", StringComparison.OrdinalIgnoreCase)
+        || (Model.Kategori?.Ad?.Contains("duvar kağıdı", StringComparison.OrdinalIgnoreCase) ?? false)
+        || string.Equals(Model.UrunTipi, "DuvarKagidi", StringComparison.OrdinalIgnoreCase);
     var isOzelOlcuUrunu = isHali || isDuvarKagidi;
+    var urunIndirimYuzdesi = KanvasProje.Core.Helpers.FiyatPolitikasiHelper.GetIndirimYuzdesi(Model.KategoriId, Model.Kategori);
+    var urunIndirimCarpani = KanvasProje.Core.Helpers.FiyatPolitikasiHelper.GetCarpan(Model.KategoriId, Model.Kategori);
 
     decimal metrekareBirimFiyati = 0;
     if (isHali)
@@ -307,11 +317,11 @@ ViewData["SeoTitle"] = !string.IsNullOrWhiteSpace(Model.SeoTitle) ? Model.SeoTit
 
 
 <!-- Yorum Yapma Modal -->
-<div class="fixed inset-0 z-50 hidden bg-black bg-opacity-50 items-center justify-center" id="commentModal">
+<div class="fixed inset-0 z-50 hidden bg-black/50 items-center justify-center p-4" id="commentModal" role="dialog" aria-modal="true" aria-label="Ürünü değerlendir">
     <div class="bg-white rounded-2xl w-full max-w-md p-6 relative shadow-2xl border border-slate-200">
-        <button class="absolute top-4 right-4 text-slate-400 hover:text-slate-800" id="closeCommentModalBtn"><i class="fas fa-times text-lg"></i></button>
+        <button type="button" class="absolute top-4 right-4 text-slate-400 hover:text-slate-800" id="closeCommentModalBtn" aria-label="Kapat"><i class="fas fa-times text-lg"></i></button>
         <h5 class="font-serif text-2xl font-bold text-slate-900 mb-6">Ürünü Değerlendir</h5>
-        <form action="/Urun/YorumYap" method="post">
+        <form id="commentForm" action="/Urun/YorumYap" method="post">
             @Html.AntiForgeryToken()
             <input type="hidden" name="UrunId" value="@Model.Id" />
             
@@ -341,16 +351,16 @@ ViewData["SeoTitle"] = !string.IsNullOrWhiteSpace(Model.SeoTitle) ? Model.SeoTit
             {
                 <div class="mb-4">
                     <label class="block text-xs uppercase tracking-wider text-slate-900 font-bold mb-1.5">Adınız Soyadınız</label>
-                    <input type="text" name="AdSoyad" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-[#00A4D3] focus:border-[#00A4D3]" required>
+                    <input type="text" name="AdSoyad" maxlength="100" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-[#00A4D3] focus:border-[#00A4D3]" required>
                 </div>
             }
 
             <div class="mb-6">
                 <label class="block text-xs uppercase tracking-wider text-slate-900 font-bold mb-1.5">Yorumunuz</label>
-                <textarea name="YorumMetni" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-[#00A4D3] focus:border-[#00A4D3]" rows="4" required></textarea>
+                <textarea name="YorumMetni" minlength="2" maxlength="2000" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-[#00A4D3] focus:border-[#00A4D3]" rows="4" required></textarea>
             </div>
 
-            <button type="submit" class="w-full bg-[#00A4D3] hover:bg-[#0284C7] text-white text-xs font-bold tracking-widest uppercase py-3.5 rounded-xl shadow-md transition-colors">Yorumu Gönder</button>
+            <button type="submit" id="commentSubmitBtn" class="w-full bg-[#00A4D3] hover:bg-[#0284C7] text-white text-xs font-bold tracking-widest uppercase py-3.5 rounded-xl shadow-md transition-colors disabled:opacity-50">Yorumu Gönder</button>
         </form>
     </div>
 </div>
@@ -517,7 +527,7 @@ ViewData["SeoTitle"] = !string.IsNullOrWhiteSpace(Model.SeoTitle) ? Model.SeoTit
                                 var varyantMedyaUrl = !string.IsNullOrWhiteSpace(varyant.GorselUrl) ? varyant.GorselUrl : (varyantMedyaHaritasi.TryGetValue(varyant.Id, out var eslesen) ? eslesen : string.Empty);
                                 var varyantUretimSuresi = varyant.UretimSuresiGun > 0 ? varyant.UretimSuresiGun : Model.UretimSuresiGun;
                                 var cerceveliBase = KanvasProje.Core.Helpers.KanvasFiyatListesi.TryGetFiyat(varyant.Olcu, out var kanvasFiyati) ? kanvasFiyati.CerceveliKargoDahil : 0;
-                                var cerceveliFiyat = cerceveliBase > 0 ? Math.Round(cerceveliBase * 0.80m, 0) : 0;
+                                var cerceveliFiyat = cerceveliBase > 0 ? KanvasProje.Core.Helpers.FiyatPolitikasiHelper.ApplyDiscount(cerceveliBase, Model.KategoriId, Model.Kategori, 0) : 0;
                                 var aydinlatmaAnahtari = AydinlatmaAnahtari(varyant);
                                 var varyantEtiketi = $"{varyant.Olcu} / {AydinlatmaBasligi(aydinlatmaAnahtari)}";
                                 <input type="radio" id="variant-@varyant.Id" name="productVariant" value="@varyant.Id" class="variant-radio" checked="@(varyant.Id == varsayilanSecenek?.Id ? "checked" : null)" disabled="@(!varyantSatinAlinabilir ? "disabled" : null)" data-price="@varyant.EtkinFiyat.ToString(System.Globalization.CultureInfo.InvariantCulture)" data-framed-price="@cerceveliFiyat.ToString(System.Globalization.CultureInfo.InvariantCulture)" data-oldprice="@varyant.EskiFiyat.ToString(System.Globalization.CultureInfo.InvariantCulture)" data-framed-oldprice="@cerceveliBase.ToString(System.Globalization.CultureInfo.InvariantCulture)" data-stock="@varyant.StokAdedi" data-preorder="@varyant.OnSipariseAcikMi.ToString().ToLowerInvariant()" data-production="@varyantUretimSuresi" data-image="@varyantMedyaUrl" data-label="@varyantEtiketi" data-olcu="@varyant.Olcu" data-size="@varyant.Olcu" data-lighting="@aydinlatmaAnahtari" />
@@ -539,7 +549,7 @@ ViewData["SeoTitle"] = !string.IsNullOrWhiteSpace(Model.SeoTitle) ? Model.SeoTit
                                 if (string.IsNullOrWhiteSpace(cleanVb)) cleanVb = rawVb.Split('/')[0].Trim();
                                 var varyantUretimSuresi = varyant.UretimSuresiGun > 0 ? varyant.UretimSuresiGun : Model.UretimSuresiGun;
                                 var cerceveliBase = KanvasProje.Core.Helpers.KanvasFiyatListesi.TryGetFiyat(varyant.Olcu, out var kanvasFiyati) ? kanvasFiyati.CerceveliKargoDahil : 0;
-                                var cerceveliFiyat = cerceveliBase > 0 ? Math.Round(cerceveliBase * 0.80m, 0) : 0;
+                                var cerceveliFiyat = cerceveliBase > 0 ? KanvasProje.Core.Helpers.FiyatPolitikasiHelper.ApplyDiscount(cerceveliBase, Model.KategoriId, Model.Kategori, 0) : 0;
                                 var checkedAttr = varyant.Id == varsayilanSecenek?.Id ? "checked" : null;
                                 var disabledAttr = !varyantSatinAlinabilir ? "disabled" : null;
 
@@ -568,7 +578,7 @@ ViewData["SeoTitle"] = !string.IsNullOrWhiteSpace(Model.SeoTitle) ? Model.SeoTit
                                 </div>
                             </div>
                             <span class="inline-flex items-center self-start sm:self-auto text-xs font-semibold px-2.5 py-1 bg-sky-100/90 text-sky-800 rounded-full">
-                                Birim: @metrekareBirimFiyati.ToString("N0") TL / m²
+                                Birim: @metrekareBirimFiyati.ToString("N0") @currencySymbol / m²
                             </span>
                         </div>
 
@@ -614,7 +624,7 @@ ViewData["SeoTitle"] = !string.IsNullOrWhiteSpace(Model.SeoTitle) ? Model.SeoTit
                             <div class="text-right">
                                 <span class="text-[11px] text-slate-500 block font-medium">Özel Ölçü Tutarı</span>
                                 <span id="customPriceDisplay" class="text-lg sm:text-xl font-black text-[#E30613]">
-                                    @((Math.Round(3.68m * metrekareBirimFiyati, 2)).ToString("N2")) @currencySymbol
+                                    @(KanvasProje.Core.Helpers.FiyatPolitikasiHelper.ApplyDiscount(3.68m * metrekareBirimFiyati, Model.KategoriId, Model.Kategori, 2).ToString("N2")) @currencySymbol
                                 </span>
                             </div>
                         </div>
@@ -807,7 +817,7 @@ ViewData["SeoTitle"] = !string.IsNullOrWhiteSpace(Model.SeoTitle) ? Model.SeoTit
                         <i class="fas fa-file-alt text-[#00A4D3]"></i> Ürün Açıklaması
                     </h2>
                     <div class="prose prose-sm max-w-none text-slate-600 leading-relaxed">
-                        @Html.Raw(Model.Aciklama ?? "Bu ürün için açıklama girilmemiştir.")
+                        @Html.Raw(KanvasProje.Core.Helpers.HtmlSanitizerHelper.Sanitize(Model.Aciklama ?? "Bu ürün için açıklama girilmemiştir."))
                     </div>
                 </div>
 
@@ -893,31 +903,42 @@ ViewData["SeoTitle"] = !string.IsNullOrWhiteSpace(Model.SeoTitle) ? Model.SeoTit
                             }
                         </div>
                         <p class="text-sm text-slate-500 mb-4">Toplam @yorumSayisi değerlendirme</p>
-                        <button class="w-full border border-[#00A4D3] text-[#00A4D3] text-xs font-bold tracking-wider uppercase py-2.5 rounded-xl hover:bg-[#00A4D3] hover:text-white transition-colors" id="openCommentModalBtn">
+                        <button type="button" class="w-full border border-[#00A4D3] text-[#00A4D3] text-xs font-bold tracking-wider uppercase py-2.5 rounded-xl hover:bg-[#00A4D3] hover:text-white transition-colors" id="openCommentModalBtn">
                             Yorum Yap
                         </button>
                     </div>
 
-                    <div class="space-y-4">
-                        @foreach (var yorum in yorumlar.Take(3))
+                    <div class="space-y-4 max-h-[600px] overflow-y-auto pr-1 custom-scrollbar">
+                        @foreach (var yorum in yorumlar)
                         {
                             <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs">
                                 <div class="flex items-start justify-between mb-2">
                                     <div class="flex items-center gap-3">
-                                        <div class="w-10 h-10 rounded-full bg-sky-50 text-[#00A4D3] flex items-center justify-center font-bold text-sm">
+                                        <div class="w-10 h-10 rounded-full bg-sky-50 text-[#00A4D3] flex items-center justify-center font-bold text-sm uppercase">
                                             @{
-                                                var names = yorum.AdSoyad.Split(' ');
-                                                string initials = "";
-                                                if (names.Length > 0) { initials += names[0][0]; }
-                                                if (names.Length > 1) { initials += names[names.Length - 1][0]; }
-                                                else if (names[0].Length > 1) { initials += names[0][1]; }
+                                                var safeAdSoyad = string.IsNullOrWhiteSpace(yorum.AdSoyad) ? "Müşteri" : yorum.AdSoyad.Trim();
+                                                var names = safeAdSoyad.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                                                string initials = "M";
+                                                if (names.Length > 0 && names[0].Length > 0)
+                                                {
+                                                    initials = names[0][0].ToString();
+                                                    if (names.Length > 1 && names[^1].Length > 0)
+                                                    {
+                                                        initials += names[^1][0];
+                                                    }
+                                                    else if (names[0].Length > 1)
+                                                    {
+                                                        initials += names[0][1];
+                                                    }
+                                                }
+                                                var clampedPuan = Math.Clamp(yorum.Puan, 1, 5);
                                             }
                                             @initials
                                         </div>
                                         <div>
-                                            <h5 class="text-sm font-bold text-slate-900">@yorum.AdSoyad</h5>
+                                            <h5 class="text-sm font-bold text-slate-900">@safeAdSoyad</h5>
                                             <div class="text-amber-400 text-[10px]">
-                                                @for (int i = 0; i < yorum.Puan; i++) { <i class="fas fa-star"></i> }
+                                                @for (int i = 0; i < clampedPuan; i++) { <i class="fas fa-star"></i> }
                                             </div>
                                         </div>
                                     </div>
@@ -937,7 +958,7 @@ ViewData["SeoTitle"] = !string.IsNullOrWhiteSpace(Model.SeoTitle) ? Model.SeoTit
                         <i class="far fa-comments fa-3x text-slate-300 mb-4"></i>
                         <h5 class="text-slate-900 font-bold mb-2">Henüz yorum yapılmamış</h5>
                         <p class="text-sm text-slate-500 mb-6">Bu ürün için ilk yorumu siz yapın!</p>
-                        <button class="bg-[#00A4D3] hover:bg-[#0284C7] text-white text-xs font-bold tracking-wider uppercase px-6 py-2.5 rounded-xl shadow-md transition-colors" id="openCommentModalBtnEmpty">
+                        <button type="button" class="bg-[#00A4D3] hover:bg-[#0284C7] text-white text-xs font-bold tracking-wider uppercase px-6 py-2.5 rounded-xl shadow-md transition-colors" id="openCommentModalBtnEmpty">
                             İlk Yorumu Yap
                         </button>
                     </div>
@@ -962,20 +983,20 @@ ViewData["SeoTitle"] = !string.IsNullOrWhiteSpace(Model.SeoTitle) ? Model.SeoTit
             <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 md:gap-6">
                 @foreach (var item in benzerUrunler)
                 {
-                    decimal itemFiyat = item.IndirimliFiyat ?? item.Fiyat;
-                    decimal? bEskiFiyat = (item.IndirimliFiyat != null && item.IndirimliFiyat < item.Fiyat) ? item.Fiyat : null;
+                    decimal itemFiyat = item.EtkinFiyat;
+                    decimal? bEskiFiyat = item.IndirimVarMi ? item.Fiyat : null;
                     string bProductUrl = !string.IsNullOrEmpty(item.Slug) ? $"/Urun/Detay/{item.Slug}-{item.Id}" : $"/Urun/Detay/{KanvasProje.Core.Helpers.SlugHelper.GenerateSlug(item.Baslik)}-{item.Id}";
-                    string gorsel = !string.IsNullOrEmpty(item.AnaGorselUrl) ? item.AnaGorselUrl : "/img/products/placeholder.webp";
+                    string gorsel = !string.IsNullOrEmpty(item.AnaGorselUrl) ? item.AnaGorselUrl : fallbackGorsel;
                     <a href="@bProductUrl" class="group block bg-white p-3 rounded-xl border border-slate-200 hover:border-[#00A4D3] shadow-2xs hover:shadow-md transition-all">
                         <div class="relative overflow-hidden mb-3 aspect-square bg-[#F8FAFC] rounded-lg">
-                            <img alt="@item.Baslik" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src="@gorsel" loading="lazy" decoding="async" />
+                            <img alt="@item.Baslik" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src="@gorsel" loading="lazy" decoding="async" onerror="this.onerror=null; this.src='@fallbackGorsel';" />
                         </div>
                         <h3 class="text-xs font-bold text-slate-800 tracking-wide line-clamp-2 mb-1 group-hover:text-[#00A4D3] transition-colors">@item.Baslik</h3>
                         <div class="flex items-center gap-2">
-                            <span class="text-sm font-extrabold text-[#E30613]">@itemFiyat.ToString("N2") TL</span>
+                            <span class="text-sm font-extrabold text-[#E30613]">@itemFiyat.ToString("N2") @currencySymbol</span>
                             @if (bEskiFiyat != null)
                             {
-                                <span class="text-xs text-slate-400 line-through">@bEskiFiyat?.ToString("N2") TL</span>
+                                <span class="text-xs text-slate-400 line-through">@bEskiFiyat?.ToString("N2") @currencySymbol</span>
                             }
                         </div>
                     </a>
@@ -991,6 +1012,8 @@ ViewData["SeoTitle"] = !string.IsNullOrWhiteSpace(Model.SeoTitle) ? Model.SeoTit
 const PRODUCT_CURRENCY = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(currencySymbol));
 const METREKARE_BIRIM_FIYATI = @(metrekareBirimFiyati.ToString(System.Globalization.CultureInfo.InvariantCulture));
 const IS_OZEL_OLCU_URUNU = @(isOzelOlcuUrunu ? "true" : "false");
+const URUN_INDIRIM_YUZDESI = @(urunIndirimYuzdesi.ToString(System.Globalization.CultureInfo.InvariantCulture));
+const URUN_INDIRIM_CARPANI = @(urunIndirimCarpani.ToString(System.Globalization.CultureInfo.InvariantCulture));
 let isCustomSizeMode = false;
 
 function switchToStandardSize() {
@@ -1045,7 +1068,7 @@ function calculateCustomSizePrice() {
     const effectiveM2 = Math.max(0.25, m2);
     const adet = parseInt(document.getElementById('productQuantity')?.value) || 1;
     const birimCustomBasePrice = Math.round(effectiveM2 * METREKARE_BIRIM_FIYATI * 100) / 100;
-    const birimCustomPrice = Math.round(birimCustomBasePrice * 0.80 * 100) / 100;
+    const birimCustomPrice = Math.round(birimCustomBasePrice * URUN_INDIRIM_CARPANI * 100) / 100;
     const totalCustomPrice = Math.round(birimCustomPrice * adet * 100) / 100;
     const totalCustomOldPrice = Math.round(birimCustomBasePrice * adet * 100) / 100;
 
@@ -1065,13 +1088,18 @@ function calculateCustomSizePrice() {
 
     const oldPriceDisplay = document.getElementById('oldPriceDisplay');
     const discountBadge = document.getElementById('discountBadge');
-    if (oldPriceDisplay) {
-        oldPriceDisplay.innerHTML = `${totalCustomOldPrice.toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} ${PRODUCT_CURRENCY}`;
-        oldPriceDisplay.classList.remove('hidden');
-    }
-    if (discountBadge) {
-        discountBadge.innerHTML = '%20 İndirim';
-        discountBadge.classList.remove('hidden');
+    if (URUN_INDIRIM_YUZDESI > 0 && totalCustomOldPrice > totalCustomPrice) {
+        if (oldPriceDisplay) {
+            oldPriceDisplay.innerHTML = `${totalCustomOldPrice.toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} ${PRODUCT_CURRENCY}`;
+            oldPriceDisplay.classList.remove('hidden');
+        }
+        if (discountBadge) {
+            discountBadge.innerHTML = `%${Math.round(URUN_INDIRIM_YUZDESI)} İndirim`;
+            discountBadge.classList.remove('hidden');
+        }
+    } else {
+        if (oldPriceDisplay) oldPriceDisplay.classList.add('hidden');
+        if (discountBadge) discountBadge.classList.add('hidden');
     }
 
     const summaryOlcu = document.getElementById('summaryOlcu');
@@ -1126,13 +1154,21 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    const commentModal = document.getElementById('commentModal');
+    const closeCommentModal = () => {
+        if (commentModal) {
+            commentModal.classList.add('hidden');
+            commentModal.classList.remove('flex');
+        }
+    };
+
     window.addEventListener('keydown', event => {
         if (event.key === 'Escape' || event.code === 'Escape') {
             closeProductLightbox();
+            closeCommentModal();
         }
     }, true);
 
-    const commentModal = document.getElementById('commentModal');
     if (commentModal) {
         const openBtns = [document.getElementById('openCommentModalBtn'), document.getElementById('openCommentModalBtnEmpty')];
         openBtns.forEach(btn => btn && btn.addEventListener('click', () => {
@@ -1142,9 +1178,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const closeCommentBtn = document.getElementById('closeCommentModalBtn');
         if (closeCommentBtn) {
-            closeCommentBtn.addEventListener('click', () => {
-                commentModal.classList.add('hidden');
-                commentModal.classList.remove('flex');
+            closeCommentBtn.addEventListener('click', closeCommentModal);
+        }
+
+        commentModal.addEventListener('click', event => {
+            if (event.target === commentModal) {
+                closeCommentModal();
+            }
+        });
+
+        const commentForm = document.getElementById('commentForm');
+        const commentSubmitBtn = document.getElementById('commentSubmitBtn');
+        if (commentForm && commentSubmitBtn) {
+            commentForm.addEventListener('submit', () => {
+                commentSubmitBtn.disabled = true;
+                commentSubmitBtn.textContent = 'Gönderiliyor...';
             });
         }
 

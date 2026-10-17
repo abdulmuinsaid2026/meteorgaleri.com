@@ -116,6 +116,10 @@
                 @foreach (var item in Model)
                 {
                     var optionLabel = FormatCartOptionLabel(item.SecenekAdi);
+                    var itemSlug = !string.IsNullOrWhiteSpace(item.Urun?.Slug)
+                        ? item.Urun.Slug
+                        : KanvasProje.Core.Helpers.SlugHelper.GenerateSlug(item.UrunBaslik ?? "urun");
+                    var itemDetayUrl = $"/Urun/Detay/{itemSlug}-{item.UrunId}";
 
                     <article class="bg-white border border-slate-200 rounded-xl p-4 flex gap-4 relative shadow-2xs">
                         <!-- Sil Butonu -->
@@ -128,13 +132,13 @@
                         </form>
 
                         <!-- Ürün Görseli -->
-                        <a href="/Urun/Detay/@item.UrunId" class="flex-shrink-0 w-24 h-24 bg-[#F8FAFC] border border-slate-200 rounded-xl overflow-hidden block">
+                        <a href="@itemDetayUrl" class="flex-shrink-0 w-24 h-24 bg-[#F8FAFC] border border-slate-200 rounded-xl overflow-hidden block">
                             <img src="@item.UrunResimUrl" class="w-full h-full object-cover" alt="@item.UrunBaslik" loading="lazy" decoding="async" />
                         </a>
 
                         <!-- Ürün Bilgisi -->
                         <div class="flex-1 min-w-0 pr-6">
-                            <a href="/Urun/Detay/@item.UrunId" class="font-bold text-sm text-slate-900 hover:text-[#00A4D3] transition-colors line-clamp-2 block mb-1">
+                            <a href="@itemDetayUrl" class="font-bold text-sm text-slate-900 hover:text-[#00A4D3] transition-colors line-clamp-2 block mb-1">
                                 @item.UrunBaslik
                             </a>
                             @if (!string.IsNullOrWhiteSpace(optionLabel))

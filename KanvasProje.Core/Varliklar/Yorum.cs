@@ -15,10 +15,11 @@ namespace KanvasProje.Core.Varliklar
         [StringLength(50)]
         public string AdSoyad { get; set; } = string.Empty; // Bot ise "Ahmet K." gibi yazacağız
 
-        [Required]
+        [Required(ErrorMessage = "Yorum metni zorunludur.")]
+        [StringLength(2000, MinimumLength = 2, ErrorMessage = "Yorum metni 2 ile 2000 karakter arasında olmalıdır.")]
         public string YorumMetni { get; set; } = string.Empty;
 
-        [Range(1, 5)]
+        [Range(1, 5, ErrorMessage = "Puan 1 ile 5 arasında olmalıdır.")]
         public int Puan { get; set; } // 1 ile 5 arası
 
         public bool OnayliMi { get; set; } // Admin onayı

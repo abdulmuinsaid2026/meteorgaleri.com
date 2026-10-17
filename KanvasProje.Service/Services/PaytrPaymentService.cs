@@ -139,8 +139,8 @@ namespace KanvasProje.Service.Services
                 var responseBody = await response.Content.ReadAsStringAsync();
 
                 _logger.LogInformation(
-                    "PayTR token response. OrderId={OrderId}, StatusCode={StatusCode}, Body={Body}",
-                    request.OrderId, response.StatusCode, responseBody);
+                    "PayTR token response. OrderId={OrderId}, StatusCode={StatusCode}",
+                    request.OrderId, response.StatusCode);
 
                 var result = JsonSerializer.Deserialize<PaytrTokenResponse>(responseBody, new JsonSerializerOptions
                 {
@@ -150,8 +150,8 @@ namespace KanvasProje.Service.Services
                 if (result?.Status == "success" && !string.IsNullOrWhiteSpace(result.Token))
                 {
                     _logger.LogInformation(
-                        "PayTR token alındı. OrderId={OrderId}, Token={Token}",
-                        request.OrderId, result.Token);
+                        "PayTR token alındı. OrderId={OrderId}",
+                        request.OrderId);
 
                     return new PaymentInitResult
                     {
@@ -220,8 +220,8 @@ namespace KanvasProje.Service.Services
                 if (!HashesMatch(expectedHash, request.Hash))
                 {
                     _logger.LogWarning(
-                        "PayTR hash doğrulama BAŞARISIZ! OrderId={OrderId}, Beklenen={Expected}, Gelen={Received}",
-                        request.MerchantOid, expectedHash, request.Hash);
+                        "PayTR hash doğrulama BAŞARISIZ! OrderId={OrderId}",
+                        request.MerchantOid);
 
                     return Task.FromResult(new PaymentVerifyResult
                     {

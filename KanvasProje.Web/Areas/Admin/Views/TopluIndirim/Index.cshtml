@@ -1,0 +1,157 @@
+@model KanvasProje.Web.Areas.Admin.Controllers.TopluIndirimViewModel
+@{
+    ViewData["Title"] = "Toplu İndirim Yönetimi";
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <h1 class="h3 mb-1 fw-bold">Toplu İndirim Yönetimi</h1>
+            <p class="text-muted mb-0">Mağaza genelindeki tüm ürünlere veya seçili kategorilere özel yüzdelik (%) indirim oranı tanımlayın.</p>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Genel Mağaza İndirimi Kartı -->
+        <div class="col-12 col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="rounded-3 bg-danger bg-opacity-10 text-danger p-3">
+                            <i class="fas fa-percent fa-lg"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-0 fw-bold">Tüm Mağaza Genel İndirimi</h5>
+                            <small class="text-muted">Özel oranı olmayan tüm kategorilerde geçerlidir</small>
+                        </div>
+                    </div>
+
+                    <form asp-action="GenelIndirimGuncelle" method="post">
+                        @Html.AntiForgeryToken()
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Genel İndirim Oranı (%)</label>
+                            <div class="input-group input-group-lg">
+                                <span class="input-group-text bg-light fw-bold">%</span>
+                                <input type="number"
+                                       name="genelIndirimYuzdesi"
+                                       value="@Model.GenelIndirimYuzdesi.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)"
+                                       min="0"
+                                       max="95"
+                                       step="1"
+                                       class="form-control fw-bold"
+                                       required />
+                            </div>
+                            <div class="form-text mt-2">
+                                Örneğin <strong>20</strong> girildiğinde 1.000 TL'lik ürün ve varyantlar vitrin, liste, detay ve sepette <strong>800 TL (%20 İndirim)</strong> olarak satılır. İndirimi kapatmak için <strong>0</strong> girebilirsiniz.
+                            </div>
+                        </div>
+
+                        <div class="d-flex flex-wrap gap-2 mb-4">
+                            @foreach (var hizliOran in new[] { 0, 10, 15, 20, 25, 30, 40, 50 })
+                            {
+                                <button type="button"
+                                        class="btn btn-sm @(Model.GenelIndirimYuzdesi == hizliOran ? "btn-danger" : "btn-outline-secondary")"
+                                        onclick="document.querySelector('input[name=genelIndirimYuzdesi]').value='@hizliOran'">
+                                    %@hizliOran
+                                </button>
+                            }
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
+                            <i class="fas fa-check me-2"></i>Genel İndirimi Uygula
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Kategori Bazlı Özel İndirim Tablosu -->
+        <div class="col-12 col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div>
+                        <h5 class="mb-0 fw-bold">Kategoriye Özel İndirim Oranları</h5>
+                        <small class="text-muted">Boş bırakılan kategoriler otomatik olarak Genel Mağaza İndirimini (%@Model.GenelIndirimYuzdesi.ToString("0.##")) kullanır.</small>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <form asp-action="KategoriIndirimleriniGuncelle" method="post">
+                        @Html.AntiForgeryToken()
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="ps-4">Kategori</th>
+                                        <th>Üst Kategori</th>
+                                        <th class="text-center">Ürün Sayısı</th>
+                                        <th class="text-center">Etkin Oran</th>
+                                        <th style="width: 220px;" class="pe-4">Özel İndirim (%)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @for (var i = 0; i < Model.Kategoriler.Count; i++)
+                                    {
+                                        var kat = Model.Kategoriler[i];
+                                        var etkinOran = kat.IndirimYuzdesi ?? Model.GenelIndirimYuzdesi;
+                                        <tr>
+                                            <td class="ps-4 fw-semibold">
+                                                @kat.Ad
+                                                @if (!kat.AktifMi)
+                                                {
+                                                    <span class="badge bg-secondary ms-1">Pasif</span>
+                                                }
+                                            </td>
+                                            <td class="text-muted">@(kat.UstKategoriAdi ?? "Ana Kategori")</td>
+                                            <td class="text-center">
+                                                <span class="badge bg-light text-dark border">@kat.UrunSayisi</span>
+                                            </td>
+                                            <td class="text-center">
+                                                @if (kat.IndirimYuzdesi.HasValue)
+                                                {
+                                                    <span class="badge bg-danger">%@kat.IndirimYuzdesi.Value.ToString("0.##") (Özel)</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-info text-dark">%@etkinOran.ToString("0.##") (Genel)</span>
+                                                }
+                                            </td>
+                                            <td class="pe-4">
+                                                <input type="hidden" name="girdiler[@i].KategoriId" value="@kat.Id" />
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text">%</span>
+                                                    <input type="number"
+                                                           name="girdiler[@i].IndirimYuzdesi"
+                                                           value="@(kat.IndirimYuzdesi.HasValue ? kat.IndirimYuzdesi.Value.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) : "")"
+                                                           placeholder="Genel (%@Model.GenelIndirimYuzdesi.ToString("0.##"))"
+                                                           min="0"
+                                                           max="95"
+                                                           step="1"
+                                                           class="form-control" />
+                                                    @if (kat.IndirimYuzdesi.HasValue)
+                                                    {
+                                                        <button type="button"
+                                                                class="btn btn-outline-secondary"
+                                                                title="Genel indirime döndür"
+                                                                onclick="this.previousElementSibling.value=''">
+                                                            <i class="fas fa-rotate-left"></i>
+                                                        </button>
+                                                    }
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="card-footer bg-white py-3 px-4 d-flex justify-content-end">
+                            <button type="submit" class="btn btn-success fw-semibold px-4">
+                                <i class="fas fa-save me-2"></i>Kategori İndirimlerini Kaydet
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

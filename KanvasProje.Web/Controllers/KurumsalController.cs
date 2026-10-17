@@ -29,7 +29,9 @@ namespace KanvasProje.Web.Controllers
         [Route("Kurumsal/Detay/{slug}")]
         public async Task<IActionResult> Detay(string slug)
         {
-            var sayfa = await _context.KurumsalSayfalar.FirstOrDefaultAsync(x => x.UrlSlug == slug);
+            var sayfa = await _context.KurumsalSayfalar
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.UrlSlug == slug && !x.SilindiMi);
             if (sayfa == null)
             {
                 return NotFound();
@@ -54,14 +56,35 @@ namespace KanvasProje.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> IletisimGonder(IletisimMesaj model)
+        [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("auth")]
+        public async Task<IActionResult> IletisimGonder([Bind("AdSoyad,Email,Konu,Mesaj")] IletisimMesaj model)
         {
-            if (!ModelState.IsValid)
+            var isAjax = string.Equals(Request.Headers["X-Requested-With"], "XMLHttpRequest", StringComparison.OrdinalIgnoreCase)
+                || Request.Headers.Accept.Any(a => a != null && a.Contains("application/json", StringComparison.OrdinalIgnoreCase));
+
+            model.AdSoyad = model.AdSoyad?.Trim() ?? string.Empty;
+            model.Email = model.Email?.Trim() ?? string.Empty;
+            model.Konu = model.Konu?.Trim() ?? string.Empty;
+            model.Mesaj = model.Mesaj?.Trim() ?? string.Empty;
+
+            if (!ModelState.IsValid ||
+                string.IsNullOrWhiteSpace(model.AdSoyad) ||
+                string.IsNullOrWhiteSpace(model.Email) ||
+                string.IsNullOrWhiteSpace(model.Konu) ||
+                string.IsNullOrWhiteSpace(model.Mesaj))
             {
-                return Json(new { success = false, message = "Lütfen tüm alanları eksiksiz doldurun." });
+                const string errMsg = "Lütfen tüm alanları eksiksiz doldurun.";
+                if (isAjax)
+                {
+                    return Json(new { success = false, message = errMsg });
+                }
+
+                TempData["Hata"] = errMsg;
+                return RedirectToAction(nameof(Iletisim));
             }
 
-            model.Tarih = DateTime.UtcNow.AddHours(3);
+            model.Id = 0;
+            model.Tarih = DateTime.UtcNow;
             model.IpAdresi = Request.HttpContext.Connection.RemoteIpAddress?.ToString();
             model.OkunduMu = false;
 
@@ -99,14 +122,21 @@ namespace KanvasProje.Web.Controllers
                 }
             }
 
-            return Json(new { success = true, message = "Mesajınız başarıyla iletildi. En kısa sürede dönüş yapacağız." });
+            const string okMsg = "Mesajınız başarıyla iletildi. En kısa sürede dönüş yapacağız.";
+            if (isAjax)
+            {
+                return Json(new { success = true, message = okMsg });
+            }
+
+            TempData["Basari"] = okMsg;
+            return RedirectToAction(nameof(Iletisim));
         }
 
         public IActionResult SSS() => View();
         public IActionResult BankaHesaplari() => View();
         public IActionResult Gizlilik() => View();
         public IActionResult KullaniciSozlesmesi() => View();
-        public IActionResult MesafeliSatis() => RedirectToAction("MesafeliSatis", "Sozlesmeler");
+        public IActionResult MesafeliSatis() => View();
         public IActionResult IadeKosullari() => View();
     }
 }

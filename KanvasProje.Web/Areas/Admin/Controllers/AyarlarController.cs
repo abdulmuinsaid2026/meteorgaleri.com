@@ -45,14 +45,6 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
             {
                 var paytrKeyKayitli = _siteSettingsService.HasPaytrMerchantKey();
                 var paytrSaltKayitli = _siteSettingsService.HasPaytrMerchantSalt();
-                var currentSettings = _siteSettingsService.GetSettings();
-
-                // View'da Iyzico alanları bulunmadığı için mevcut Iyzico ayarlarını koru
-                model.IyzicoAktifMi = currentSettings.IyzicoAktifMi;
-                model.IyzicoTestModu = currentSettings.IyzicoTestModu;
-                model.IyzicoApiKey = currentSettings.IyzicoApiKey;
-                model.IyzicoBaseUrl = currentSettings.IyzicoBaseUrl;
-                model.IyzicoCallbackUrl = currentSettings.IyzicoCallbackUrl;
 
                 if (model.PaytrAktifMi)
                 {

@@ -7,7 +7,7 @@ namespace KanvasProje.Web.Models
         public string Token { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Yeni şifre zorunludur")]
-        [MinLength(6, ErrorMessage = "Şifre en az 6 karakter olmalı")]
+        [MinLength(8, ErrorMessage = "Şifre en az 8 karakter olmalı (büyük/küçük harf, rakam ve özel karakter içermelidir)")]
         public string YeniSifre { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Şifre tekrarı zorunludur")]

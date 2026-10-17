@@ -56,11 +56,11 @@ namespace KanvasProje.Core.Varliklar
         public decimal EtkinFiyat =>
             IndirimliFiyat.HasValue && IndirimliFiyat.Value > 0 && IndirimliFiyat.Value < Fiyat
                 ? IndirimliFiyat.Value
-                : Fiyat;
+                : KanvasProje.Core.Helpers.FiyatPolitikasiHelper.ApplyDiscount(Fiyat, KategoriId, Kategori, 0);
 
         [NotMapped]
         public bool IndirimVarMi =>
-            IndirimliFiyat.HasValue && IndirimliFiyat.Value > 0 && IndirimliFiyat.Value < Fiyat;
+            Fiyat > 0 && EtkinFiyat < Fiyat;
 
         [NotMapped]
         public int ToplamStok =>

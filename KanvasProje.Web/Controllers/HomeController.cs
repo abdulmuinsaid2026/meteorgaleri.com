@@ -8,6 +8,7 @@ using KanvasProje.Web.Models;
 using KanvasProje.Service.Services;
 using KanvasProje.Web.ViewComponents;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using System.Net;
 using System.Net.Mail;
@@ -38,6 +39,8 @@ namespace KanvasProje.Web.Controllers
 
         public async Task<IActionResult> Index()
         {
+            _ = _siteSettingsService.GetSettings();
+
             var aktifUrunler = _context.Urunler
                 .AsNoTracking()
                 .Include(u => u.Kategori)
@@ -51,25 +54,23 @@ namespace KanvasProje.Web.Controllers
 
             var secilenUrunler = new HashSet<int>();
 
-            var besParcaliKoleksiyon = await aktifUrunler
+            var besParcaliSorgu = aktifUrunler
                 .Where(u =>
-                    (EF.Functions.ILike(u.Baslik, "%5 Parça%") ||
-                     EF.Functions.ILike(u.Baslik, "%5 Parçalı%") ||
-                     EF.Functions.ILike(u.Aciklama ?? string.Empty, "%5 Parça%") ||
-                     EF.Functions.ILike(u.Etiketler ?? string.Empty, "%5 Parça%")) &&
-                    (EF.Functions.ILike(u.Baslik, "%güzel ahlak%") ||
-                     EF.Functions.ILike(u.Baslik, "%islam%") ||
-                     EF.Functions.ILike(u.Baslik, "%islami%") ||
-                     EF.Functions.ILike(u.Baslik, "%tarihi%") ||
-                     EF.Functions.ILike(u.Baslik, "%osmanlı%") ||
-                     EF.Functions.ILike(u.Baslik, "%ayet%") ||
-                     EF.Functions.ILike(u.Baslik, "%hadis%") ||
-                     EF.Functions.ILike(u.Etiketler ?? string.Empty, "%islam%") ||
-                     EF.Functions.ILike(u.Etiketler ?? string.Empty, "%tarihi%") ||
-                     (u.Kategori != null &&
-                      (EF.Functions.ILike(u.Kategori.Ad, "%islam%") ||
-                       EF.Functions.ILike(u.Kategori.Ad, "%tarihi%")))))
-                .OrderBy(u => u.Sira)
+                    EF.Functions.ILike(u.Baslik, "%5 Parça%") ||
+                    EF.Functions.ILike(u.Baslik, "%5 Parçalı%") ||
+                    EF.Functions.ILike(u.Etiketler ?? string.Empty, "%5 Parça%") ||
+                    u.UrunSecenek.Any(s => !s.SilindiMi && s.AktifMi && s.ParcaSayisi == 5));
+
+            var besParcaliKoleksiyon = await besParcaliSorgu
+                .OrderByDescending(u =>
+                    EF.Functions.ILike(u.Baslik, "%güzel ahlak%") ||
+                    EF.Functions.ILike(u.Baslik, "%islam%") ||
+                    EF.Functions.ILike(u.Baslik, "%islami%") ||
+                    EF.Functions.ILike(u.Baslik, "%tarihi%") ||
+                    EF.Functions.ILike(u.Baslik, "%osmanlı%") ||
+                    EF.Functions.ILike(u.Baslik, "%ayet%") ||
+                    EF.Functions.ILike(u.Baslik, "%hadis%"))
+                .ThenBy(u => u.Sira)
                 .ThenByDescending(u => u.OneCikanMi)
                 .ThenByDescending(u => u.GoruntulenmeSayisi)
                 .ThenByDescending(u => u.OlusturulmaTarihi)
@@ -77,19 +78,6 @@ namespace KanvasProje.Web.Controllers
                 .ToListAsync();
 
             secilenUrunler.UnionWith(besParcaliKoleksiyon.Select(x => x.Id));
-            await TamamlayiciUrunleriEkleAsync(
-                besParcaliKoleksiyon,
-                aktifUrunler
-                    .Where(u =>
-                        EF.Functions.ILike(u.Baslik, "%5 Parça%") ||
-                        EF.Functions.ILike(u.Baslik, "%5 Parçalı%") ||
-                        EF.Functions.ILike(u.Aciklama ?? string.Empty, "%5 Parça%") ||
-                        EF.Functions.ILike(u.Etiketler ?? string.Empty, "%5 Parça%"))
-                    .OrderBy(u => u.Sira)
-                    .ThenByDescending(u => u.GoruntulenmeSayisi)
-                    .ThenByDescending(u => u.OlusturulmaTarihi),
-                secilenUrunler,
-                15);
 
             var vitrinUrunleri = await aktifUrunler
                 .Where(u => (u.AnaSayfadaGoster || u.OneCikanMi || u.YeniUrunMu) && !secilenUrunler.Contains(u.Id))
@@ -107,38 +95,34 @@ namespace KanvasProje.Web.Controllers
                 10);
 
             var cokSatanlar = await aktifUrunler
-                .Where(u => (u.SatisSayisi > 0 || u.OneCikanMi) && !secilenUrunler.Contains(u.Id))
+                .Where(u => (u.SatisSayisi > 0 || u.OneCikanMi || u.GoruntulenmeSayisi > 0) && !secilenUrunler.Contains(u.Id))
                 .OrderByDescending(u => u.SatisSayisi)
+                .ThenByDescending(u => u.OneCikanMi)
                 .ThenByDescending(u => u.GoruntulenmeSayisi)
                 .ThenBy(u => u.Sira)
                 .Take(8)
                 .ToListAsync();
 
             secilenUrunler.UnionWith(cokSatanlar.Select(x => x.Id));
-            await TamamlayiciUrunleriEkleAsync(
-                cokSatanlar,
-                aktifUrunler.OrderByDescending(u => u.SatisSayisi).ThenBy(u => u.Sira),
-                secilenUrunler,
-                8);
 
+            var genelIndirimAktif = FiyatPolitikasiHelper.GenelIndirimYuzdesi > 0m;
             var firsatUrunleri = await aktifUrunler
                 .Where(u =>
-                    (u.KampanyaliMi || (u.IndirimliFiyat.HasValue && u.IndirimliFiyat > 0 && u.IndirimliFiyat < u.Fiyat)) &&
+                    (u.KampanyaliMi ||
+                     (u.IndirimliFiyat.HasValue && u.IndirimliFiyat > 0 && u.IndirimliFiyat < u.Fiyat) ||
+                     (genelIndirimAktif && u.Fiyat > 0) ||
+                     (u.Kategori != null && u.Kategori.IndirimYuzdesi.HasValue && u.Kategori.IndirimYuzdesi.Value > 0 && u.Fiyat > 0)) &&
                     !secilenUrunler.Contains(u.Id))
                 .OrderByDescending(u => u.KampanyaliMi)
+                .ThenByDescending(u => u.IndirimliFiyat.HasValue && u.IndirimliFiyat > 0 && u.IndirimliFiyat < u.Fiyat)
                 .ThenBy(u => u.IndirimliFiyat ?? u.Fiyat)
                 .ThenBy(u => u.Sira)
                 .Take(8)
                 .ToListAsync();
 
             secilenUrunler.UnionWith(firsatUrunleri.Select(x => x.Id));
-            await TamamlayiciUrunleriEkleAsync(
-                firsatUrunleri,
-                aktifUrunler.OrderBy(u => u.IndirimliFiyat ?? u.Fiyat).ThenBy(u => u.Sira),
-                secilenUrunler,
-                8);
 
-var kategoriler = await _context.Kategoriler
+            var kategoriler = await _context.Kategoriler
                 .AsNoTracking()
                 .Where(k => k.AktifMi && !k.SilindiMi && k.ParentKategoriId == null)
                 .OrderBy(k => k.Sira)
@@ -191,6 +175,7 @@ var kategoriler = await _context.Kategoriler
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [EnableRateLimiting("auth")]
         public async Task<IActionResult> BulteneAboneOl(string email)
         {
             email = (email ?? string.Empty).Trim().ToLowerInvariant();
@@ -203,35 +188,39 @@ var kategoriler = await _context.Kategoriler
             try
             {
                 var mevcutAbone = await _context.BultenAbonelikleri.FirstOrDefaultAsync(x => x.Email == email);
-            if (mevcutAbone?.AktifMi == true)
+                if (mevcutAbone?.AktifMi == true)
+                {
+                    return Json(new { success = false, message = "Bu e-posta adresi zaten bültene kayıtlı." });
+                }
+
+                if (mevcutAbone != null)
+                {
+                    mevcutAbone.AktifMi = true;
+                    mevcutAbone.KayitTarihi = DateTime.UtcNow;
+                    mevcutAbone.IpAdresi = Request.HttpContext.Connection.RemoteIpAddress?.ToString();
+                }
+                else
+                {
+                    var yeniAbone = new BultenAboneligi
+                    {
+                        Email = email,
+                        KayitTarihi = DateTime.UtcNow,
+                        AktifMi = true,
+                        IpAdresi = Request.HttpContext.Connection.RemoteIpAddress?.ToString()
+                    };
+
+                    _context.BultenAbonelikleri.Add(yeniAbone);
+                }
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException)
             {
                 return Json(new { success = false, message = "Bu e-posta adresi zaten bültene kayıtlı." });
-            }
-
-            if (mevcutAbone != null)
-            {
-                mevcutAbone.AktifMi = true;
-                mevcutAbone.KayitTarihi = DateTime.UtcNow.AddHours(3);
-                mevcutAbone.IpAdresi = Request.HttpContext.Connection.RemoteIpAddress?.ToString();
-            }
-            else
-            {
-                var yeniAbone = new BultenAboneligi
-                {
-                    Email = email,
-                    KayitTarihi = DateTime.UtcNow.AddHours(3),
-                    AktifMi = true,
-                    IpAdresi = Request.HttpContext.Connection.RemoteIpAddress?.ToString()
-                };
-
-                _context.BultenAbonelikleri.Add(yeniAbone);
-            }
-                await _context.SaveChangesAsync();
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Bulten aboneligi kaydedilemedi. Email: {Email}", email);
-                return Json(new { success = false, message = "Bulten aboneligi su anda kaydedilemedi. Lutfen kisa bir sure sonra tekrar deneyin." });
+                return Json(new { success = false, message = "Bülten aboneliği şu anda kaydedilemedi. Lütfen kısa bir süre sonra tekrar deneyin." });
             }
 
             var settings = _siteSettingsService.GetSettings();
@@ -255,20 +244,26 @@ var kategoriler = await _context.Kategoriler
 
             try
             {
-                const string recipientEmail = "canvasia.com.tr@gmail.com";
-                var ipAddress = Request.HttpContext.Connection.RemoteIpAddress?.ToString() ?? "-";
-                var adminMailIcerik = $@"
-                    <p>Bir kisi bultene kayit oldu.</p>
-                    <p><b>Abone e-posta:</b> {WebUtility.HtmlEncode(email)}</p>
-                    <p><b>IP:</b> {WebUtility.HtmlEncode(ipAddress)}</p>";
+                var recipientEmail = !string.IsNullOrWhiteSpace(settings.BildirimAliciEmail)
+                    ? settings.BildirimAliciEmail
+                    : settings.Email;
 
-                await _emailService.SendTemplateMailAsync(
-                    recipientEmail,
-                    "Yeni Bulten Aboneligi",
-                    "Operasyon Ekibi",
-                    adminMailIcerik,
-                    siteUrl,
-                    "Siteyi Incele");
+                if (!string.IsNullOrWhiteSpace(recipientEmail))
+                {
+                    var ipAddress = Request.HttpContext.Connection.RemoteIpAddress?.ToString() ?? "-";
+                    var adminMailIcerik = $@"
+                        <p>Bir kişi bültene kayıt oldu.</p>
+                        <p><b>Abone e-posta:</b> {WebUtility.HtmlEncode(email)}</p>
+                        <p><b>IP:</b> {WebUtility.HtmlEncode(ipAddress)}</p>";
+
+                    await _emailService.SendTemplateMailAsync(
+                        recipientEmail,
+                        "Yeni Bülten Aboneliği",
+                        "Operasyon Ekibi",
+                        adminMailIcerik,
+                        siteUrl,
+                        "Siteyi İncele");
+                }
             }
             catch (Exception ex)
             {
@@ -298,7 +293,7 @@ var kategoriler = await _context.Kategoriler
 
         public IActionResult Privacy()
         {
-            return View();
+            return RedirectPermanent("/Kurumsal/Gizlilik");
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

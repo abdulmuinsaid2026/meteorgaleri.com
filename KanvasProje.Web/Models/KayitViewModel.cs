@@ -15,7 +15,7 @@ namespace KanvasProje.Web.Models
         public string Sehir { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Şifre zorunludur")]
-        [MinLength(6, ErrorMessage = "Şifre en az 3 karakter olmalı")]
+        [MinLength(8, ErrorMessage = "Şifre en az 8 karakter olmalı (büyük/küçük harf, rakam ve özel karakter içermelidir)")]
         public string Sifre { get; set; } = string.Empty;
         
         [Compare("Sifre", ErrorMessage = "Şifreler uyuşmuyor")]

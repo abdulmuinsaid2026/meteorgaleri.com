@@ -22,28 +22,36 @@ namespace KanvasProje.Service
             _siteSettingsService = siteSettingsService;
         }
 
-        public async Task<Sepet> GetOrCreateSepetAsync(string? userId, string sessionId)
+        private async Task<Sepet?> GetExistingSepetAsync(string? userId, string sessionId)
         {
-            Sepet? sepet = null;
-
             if (!string.IsNullOrEmpty(userId))
             {
-                sepet = await _context.Sepetler
+                return await _context.Sepetler
                     .Include(s => s.SepetItems.Where(i => !i.SilindiMi))
                         .ThenInclude(i => i.Urun)
+                            .ThenInclude(u => u!.Kategori)
                     .Include(s => s.SepetItems.Where(i => !i.SilindiMi))
                         .ThenInclude(i => i.UrunSecenek)
                     .FirstOrDefaultAsync(s => s.AppUserId == userId && !s.SilindiMi);
             }
-            else
+
+            if (string.IsNullOrEmpty(sessionId))
             {
-                sepet = await _context.Sepetler
-                    .Include(s => s.SepetItems.Where(i => !i.SilindiMi))
-                        .ThenInclude(i => i.Urun)
-                    .Include(s => s.SepetItems.Where(i => !i.SilindiMi))
-                        .ThenInclude(i => i.UrunSecenek)
-                    .FirstOrDefaultAsync(s => s.SessionId == sessionId && !s.SilindiMi);
+                return null;
             }
+
+            return await _context.Sepetler
+                .Include(s => s.SepetItems.Where(i => !i.SilindiMi))
+                    .ThenInclude(i => i.Urun)
+                        .ThenInclude(u => u!.Kategori)
+                .Include(s => s.SepetItems.Where(i => !i.SilindiMi))
+                    .ThenInclude(i => i.UrunSecenek)
+                .FirstOrDefaultAsync(s => s.SessionId == sessionId && !s.SilindiMi);
+        }
+
+        public async Task<Sepet> GetOrCreateSepetAsync(string? userId, string sessionId)
+        {
+            var sepet = await GetExistingSepetAsync(userId, sessionId);
 
             if (sepet == null)
             {
@@ -67,13 +75,17 @@ namespace KanvasProje.Service
         {
             try
             {
-                var sepet = await GetOrCreateSepetAsync(userId, sessionId);
+                if (adet < 1)
+                {
+                    return false;
+                }
+
                 var urun = await _context.Urunler
                     .AsNoTracking()
                     .Include(x => x.Kategori!)
                         .ThenInclude(x => x.ParentKategori)
                     .Include(x => x.UrunSecenek)
-                    .FirstOrDefaultAsync(x => x.Id == urunId && x.AktifMi && !x.SilindiMi);
+                    .FirstOrDefaultAsync(x => x.Id == urunId && x.AktifMi && !x.SilindiMi && (x.Kategori == null || x.Kategori.AktifMi));
 
                 if (urun == null)
                 {
@@ -81,14 +93,29 @@ namespace KanvasProje.Service
                 }
 
                 // Özel ölçü kontrolü (Sadece Baskılı Halı ve Duvar Kağıdı için geçerli)
-                bool isOzelOlcu = ozelEn.HasValue && ozelBoy.HasValue && ozelEn.Value > 0 && ozelBoy.Value > 0;
-                bool isHali = urun.KategoriId == 34 || urun.Kategori?.Slug == "baskili-hali" || urun.UrunTipi == "BaskiliHali";
-                bool isDuvarKagidi = urun.KategoriId == 31 || urun.Kategori?.Slug == "duvar-kagidi" || urun.UrunTipi == "DuvarKagidi";
+                bool isOzelOlcu = ozelEn.HasValue || ozelBoy.HasValue;
+                bool isHali = urun.KategoriId == 34
+                    || string.Equals(urun.Kategori?.Slug, "baskili-hali", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(urun.Kategori?.ParentKategori?.Slug, "baskili-hali", StringComparison.OrdinalIgnoreCase)
+                    || (urun.Kategori?.Ad?.Contains("halı", StringComparison.OrdinalIgnoreCase) ?? false)
+                    || string.Equals(urun.UrunTipi, "BaskiliHali", StringComparison.OrdinalIgnoreCase);
+                bool isDuvarKagidi = urun.KategoriId == 31
+                    || string.Equals(urun.Kategori?.Slug, "duvar-kagidi", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(urun.Kategori?.ParentKategori?.Slug, "duvar-kagidi", StringComparison.OrdinalIgnoreCase)
+                    || (urun.Kategori?.Ad?.Contains("duvar kağıdı", StringComparison.OrdinalIgnoreCase) ?? false)
+                    || string.Equals(urun.UrunTipi, "DuvarKagidi", StringComparison.OrdinalIgnoreCase);
 
-                if (isOzelOlcu && !isHali && !isDuvarKagidi)
+                if (isOzelOlcu)
                 {
-                    // Halı veya Duvar Kağıdı dışındaki ürünlerde özel ölçü izin verilmez
-                    return false;
+                    if (!isHali && !isDuvarKagidi)
+                    {
+                        return false;
+                    }
+
+                    if (!ozelEn.HasValue || !ozelBoy.HasValue || ozelEn.Value < 50 || ozelEn.Value > 600 || ozelBoy.Value < 50 || ozelBoy.Value > 800)
+                    {
+                        return false;
+                    }
                 }
 
                 UrunSecenek? secenek = null;
@@ -99,10 +126,20 @@ namespace KanvasProje.Service
                     {
                         return false;
                     }
+                    if (secenek == null && !urun.StoktaVarMi)
+                    {
+                        return false;
+                    }
                 }
 
                 var requiresFrameSelection = !isOzelOlcu && RequiresFrameSelection(urun);
                 var normalizedCerceveModeli = isOzelOlcu ? string.Empty : NormalizeFrameModel(cerceveModeli);
+                if (!isOzelOlcu && !string.IsNullOrWhiteSpace(cerceveModeli) && string.IsNullOrEmpty(normalizedCerceveModeli))
+                {
+                    // Whitelist dışı çerçeve modeli gönderildi
+                    return false;
+                }
+
                 if (requiresFrameSelection && string.IsNullOrWhiteSpace(normalizedCerceveModeli))
                 {
                     normalizedCerceveModeli = "Çerçevesiz";
@@ -128,7 +165,7 @@ namespace KanvasProje.Service
                         m2BirimFiyat = isHali ? 1250m : 450m;
                     }
 
-                    fiyat = Math.Round(metrekare * m2BirimFiyat * 0.80m, 2);
+                    fiyat = FiyatPolitikasiHelper.ApplyDiscount(metrekare * m2BirimFiyat, urun.KategoriId, urun.Kategori, 2);
                     secenekAdi = $"Özel Ölçü: {ozelEn.Value}x{ozelBoy.Value} cm ({metrekare:0.##} m²)";
                 }
                 else
@@ -136,6 +173,8 @@ namespace KanvasProje.Service
                     fiyat = ResolveCartPrice(urun, secenek, normalizedCerceveModeli, cerceveFarki);
                     secenekAdi = BuildCartOptionLabel(secenek != null ? BuildVariantLabel(secenek) : null, normalizedCerceveModeli);
                 }
+
+                var sepet = await GetOrCreateSepetAsync(userId, sessionId);
 
                 SepetItem? mevcutItem;
                 if (isOzelOlcu)
@@ -157,7 +196,7 @@ namespace KanvasProje.Service
                 }
 
                 var toplamAdet = (mevcutItem?.Adet ?? 0) + adet;
-                if (!isOzelOlcu && !CanAddQuantity(urun, secenek, toplamAdet))
+                if (!CanAddQuantity(urun, isOzelOlcu ? null : secenek, toplamAdet))
                 {
                     return false;
                 }
@@ -165,6 +204,7 @@ namespace KanvasProje.Service
                 if (mevcutItem != null)
                 {
                     mevcutItem.Adet += adet;
+                    mevcutItem.Fiyat = fiyat;
                 }
                 else
                 {
@@ -213,7 +253,7 @@ namespace KanvasProje.Service
                             .ThenInclude(x => x.ParentKategori)
                     .Include(x => x.UrunSecenek)
                     .FirstOrDefaultAsync(x => x.Id == sepetItemId);
-                if (item == null || item.SilindiMi)
+                if (item == null || item.SilindiMi || item.Urun == null || !item.Urun.AktifMi || item.Urun.SilindiMi)
                 {
                     return false;
                 }
@@ -266,8 +306,19 @@ namespace KanvasProje.Service
 
         public async Task<List<SepetItem>> GetSepetItemsAsync(string? userId, string sessionId)
         {
-            var sepet = await GetOrCreateSepetAsync(userId, sessionId);
-            return sepet.SepetItems.Where(i => !i.SilindiMi).ToList();
+            var sepet = await GetExistingSepetAsync(userId, sessionId);
+            if (sepet == null)
+            {
+                return new List<SepetItem>();
+            }
+
+            return sepet.SepetItems
+                .Where(i => !i.SilindiMi
+                    && i.Urun != null
+                    && i.Urun.AktifMi
+                    && !i.Urun.SilindiMi
+                    && (i.UrunSecenekId == null || (i.UrunSecenek != null && i.UrunSecenek.AktifMi && !i.UrunSecenek.SilindiMi)))
+                .ToList();
         }
 
         public async Task<decimal> GetSepetToplamiAsync(string? userId, string sessionId)
@@ -285,7 +336,11 @@ namespace KanvasProje.Service
 
             return await query
                 .SelectMany(s => s.SepetItems)
-                .Where(i => !i.SilindiMi)
+                .Where(i => !i.SilindiMi
+                    && i.Urun != null
+                    && i.Urun.AktifMi
+                    && !i.Urun.SilindiMi
+                    && (i.UrunSecenekId == null || (i.UrunSecenek != null && i.UrunSecenek.AktifMi && !i.UrunSecenek.SilindiMi)))
                 .SumAsync(i => (int?)i.Adet) ?? 0;
         }
 
@@ -293,7 +348,11 @@ namespace KanvasProje.Service
         {
             try
             {
-                var sepet = await GetOrCreateSepetAsync(userId, sessionId);
+                var sepet = await GetExistingSepetAsync(userId, sessionId);
+                if (sepet == null)
+                {
+                    return true;
+                }
 
                 foreach (var item in sepet.SepetItems.Where(i => !i.SilindiMi))
                 {
@@ -577,11 +636,17 @@ namespace KanvasProje.Service
 
             if (RequiresFrameSelection(urun) && secenek != null && KanvasFiyatListesi.TryGetFiyat(secenek.Olcu, out var fiyat))
             {
-                var kanvasFiyat = cerceveModeli == "Çerçevesiz" ? fiyat.CercevesizKargoDahil : fiyat.CerceveliKargoDahil;
-                return Math.Round(kanvasFiyat * 0.80m, 0);
+                if (string.IsNullOrWhiteSpace(cerceveModeli) || cerceveModeli == "Çerçevesiz")
+                {
+                    return basePrice > 0
+                        ? basePrice
+                        : FiyatPolitikasiHelper.ApplyDiscount(fiyat.CercevesizKargoDahil, urun.KategoriId, urun.Kategori, 0);
+                }
+
+                return FiyatPolitikasiHelper.ApplyDiscount(fiyat.CerceveliKargoDahil, urun.KategoriId, urun.Kategori, 0);
             }
 
-            return basePrice + (cerceveFarki ?? 0);
+            return basePrice;
         }
 
         private static bool ContainsKanvas(string? value)

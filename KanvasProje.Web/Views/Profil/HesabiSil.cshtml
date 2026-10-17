@@ -1,5 +1,6 @@
 @{
     ViewData["Title"] = "Hesabı Sil";
+    var hasPassword = ViewBag.HasPassword as bool? ?? true;
 }
 
 <div class="bg-slate-50 border-b border-slate-200 py-3">
@@ -18,20 +19,39 @@
             <i class="fas fa-triangle-exclamation"></i>
         </div>
         <h1 class="font-heading text-2xl sm:text-3xl font-extrabold text-slate-900 mb-4">Hesabınızı Silmek Üzeresiniz</h1>
-        <p class="text-sm text-slate-600 mb-8 leading-relaxed">
-            Hesabınızı silerseniz sipariş geçmişiniz, favorileriniz ve tüm kayıtlı adres bilgileriniz kalıcı olarak silinecektir. Bu işlem geri alınamaz. 
+        <p class="text-sm text-slate-600 mb-6 leading-relaxed">
+            Hesabınızı silerseniz sipariş geçmişiniz, favorileriniz ve tüm kayıtlı adres bilgileriniz kalıcı olarak silinecektir. Bu işlem geri alınamaz.
             Onaylıyor musunuz?
         </p>
 
-        <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <form asp-action="HesabiSilOnay" method="post" class="w-full sm:w-auto">
+        @if (ViewBag.Hata != null)
+        {
+            <div class="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl mb-6 flex items-center justify-center gap-2 text-left">
+                <i class="fas fa-circle-exclamation text-red-600"></i>
+                <span>@ViewBag.Hata</span>
+            </div>
+        }
+
+        <form asp-action="HesabiSilOnayla" method="post" class="space-y-5 text-left">
+            @Html.AntiForgeryToken()
+
+            @if (hasPassword)
+            {
+                <div>
+                    <label for="sifre" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Güvenliğiniz İçin Mevcut Şifrenizi Girin</label>
+                    <input id="sifre" type="password" name="sifre" required autocomplete="current-password" placeholder="Mevcut şifreniz"
+                           class="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none bg-white text-slate-800" />
+                </div>
+            }
+
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
                 <button type="submit" class="w-full sm:w-auto bg-[#E30613] text-white px-8 py-3.5 text-xs font-bold tracking-wider uppercase rounded-xl hover:bg-[#DC2626] transition-all shadow-md shadow-red-500/20 flex items-center justify-center gap-2">
                     <i class="fas fa-trash"></i> Evet, Hesabımı Sil
                 </button>
-            </form>
-            <a href="/Profil" class="w-full sm:w-auto bg-white border border-slate-300 text-slate-700 px-8 py-3.5 text-xs font-bold tracking-wider uppercase rounded-xl hover:bg-slate-50 transition-colors inline-block text-center">
-                Vazgeç
-            </a>
-        </div>
+                <a href="/Profil" class="w-full sm:w-auto bg-white border border-slate-300 text-slate-700 px-8 py-3.5 text-xs font-bold tracking-wider uppercase rounded-xl hover:bg-slate-50 transition-colors inline-block text-center">
+                    Vazgeç
+                </a>
+            </div>
+        </form>
     </div>
 </div>

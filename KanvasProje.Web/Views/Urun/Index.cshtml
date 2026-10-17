@@ -77,11 +77,33 @@
             }
         }
 
-        if (aktifKategori.HasValue) AddQueryValue("k", aktifKategori.Value.ToString());
-        AddQueryValue("s", aktifArama);
-        if (aktifMin.HasValue) AddQueryValue("min", aktifMin.Value.ToString());
-        if (aktifMax.HasValue) AddQueryValue("max", aktifMax.Value.ToString());
-        if (!string.Equals(key, "sort", StringComparison.OrdinalIgnoreCase)) AddQueryValue("sort", aktifSort);
+        if (!string.Equals(key, "k", StringComparison.OrdinalIgnoreCase) && aktifKategori.HasValue)
+        {
+            AddQueryValue("k", aktifKategori.Value.ToString());
+        }
+        if (!string.Equals(key, "s", StringComparison.OrdinalIgnoreCase))
+        {
+            AddQueryValue("s", aktifArama);
+        }
+        if (!string.Equals(key, "min", StringComparison.OrdinalIgnoreCase) && aktifMin.HasValue)
+        {
+            AddQueryValue("min", aktifMin.Value.ToString());
+        }
+        if (!string.Equals(key, "max", StringComparison.OrdinalIgnoreCase) && aktifMax.HasValue)
+        {
+            AddQueryValue("max", aktifMax.Value.ToString());
+        }
+        if (!string.Equals(key, "sort", StringComparison.OrdinalIgnoreCase))
+        {
+            AddQueryValue("sort", aktifSort);
+        }
+        if (!string.Equals(key, "ozellik", StringComparison.OrdinalIgnoreCase) && seciliOzellikler != null)
+        {
+            foreach (var oz in seciliOzellikler)
+            {
+                AddQueryValue("ozellik", $"{oz.Key}:{oz.Value}");
+            }
+        }
 
         AddQueryValue(key, val);
 
@@ -176,6 +198,13 @@
                 {
                     <input type="hidden" name="s" value="@aktifArama" />
                 }
+                @if (seciliOzellikler != null)
+                {
+                    foreach (var oz in seciliOzellikler)
+                    {
+                        <input type="hidden" name="ozellik" value="@($"{oz.Key}:{oz.Value}")" />
+                    }
+                }
                 <input type="hidden" name="sort" value="@aktifSort" />
                 <div class="flex gap-2 items-center">
                     <input name="min" type="number" placeholder="Min ₺" value="@aktifMin" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-[#00A4D3] focus:border-[#00A4D3] bg-white text-slate-800" />
@@ -201,7 +230,7 @@
                     {
                         <span class="bg-[#00A4D3] text-white text-xs px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-xs font-medium">
                             "<span>@aktifArama</span>"
-                            <a href="/Urun@(aktifKategori.HasValue ? "?k=" + aktifKategori : "")" class="ml-1 opacity-80 hover:opacity-100 font-bold">×</a>
+                            <a href="@BuildFilterUrl("s", "")" class="ml-1 opacity-80 hover:opacity-100 font-bold" aria-label="Aramayı temizle">×</a>
                         </span>
                     }
                     <select id="sortSelect" onchange="window.location.href=this.value" class="border border-slate-200 text-xs rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-[#00A4D3] bg-white text-slate-700 shadow-2xs font-medium">
@@ -214,7 +243,7 @@
             </div>
 
             <!-- Mobile Kategori Chips -->
-            <div class="hidden md:flex lg:hidden flex gap-2 overflow-x-auto pb-3 mb-6 custom-scrollbar">
+            <div class="flex lg:hidden gap-2 overflow-x-auto pb-3 mb-6 custom-scrollbar">
                 <a href="/Urun" class="whitespace-nowrap text-xs border @(!aktifKategori.HasValue ? "bg-[#00A4D3] text-white border-[#00A4D3] font-bold" : "border-slate-200 text-slate-700 bg-white") rounded-full px-3.5 py-1.5 shadow-2xs">Tümü</a>
                 @if (kategoriler != null)
                 {

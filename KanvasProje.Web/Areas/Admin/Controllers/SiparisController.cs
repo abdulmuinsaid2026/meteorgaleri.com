@@ -44,7 +44,7 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
             _env = env;
         }
 
-        public async Task<IActionResult> Index(string search, int? durum, int page = 1, int pageSize = 20)
+        public async Task<IActionResult> Index(string search, int? durum, string? fatura = null, int page = 1, int pageSize = 20)
         {
             page = Math.Max(page, 1);
             var allowedPageSizes = new[] { 20, 50, 100 };
@@ -73,20 +73,42 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
                     (!string.IsNullOrWhiteSpace(x.Eposta) && x.Eposta.ToLowerInvariant().Contains(search)));
             }
 
-            if (durum.HasValue)
+            if (durum == -1)
+            {
+                // Ödeme Bekleyen PayTR Siparişleri
+                sorgu = sorgu.Where(x => IsUnpaidPaytrOrder(x) && x.Durum != SiparisDurumHelper.IptalEdildi);
+            }
+            else if (durum == SiparisDurumHelper.SiparisAlindi)
+            {
+                sorgu = sorgu.Where(x => x.Durum == SiparisDurumHelper.SiparisAlindi && !IsUnpaidPaytrOrder(x));
+            }
+            else if (durum.HasValue)
             {
                 sorgu = sorgu.Where(x => x.Durum == durum.Value);
+            }
+            else if (string.IsNullOrWhiteSpace(search))
+            {
+                // Varsayılan operasyonel listede ödemesi tamamlanmamış PayTR denemeleri karışmasın
+                sorgu = sorgu.Where(x => !IsUnpaidPaytrOrder(x));
+            }
+
+            if (string.Equals(fatura, "yuklenmemis", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(fatura, "yuklenmemiş", StringComparison.OrdinalIgnoreCase))
+            {
+                sorgu = sorgu.Where(x => !x.FaturaYuklendiMi && !IsUnpaidPaytrOrder(x));
             }
 
             ViewBag.CurrentSearch = search;
             ViewBag.CurrentDurum = durum;
-            ViewBag.TumuCount = siparisler.Count();
-            ViewBag.YeniCount = siparisler.Count(x => x.Durum == SiparisDurumHelper.SiparisAlindi);
+            ViewBag.CurrentFatura = fatura;
+            ViewBag.TumuCount = siparisler.Count(x => !IsUnpaidPaytrOrder(x));
+            ViewBag.YeniCount = siparisler.Count(x => x.Durum == SiparisDurumHelper.SiparisAlindi && !IsUnpaidPaytrOrder(x));
+            ViewBag.OdemeBekleyenCount = siparisler.Count(x => IsUnpaidPaytrOrder(x) && x.Durum != SiparisDurumHelper.IptalEdildi);
             ViewBag.HazirlaniyorCount = siparisler.Count(x => x.Durum == SiparisDurumHelper.UretimHazirlaniyor);
             ViewBag.PaketleniyorCount = siparisler.Count(x => x.Durum == SiparisDurumHelper.Paketleniyor);
             ViewBag.KargodaCount = siparisler.Count(x => x.Durum == SiparisDurumHelper.KargoyaVerildi);
             ViewBag.TeslimCount = siparisler.Count(x => x.Durum == SiparisDurumHelper.TeslimEdildi);
-            ViewBag.FaturaYuklenmemişCount = siparisler.Count(x => !x.FaturaYuklendiMi);
+            ViewBag.FaturaYuklenmemişCount = siparisler.Count(x => !x.FaturaYuklendiMi && !IsUnpaidPaytrOrder(x));
             ViewBag.SiparisDetayOzetleri = siparisDetayOzetleri;
             ViewBag.Page = page;
             ViewBag.PageSize = pageSize;
@@ -320,7 +342,7 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
                 .Select((id, index) => new { id, index })
                 .ToDictionary(x => x.id, x => x.index);
 
-            var siparisler = await _context.Siparisler
+            var adaySiparisler = await _context.Siparisler
                 .AsNoTracking()
                 .Include(x => x.SiparisDetaylari)
                     .ThenInclude(x => x.Urun)
@@ -329,9 +351,13 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
                 .Where(x => siparisIds.Contains(x.Id) && validDurumlar.Contains(x.Durum))
                 .ToListAsync();
 
+            var siparisler = adaySiparisler
+                .Where(x => !IsUnpaidPaytrOrder(x))
+                .ToList();
+
             if (!siparisler.Any())
             {
-                TempData["Mesaj"] = "Seçilen siparişler arasında etiket yazdırılabilecek (Yeni, Hazırlanıyor veya Paketleniyor durumunda) sipariş bulunamadı.";
+                TempData["Mesaj"] = "Seçilen siparişler arasında ödemesi tamamlanmış ve etiket yazdırılabilecek (Yeni, Hazırlanıyor veya Paketleniyor durumunda) sipariş bulunamadı.";
                 TempData["Durum"] = "warning";
                 return RedirectToAction(nameof(Index));
             }
@@ -970,11 +996,16 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
             // Eski fatura varsa sil
             if (!string.IsNullOrWhiteSpace(siparis.FaturaDosyaYolu))
             {
-                var oldFilePath = Path.Combine(_env.WebRootPath, siparis.FaturaDosyaYolu.TrimStart('/'));
-                if (System.IO.File.Exists(oldFilePath))
+                var oldSafeFileName = Path.GetFileName(siparis.FaturaDosyaYolu);
+                if (!string.IsNullOrWhiteSpace(oldSafeFileName))
                 {
-                    try { System.IO.File.Delete(oldFilePath); }
-                    catch { /* Silinemezse ignore */ }
+                    var oldFilePath = Path.GetFullPath(Path.Combine(uploadsPath, oldSafeFileName));
+                    var uploadsRoot = Path.GetFullPath(uploadsPath);
+                    if (oldFilePath.StartsWith(uploadsRoot, StringComparison.OrdinalIgnoreCase) && System.IO.File.Exists(oldFilePath))
+                    {
+                        try { System.IO.File.Delete(oldFilePath); }
+                        catch { /* Silinemezse ignore */ }
+                    }
                 }
             }
 
@@ -986,7 +1017,7 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
 
             // Sipariş fatura bilgilerini güncelle
             siparis.FaturaDosyaYolu = relativePath;
-            siparis.FaturaDosyaAdi = faturaDosyasi.FileName;
+            siparis.FaturaDosyaAdi = Path.GetFileName(faturaDosyasi.FileName);
             siparis.FaturaYuklendiMi = true;
             siparis.FaturaYuklenmeTarihi = DateTime.UtcNow;
 
@@ -1025,15 +1056,22 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
                 return NotFound("Fatura bulunamadı.");
             }
 
-            var filePath = Path.Combine(_env.WebRootPath, siparis.FaturaDosyaYolu.TrimStart('/'));
+            var invoicesRoot = Path.GetFullPath(Path.Combine(_env.WebRootPath, "uploads", "invoices"));
+            var safeFileName = Path.GetFileName(siparis.FaturaDosyaYolu);
+            if (string.IsNullOrWhiteSpace(safeFileName) || !safeFileName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+            {
+                return NotFound("Fatura dosyası bulunamadı.");
+            }
 
-            if (!System.IO.File.Exists(filePath))
+            var filePath = Path.GetFullPath(Path.Combine(invoicesRoot, safeFileName));
+            if (!filePath.StartsWith(invoicesRoot, StringComparison.OrdinalIgnoreCase) || !System.IO.File.Exists(filePath))
             {
                 return NotFound("Fatura dosyası bulunamadı.");
             }
 
             var fileBytes = await System.IO.File.ReadAllBytesAsync(filePath);
-            return File(fileBytes, "application/pdf", siparis.FaturaDosyaAdi ?? $"fatura_{id}.pdf");
+            var downloadName = Path.GetFileName(siparis.FaturaDosyaAdi ?? $"fatura_{id}.pdf");
+            return File(fileBytes, "application/pdf", downloadName);
         }
     }
 }

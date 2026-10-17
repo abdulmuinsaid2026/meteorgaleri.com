@@ -24,39 +24,53 @@ namespace KanvasProje.Web.Attributes
                 return;
             }
 
-            var ipAdresi = ResolveIpAddress(context);
-            var userAgent = request.Headers.UserAgent.ToString();
-            var cihazBilgi = CihazModeliBul(userAgent);
-            var ulke = request.Headers["CF-IPCountry"].FirstOrDefault();
-            var sehir = request.Headers["CF-IPCity"].FirstOrDefault();
-
-            _context.ZiyaretciLoglari.Add(new ZiyaretciLog
+            try
             {
-                IpAdresi = ipAdresi,
-                Url = request.Path.Value ?? string.Empty,
-                Metod = request.Method,
-                ReferansUrl = request.Headers.Referer.ToString(),
-                CihazBilgisi = userAgent,
-                Tarayici = cihazBilgi.Tarayici,
-                IsletimSistemi = cihazBilgi.OS,
-                CihazModeli = cihazBilgi.Model,
-                Sehir = string.IsNullOrWhiteSpace(sehir) ? "-" : sehir,
-                Ulke = string.IsNullOrWhiteSpace(ulke) ? "-" : ulke,
-                OlusturulmaTarihi = DateTime.UtcNow,
-                KullaniciAdi = context.HttpContext.User.Identity?.IsAuthenticated == true
-                    ? context.HttpContext.User.Identity.Name
-                    : "Misafir"
-            });
+                var ipAdresi = ResolveIpAddress(context);
+                var userAgent = request.Headers.UserAgent.ToString();
+                var cihazBilgi = CihazModeliBul(userAgent);
+                var ulke = request.Headers["CF-IPCountry"].FirstOrDefault();
+                var sehir = request.Headers["CF-IPCity"].FirstOrDefault();
 
-            await _context.SaveChangesAsync();
+                _context.ZiyaretciLoglari.Add(new ZiyaretciLog
+                {
+                    IpAdresi = ipAdresi,
+                    Url = request.Path.Value ?? string.Empty,
+                    Metod = request.Method,
+                    ReferansUrl = request.Headers.Referer.ToString(),
+                    CihazBilgisi = userAgent,
+                    Tarayici = cihazBilgi.Tarayici,
+                    IsletimSistemi = cihazBilgi.OS,
+                    CihazModeli = cihazBilgi.Model,
+                    Sehir = string.IsNullOrWhiteSpace(sehir) ? "-" : sehir,
+                    Ulke = string.IsNullOrWhiteSpace(ulke) ? "-" : ulke,
+                    OlusturulmaTarihi = DateTime.UtcNow,
+                    KullaniciAdi = context.HttpContext.User.Identity?.IsAuthenticated == true
+                        ? context.HttpContext.User.Identity.Name
+                        : "Misafir"
+                });
+
+                await _context.SaveChangesAsync();
+            }
+            catch
+            {
+                // Ziyaretçi log hatası sayfa açılışını engellememeli
+            }
+
             await next();
         }
 
         private static bool ShouldSkip(HttpRequest request)
         {
             var path = request.Path.Value ?? string.Empty;
-            return path.Contains("/admin", StringComparison.OrdinalIgnoreCase)
+            var isAjax = string.Equals(request.Headers["X-Requested-With"], "XMLHttpRequest", StringComparison.OrdinalIgnoreCase)
+                || request.Headers.Accept.Any(a => a != null && a.Contains("application/json", StringComparison.OrdinalIgnoreCase));
+
+            return isAjax
+                || path.Contains("/admin", StringComparison.OrdinalIgnoreCase)
                 || path.StartsWith("/api", StringComparison.OrdinalIgnoreCase)
+                || path.StartsWith("/Urun/CanliAra", StringComparison.OrdinalIgnoreCase)
+                || path.StartsWith("/sitemap.xml", StringComparison.OrdinalIgnoreCase)
                 || !HttpMethods.IsGet(request.Method)
                 || Path.HasExtension(path);
         }

@@ -39,6 +39,7 @@ namespace KanvasProje.Core.Models
         // Özel Ölçü Metrekare Birim Fiyatları
         public decimal HaliMetrekareFiyati { get; set; } = 1250;
         public decimal DuvarKagidiMetrekareFiyati { get; set; } = 450;
+        public decimal GenelIndirimYuzdesi { get; set; } = 20;
 
         public bool PaytrAktifMi { get; set; } = false;
         public bool PaytrTestModu { get; set; } = true;
@@ -48,14 +49,6 @@ namespace KanvasProje.Core.Models
         public string PaytrCallbackUrl { get; set; } = string.Empty;
         public string PaytrBasariliDonusUrl { get; set; } = string.Empty;
         public string PaytrBasarisizDonusUrl { get; set; } = string.Empty;
-
-        // İyzico Ödeme Ayarları
-        public bool IyzicoAktifMi { get; set; } = true;
-        public bool IyzicoTestModu { get; set; } = true;
-        public string IyzicoApiKey { get; set; } = "sandbox-placeholder-key";
-        public string IyzicoSecretKeyProtected { get; set; } = string.Empty;
-        public string IyzicoBaseUrl { get; set; } = "https://sandbox-api.iyzipay.com";
-        public string IyzicoCallbackUrl { get; set; } = string.Empty;
 
         public string KargoFirmasi { get; set; } = "Aras Kargo";
         public string KargoTakipUrl { get; set; } = string.Empty;

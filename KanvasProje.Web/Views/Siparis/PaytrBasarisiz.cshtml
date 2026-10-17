@@ -1,5 +1,6 @@
 @{
-    ViewData["Title"] = "Ödeme Başarısız - Meteor Galeri";
+    ViewData["Title"] = "Ödeme Başarısız - Canvasia";
+    var siparisNo = ViewBag.SiparisNo as string;
 }
 
 <div class="min-h-[70vh] flex items-center justify-center py-16 px-4 bg-[#F8FAFC]">
@@ -8,6 +9,11 @@
             <i class="fas fa-times text-4xl"></i>
         </div>
         <h1 class="font-heading text-3xl md:text-4xl font-extrabold text-slate-900 mb-4 tracking-tight">Ödeme Başarısız</h1>
+
+        @if (!string.IsNullOrWhiteSpace(siparisNo))
+        {
+            <p class="text-xs font-mono text-slate-500 mb-4">Sipariş No: <strong class="text-slate-800">#@siparisNo</strong></p>
+        }
 
         @if (ViewBag.Hata != null)
         {
@@ -23,13 +29,16 @@
             <p class="text-sm text-slate-600 mb-8 leading-relaxed">
                 Ödeme işleminiz sırasında bir sorun oluştu ve siparişiniz tamamlanamadı.
                 Kredi kartı bilgilerinizde, limitinizde veya 3D Secure onay kodunda bir sorun olabilir.
-                Lütfen tekrar deneyin veya farklı bir kart kullanın.
+                Sepetinizdeki ürünler korunmaktadır; tekrar deneyebilir veya farklı bir kart kullanabilirsiniz.
             </p>
         }
 
         <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <a href="/Sepet" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#00A4D3] text-white px-8 py-3.5 text-xs font-bold tracking-wider uppercase rounded-xl hover:bg-[#0284C7] shadow-md shadow-sky-500/20 transition-all">
-                <i class="fas fa-shopping-cart"></i> Sepete Dön ve Tekrar Dene
+            <a href="/Siparis/Odeme" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#00A4D3] text-white px-8 py-3.5 text-xs font-bold tracking-wider uppercase rounded-xl hover:bg-[#0284C7] shadow-md shadow-sky-500/20 transition-all">
+                <i class="fas fa-redo"></i> Tekrar Ödeme Dene
+            </a>
+            <a href="/Sepet" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-slate-900 text-white px-8 py-3.5 text-xs font-bold tracking-wider uppercase rounded-xl hover:bg-slate-800 shadow-md transition-all">
+                <i class="fas fa-shopping-cart"></i> Sepete Dön
             </a>
             <a href="/Kurumsal/Iletisim" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-700 px-8 py-3.5 text-xs font-bold tracking-wider uppercase rounded-xl hover:bg-slate-50 transition-all">
                 <i class="fas fa-headset"></i> Destek Al

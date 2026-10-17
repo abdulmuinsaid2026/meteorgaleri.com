@@ -12,10 +12,8 @@ namespace KanvasProje.Service.Services
         SiteAyarlari GetSettings();
         void SaveSettings(SiteAyarlari settings);
         void SaveSettings(SiteAyarlari settings, string? paytrMerchantKey, string? paytrMerchantSalt);
-        void SaveSettings(SiteAyarlari settings, string? paytrMerchantKey, string? paytrMerchantSalt, string? iyzicoSecretKey);
         bool HasPaytrMerchantKey();
         bool HasPaytrMerchantSalt();
-        bool HasIyzicoSecretKey();
         string BuildAbsoluteUrl(string? path);
     }
 
@@ -23,12 +21,10 @@ namespace KanvasProje.Service.Services
     {
         private const string CacheKey = "site-settings";
         private const string PaytrProtectorPurpose = "Canvasia.PayTR.Settings.v1";
-        private const string IyzicoProtectorPurpose = "MeteorGaleri.Iyzico.Settings.v1";
 
         private readonly KanvasDbContext _context;
         private readonly IMemoryCache _cache;
         private readonly IDataProtector _paytrProtector;
-        private readonly IDataProtector _iyzicoProtector;
         private readonly JsonSerializerOptions _serializerOptions = new()
         {
             WriteIndented = true,
@@ -40,7 +36,6 @@ namespace KanvasProje.Service.Services
             _context = context;
             _cache = cache;
             _paytrProtector = dataProtectionProvider.CreateProtector(PaytrProtectorPurpose);
-            _iyzicoProtector = dataProtectionProvider.CreateProtector(IyzicoProtectorPurpose);
         }
 
         public SiteAyarlari GetSettings()
@@ -54,15 +49,10 @@ namespace KanvasProje.Service.Services
 
         public void SaveSettings(SiteAyarlari settings)
         {
-            SaveSettings(settings, null, null, null);
+            SaveSettings(settings, null, null);
         }
 
         public void SaveSettings(SiteAyarlari settings, string? paytrMerchantKey, string? paytrMerchantSalt)
-        {
-            SaveSettings(settings, paytrMerchantKey, paytrMerchantSalt, null);
-        }
-
-        public void SaveSettings(SiteAyarlari settings, string? paytrMerchantKey, string? paytrMerchantSalt, string? iyzicoSecretKey)
         {
             var normalized = NormalizeSettings(settings);
 
@@ -100,6 +90,7 @@ namespace KanvasProje.Service.Services
                 existing.StoktaYokSatisIzni = normalized.StoktaYokSatisIzni;
                 existing.HaliMetrekareFiyati = normalized.HaliMetrekareFiyati;
                 existing.DuvarKagidiMetrekareFiyati = normalized.DuvarKagidiMetrekareFiyati;
+                existing.GenelIndirimYuzdesi = normalized.GenelIndirimYuzdesi;
                 existing.PaytrAktifMi = normalized.PaytrAktifMi;
                 existing.PaytrTestModu = normalized.PaytrTestModu;
                 existing.PaytrMerchantId = normalized.PaytrMerchantId;
@@ -107,20 +98,6 @@ namespace KanvasProje.Service.Services
                 existing.PaytrBasariliDonusUrl = normalized.PaytrBasariliDonusUrl;
                 existing.PaytrBasarisizDonusUrl = normalized.PaytrBasarisizDonusUrl;
                 ApplyPaytrSecrets(existing, paytrMerchantKey, paytrMerchantSalt);
-                
-                // Iyzico Ayarları (formda gönderilmediyse mevcut değerleri koru)
-                if (!string.IsNullOrWhiteSpace(normalized.IyzicoApiKey) || !string.IsNullOrWhiteSpace(iyzicoSecretKey))
-                {
-                    existing.IyzicoAktifMi = normalized.IyzicoAktifMi;
-                    existing.IyzicoTestModu = normalized.IyzicoTestModu;
-                    existing.IyzicoApiKey = normalized.IyzicoApiKey;
-                    existing.IyzicoBaseUrl = normalized.IyzicoBaseUrl;
-                    existing.IyzicoCallbackUrl = normalized.IyzicoCallbackUrl;
-                }
-                if (!string.IsNullOrWhiteSpace(iyzicoSecretKey))
-                {
-                    existing.IyzicoSecretKeyProtected = _iyzicoProtector.Protect(iyzicoSecretKey.Trim());
-                }
 
                 existing.KargoFirmasi = normalized.KargoFirmasi;
                 existing.KargoTakipUrl = normalized.KargoTakipUrl;
@@ -144,15 +121,12 @@ namespace KanvasProje.Service.Services
             {
                 normalized.Id = 1;
                 ApplyPaytrSecrets(normalized, paytrMerchantKey, paytrMerchantSalt);
-                if (!string.IsNullOrWhiteSpace(iyzicoSecretKey))
-                {
-                    normalized.IyzicoSecretKeyProtected = _iyzicoProtector.Protect(iyzicoSecretKey.Trim());
-                }
                 _context.SiteAyarlari.Add(normalized);
             }
 
             _context.SaveChanges();
             _cache.Remove(CacheKey);
+            _ = GetSettings();
         }
 
         public bool HasPaytrMerchantKey()
@@ -163,11 +137,6 @@ namespace KanvasProje.Service.Services
         public bool HasPaytrMerchantSalt()
         {
             return _context.SiteAyarlari.Any(x => !string.IsNullOrWhiteSpace(x.PaytrMerchantSaltProtected));
-        }
-
-        public bool HasIyzicoSecretKey()
-        {
-            return _context.SiteAyarlari.Any(x => !string.IsNullOrWhiteSpace(x.IyzicoSecretKeyProtected));
         }
 
         public string BuildAbsoluteUrl(string? path)
@@ -196,7 +165,20 @@ namespace KanvasProje.Service.Services
         private SiteAyarlari LoadSettings()
         {
             var settings = _context.SiteAyarlari.FirstOrDefault();
-            return NormalizeSettings(settings ?? new SiteAyarlari());
+            var normalized = NormalizeSettings(settings ?? new SiteAyarlari());
+            try
+            {
+                var katIndirimleri = _context.Kategoriler
+                    .AsNoTracking()
+                    .Where(k => !k.SilindiMi && k.IndirimYuzdesi.HasValue)
+                    .ToDictionary(k => k.Id, k => k.IndirimYuzdesi!.Value);
+                KanvasProje.Core.Helpers.FiyatPolitikasiHelper.Configure(normalized.GenelIndirimYuzdesi, katIndirimleri);
+            }
+            catch
+            {
+                KanvasProje.Core.Helpers.FiyatPolitikasiHelper.Configure(normalized.GenelIndirimYuzdesi);
+            }
+            return normalized;
         }
 
         private static SiteAyarlari NormalizeSettings(SiteAyarlari settings)
@@ -236,6 +218,7 @@ namespace KanvasProje.Service.Services
             settings.StokUyariLimiti = Math.Max(0, settings.StokUyariLimiti);
             settings.HaliMetrekareFiyati = settings.HaliMetrekareFiyati <= 0 ? 1250 : settings.HaliMetrekareFiyati;
             settings.DuvarKagidiMetrekareFiyati = settings.DuvarKagidiMetrekareFiyati <= 0 ? 450 : settings.DuvarKagidiMetrekareFiyati;
+            settings.GenelIndirimYuzdesi = Math.Clamp(settings.GenelIndirimYuzdesi, 0m, 95m);
             settings.PaytrMerchantId = settings.PaytrMerchantId?.Trim() ?? string.Empty;
             settings.PaytrMerchantKeyProtected = settings.PaytrMerchantKeyProtected?.Trim() ?? string.Empty;
             settings.PaytrMerchantSaltProtected = settings.PaytrMerchantSaltProtected?.Trim() ?? string.Empty;
@@ -275,10 +258,6 @@ namespace KanvasProje.Service.Services
             settings.BakimModuMesaji = string.IsNullOrWhiteSpace(settings.BakimModuMesaji)
                 ? "Size daha iyi bir alışveriş deneyimi sunmak için kısa bir bakım çalışması yapıyoruz. Çok yakında premium dekorasyon ürünlerimizle yeniden yayında olacağız."
                 : settings.BakimModuMesaji.Trim();
-
-            settings.IyzicoApiKey = settings.IyzicoApiKey?.Trim() ?? string.Empty;
-            settings.IyzicoBaseUrl = string.IsNullOrWhiteSpace(settings.IyzicoBaseUrl) ? "https://sandbox-api.iyzipay.com" : settings.IyzicoBaseUrl.Trim();
-            settings.IyzicoCallbackUrl = NormalizeOptionalUrl(settings.IyzicoCallbackUrl);
 
             return settings;
         }

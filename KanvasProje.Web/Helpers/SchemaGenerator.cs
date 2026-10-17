@@ -32,9 +32,9 @@ namespace KanvasProje.Core.Helpers
                     ["@type"] = "Offer",
                     ["url"] = detailUrl,
                     ["priceCurrency"] = "TRY",
-                    ["price"] = urun.EtkinFiyat.ToString("F2"),
+                    ["price"] = urun.EtkinFiyat.ToString("F2", System.Globalization.CultureInfo.InvariantCulture),
                     ["availability"] = urun.StoktaVarMi ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
-                    ["priceValidUntil"] = DateTime.UtcNow.AddYears(1).ToString("yyyy-MM-dd")
+                    ["priceValidUntil"] = DateTime.UtcNow.AddYears(1).ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)
                 }
             };
 
@@ -43,7 +43,7 @@ namespace KanvasProje.Core.Helpers
                 schema["aggregateRating"] = new Dictionary<string, object?>
                 {
                     ["@type"] = "AggregateRating",
-                    ["ratingValue"] = averageRating.ToString("F1"),
+                    ["ratingValue"] = averageRating.ToString("F1", System.Globalization.CultureInfo.InvariantCulture),
                     ["reviewCount"] = reviewCount
                 };
             }

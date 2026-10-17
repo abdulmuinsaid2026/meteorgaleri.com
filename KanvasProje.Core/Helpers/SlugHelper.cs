@@ -15,17 +15,23 @@ namespace KanvasProje.Core.Helpers
             if (string.IsNullOrWhiteSpace(text))
                 return string.Empty;
 
-            // 1. Küçük harfe çevir
-            text = text.ToLowerInvariant();
-
-            // 2. Türkçe karakterleri değiştir
-            text = text.Replace("ç", "c")
+            // 1. Türkçe büyük/küçük karakterleri önceden değiştir
+            text = text.Replace("Ç", "c")
+                       .Replace("ç", "c")
+                       .Replace("Ğ", "g")
                        .Replace("ğ", "g")
+                       .Replace("I", "i")
                        .Replace("ı", "i")
                        .Replace("İ", "i")
+                       .Replace("Ö", "o")
                        .Replace("ö", "o")
+                       .Replace("Ş", "s")
                        .Replace("ş", "s")
+                       .Replace("Ü", "u")
                        .Replace("ü", "u");
+
+            // 2. Küçük harfe çevir
+            text = text.ToLowerInvariant();
 
             // 3. Aksanlı karakterleri temizle (è, é, ê vb.)
             text = RemoveDiacritics(text);
@@ -75,7 +81,8 @@ namespace KanvasProje.Core.Helpers
         /// </summary>
         public static string EnsureUnique(string slug, List<string> existingSlugs)
         {
-            if (!existingSlugs.Contains(slug))
+            var set = new HashSet<string>(existingSlugs, StringComparer.OrdinalIgnoreCase);
+            if (!set.Contains(slug))
                 return slug;
 
             int counter = 2;
@@ -85,7 +92,7 @@ namespace KanvasProje.Core.Helpers
             {
                 newSlug = $"{slug}-{counter}";
                 counter++;
-            } while (existingSlugs.Contains(newSlug));
+            } while (set.Contains(newSlug));
 
             return newSlug;
         }

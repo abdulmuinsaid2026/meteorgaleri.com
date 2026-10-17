@@ -1,13 +1,11 @@
 @model KanvasProje.Core.Varliklar.KurumsalSayfa
-@{ Layout = "~/Views/Shared/_Layout.cshtml"; }
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
 
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-lg-10">
-            <h1 class="fw-bold mb-4 text-center border-bottom pb-3">@Model.Baslik</h1>
-            <div class="content p-4 bg-white shadow-sm rounded">
-                @Html.Raw(Model.Icerik)
-            </div>
-        </div>
+<div class="container mx-auto px-4 py-12 max-w-4xl">
+    <h1 class="font-heading text-3xl md:text-4xl font-extrabold text-slate-900 mb-6 text-center border-b border-slate-200 pb-4">@Model.Baslik</h1>
+    <div class="bg-white border border-slate-200/80 rounded-2xl p-6 sm:p-10 shadow-sm prose prose-slate max-w-none leading-relaxed">
+        @Html.Raw(KanvasProje.Core.Helpers.HtmlSanitizerHelper.Sanitize(Model.Icerik))
     </div>
 </div>

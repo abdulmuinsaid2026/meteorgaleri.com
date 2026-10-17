@@ -26,6 +26,7 @@
     ViewData["Title"] = "Sipariş Yönetimi";
 
     int? currentDurum = ViewBag.CurrentDurum as int?;
+    var currentFatura = ViewBag.CurrentFatura as string ?? string.Empty;
     var currentSearch = ViewBag.CurrentSearch as string ?? string.Empty;
     var detayOzetleri = ViewBag.SiparisDetayOzetleri as Dictionary<int, string> ?? new Dictionary<int, string>();
     var currentPage = ViewBag.Page as int? ?? 1;
@@ -38,6 +39,7 @@
     {
         var query = new List<string>();
         if (currentDurum.HasValue) query.Add($"durum={currentDurum.Value}");
+        if (!string.IsNullOrWhiteSpace(currentFatura)) query.Add($"fatura={Uri.EscapeDataString(currentFatura)}");
         if (!string.IsNullOrWhiteSpace(currentSearch)) query.Add($"search={Uri.EscapeDataString(currentSearch)}");
         query.Add($"page={pageValue ?? currentPage}");
         query.Add($"pageSize={pageSizeValue ?? pageSize}");
@@ -95,6 +97,10 @@
             {
                 <input type="hidden" name="durum" value="@currentDurum.Value" />
             }
+            @if (!string.IsNullOrWhiteSpace(currentFatura))
+            {
+                <input type="hidden" name="fatura" value="@currentFatura" />
+            }
             <input type="hidden" name="pageSize" value="@pageSize" />
             <div class="ca-input-icon-group">
                 <i class="fas fa-search ca-icon-left"></i>
@@ -108,11 +114,17 @@
     </div>
 
     <div class="ca-tabs">
-        <a href="/Admin/Siparis" class="ca-tab @(currentDurum == null ? "active" : "")">
+        <a href="/Admin/Siparis" class="ca-tab @(currentDurum == null && string.IsNullOrWhiteSpace(currentFatura) ? "active" : "")">
             Tümü <span class="ca-tab-count">@ViewBag.TumuCount</span>
         </a>
         <a href="/Admin/Siparis?durum=0" class="ca-tab @(currentDurum == 0 ? "active" : "")">
             <i class="fas fa-box-open"></i> Yeni <span class="ca-tab-count">@ViewBag.YeniCount</span>
+        </a>
+        @{
+            var odemeBekleyenCount = ViewBag.OdemeBekleyenCount as int? ?? 0;
+        }
+        <a href="/Admin/Siparis?durum=-1" class="ca-tab @(currentDurum == -1 ? "active" : "")" title="PayTR ödeme onayı bekleyen sipariş denemeleri">
+            <i class="fas fa-clock"></i> Ödeme Bekleyen <span class="ca-tab-count">@odemeBekleyenCount</span>
         </a>
         <a href="/Admin/Siparis?durum=1" class="ca-tab @(currentDurum == 1 ? "active" : "")">
             <i class="fas fa-cog"></i> Hazırlanıyor <span class="ca-tab-count">@ViewBag.HazirlaniyorCount</span>
@@ -131,7 +143,7 @@
         }
         @if (faturaYuklenmemişCount > 0)
         {
-            <a href="/Admin/Siparis?fatura=yuklenmemiş" class="ca-tab" style="background:#dc3545; color:white;">
+            <a href="/Admin/Siparis?fatura=yuklenmemis" class="ca-tab @(!string.IsNullOrWhiteSpace(currentFatura) ? "active" : "")" style="background:#dc3545; color:white;">
                 <i class="fas fa-file-pdf"></i> Fatura Yok <span class="ca-tab-count">@faturaYuklenmemişCount</span>
             </a>
         }
@@ -197,6 +209,10 @@
                 {
                     <input type="hidden" name="durum" value="@currentDurum.Value" />
                 }
+                @if (!string.IsNullOrWhiteSpace(currentFatura))
+                {
+                    <input type="hidden" name="fatura" value="@currentFatura" />
+                }
                 @if (!string.IsNullOrWhiteSpace(currentSearch))
                 {
                     <input type="hidden" name="search" value="@currentSearch" />
@@ -235,6 +251,7 @@
                         var firstLetter = !string.IsNullOrEmpty(item.MusteriAdSoyad) ? item.MusteriAdSoyad.Substring(0, 1).ToUpper() : "M";
                         var siparisNo = string.IsNullOrWhiteSpace(item.SiparisNo) ? $"#{item.Id}" : item.SiparisNo;
                         var detayOzeti = detayOzetleri.TryGetValue(item.Id, out var ozet) ? ozet : "Ürün detayı yok";
+                        var isUnpaidPaytr = string.Equals(item.OdemeSaglayici, "PayTR", StringComparison.OrdinalIgnoreCase) && !item.OdemeTamamlandiMi;
                         <tr>
                             <td class="ps-4">
                                 <span class="ca-order-id">@siparisNo</span>
@@ -264,9 +281,15 @@
                             </td>
                             <td>
                                 <span class="ca-fw-bold">@item.ToplamTutar.ToString("N2") TL</span>
+                                @if (isUnpaidPaytr)
+                                {
+                                    <div class="mt-1"><span class="badge bg-danger"><i class="fas fa-exclamation-triangle"></i> Ödeme Bekliyor</span></div>
+                                }
                             </td>
                             <td>
-                                @if (item.Durum == SiparisDurumHelper.SiparisAlindi)
+                                @if (isUnpaidPaytr && item.Durum != SiparisDurumHelper.IptalEdildi)
+                                { <span class="ca-badge ca-badge-danger"><i class="fas fa-clock"></i> Ödeme Bekliyor (PayTR)</span> }
+                                else if (item.Durum == SiparisDurumHelper.SiparisAlindi)
                                 { <span class="ca-badge ca-badge-warning"><i class="fas fa-dot-circle"></i> Sipariş Alındı</span> }
                                 else if (item.Durum == SiparisDurumHelper.UretimHazirlaniyor)
                                 { <span class="ca-badge ca-badge-info"><i class="fas fa-spinner fa-spin"></i> Hazırlanıyor</span> }
@@ -309,9 +332,9 @@
                                                 <i class="fas fa-eye me-2"></i> Detayı Aç
                                             </a>
                                         </li>
-                                        @if (item.Durum == SiparisDurumHelper.SiparisAlindi || 
+                                        @if (!isUnpaidPaytr && (item.Durum == SiparisDurumHelper.SiparisAlindi || 
                                              item.Durum == SiparisDurumHelper.UretimHazirlaniyor || 
-                                             item.Durum == SiparisDurumHelper.Paketleniyor)
+                                             item.Durum == SiparisDurumHelper.Paketleniyor))
                                         {
                                             <li>
                                                 <a class="dropdown-item" href="/Admin/Siparis/Detay/@item.Id#printableLabel">

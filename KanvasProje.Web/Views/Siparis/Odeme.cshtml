@@ -58,7 +58,15 @@
                         @foreach (var adres in kayitliAdresler)
                         {
                             <label class="relative border border-slate-200 rounded-xl p-5 cursor-pointer transition-all hover:border-[#00A4D3] has-[:checked]:border-[#00A4D3] has-[:checked]:bg-sky-50 group block shadow-2xs">
-                                <input type="radio" name="kayitliAdresSecimi" class="absolute opacity-0 w-0 h-0 peer" onclick="selectAddress('@adres.AdSoyad', '@adres.Telefon', '@adres.Sehir', '@adres.Ilce', '@adres.AcikAdres')">
+                                <input type="radio"
+                                       name="kayitliAdresSecimi"
+                                       class="absolute opacity-0 w-0 h-0 peer"
+                                       data-ad="@adres.AdSoyad"
+                                       data-tel="@adres.Telefon"
+                                       data-sehir="@adres.Sehir"
+                                       data-ilce="@adres.Ilce"
+                                       data-adres="@adres.AcikAdres"
+                                       onclick="selectAddressFromEl(this)">
                                 <div class="flex items-start gap-3">
                                     <span class="address-radio w-5 h-5 rounded-full border-2 border-[#00A4D3] flex items-center justify-center bg-white transition-all duration-200 shrink-0 mt-0.5">
                                         <span class="address-radio-inner w-2.5 h-2.5 rounded-full bg-[#00A4D3] opacity-0 scale-0 transition-all duration-200"></span>
@@ -341,10 +349,19 @@
         </div>
     </div>
 </div>
-    </div>
-</div>
 
 <script>
+    function selectAddressFromEl(el) {
+        if (!el || !el.dataset) return;
+        selectAddress(
+            el.dataset.ad || '',
+            el.dataset.tel || '',
+            el.dataset.sehir || '',
+            el.dataset.ilce || '',
+            el.dataset.adres || ''
+        );
+    }
+
     function selectAddress(ad, tel, sehir, ilce, acikAdres) {
         document.getElementById("MusteriAdSoyad").value = ad;
         document.getElementById("Telefon").value = tel;

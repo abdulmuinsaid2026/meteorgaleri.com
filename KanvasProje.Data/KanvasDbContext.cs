@@ -226,6 +226,7 @@ namespace KanvasProje.Data
             modelBuilder.Entity<BultenAboneligi>(entity =>
             {
                 entity.HasKey(e => e.Id);
+                entity.HasIndex(e => e.Email).IsUnique();
             });
 
             modelBuilder.Entity<Kupon>(entity =>

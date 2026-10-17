@@ -1,5 +1,6 @@
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.EntityFrameworkCore
+@using Microsoft.Extensions.Caching.Memory
 @using KanvasProje.Core.Helpers
 @using KanvasProje.Core.Varliklar
 @using KanvasProje.Web.Extensions
@@ -12,6 +13,7 @@
 @inject KanvasProje.Core.Interfaces.ISepetService SepetService
 @inject KanvasProje.Data.KanvasDbContext DbContext
 @inject KanvasProje.Service.Services.ISiteSettingsService SiteSettingsService
+@inject Microsoft.Extensions.Caching.Memory.IMemoryCache MemoryCache
 
 @{
     var userId = UserManager.GetUserId(User);
@@ -80,11 +82,16 @@
         .Distinct(StringComparer.OrdinalIgnoreCase)
         .ToList();
 
-    var tumKategoriler = await DbContext.Kategoriler
-        .Where(k => k.AktifMi && !k.SilindiMi)
-        .OrderBy(k => k.Sira)
-        .ThenBy(k => k.Ad)
-        .ToListAsync();
+    var tumKategoriler = await MemoryCache.GetOrCreateAsync("LayoutNavCategories_v1", async entry =>
+    {
+        entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15);
+        return await DbContext.Kategoriler
+            .AsNoTracking()
+            .Where(k => k.AktifMi && !k.SilindiMi)
+            .OrderBy(k => k.Sira)
+            .ThenBy(k => k.Ad)
+            .ToListAsync();
+    }) ?? new List<Kategori>();
 
     string NormalizeCategoryKey(string? value)
     {
@@ -309,7 +316,7 @@
 
                 <!-- Logo: Orijinal Meteor Galeri Görsel Logosu -->
                 <a class="inline-flex items-center group py-0.5 shrink-0" href="/" aria-label="@brandName" id="siteLogo">
-                    <img src="/meteorgaleri-logo.png"
+                    <img src="@logoUrl"
                          alt="@brandName"
                          class="h-8 sm:h-9 md:h-11 w-auto object-contain transition-transform duration-200 group-hover:scale-102"
                          width="212"
@@ -492,7 +499,7 @@
         <div id="mobileNav" class="mobile-nav-panel fixed left-0 top-0 z-[90] hidden h-dvh w-[88vw] max-w-[380px] overflow-y-auto overscroll-contain border-r border-slate-200 bg-white px-5 py-5 shadow-2xl md:hidden">
             <div class="mb-5 flex items-center justify-between border-b border-slate-100 pb-4">
                 <a href="/" class="inline-block py-1">
-                    <img src="/meteorgaleri-logo.png" alt="@brandName" class="h-8 w-auto object-contain" />
+                    <img src="@logoUrl" alt="@brandName" class="h-8 w-auto object-contain" />
                 </a>
                 <button type="button" aria-label="Menüyü kapat" onclick="window.toggleMobileNav(false)" class="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-600 hover:text-[#E30613] hover:border-[#E30613] transition-colors">
                     <i class="fas fa-times"></i>
@@ -918,18 +925,8 @@ document.addEventListener('keydown', function(event) {
                 }
             } else {
                 if (shouldOpen) {
-                    desktopBar.style.display = 'flex';
-                    desktopBar.classList.remove('hidden');
-                    const dsb = document.getElementById('desktopSearchBtn');
-                    if (dsb) dsb.style.display = 'none';
                     setTimeout(() => document.getElementById('desktopSearchInput')?.focus(), 50);
                 } else {
-                    desktopBar.style.display = 'none';
-                    desktopBar.classList.add('hidden');
-                    const dsb = document.getElementById('desktopSearchBtn');
-                    if (dsb) dsb.style.display = 'block';
-                    const inp = document.getElementById('desktopSearchInput');
-                    if (inp) inp.value = '';
                     document.getElementById('searchResultsDropdown')?.classList.add('hidden');
                 }
             }
@@ -1003,12 +1000,14 @@ document.addEventListener('keydown', function(event) {
                             showResults('<div class="px-4 py-5 text-center text-sm text-slate-500"><i class="fas fa-search mr-1 text-slate-400"></i>Sonuç bulunamadı</div>');
                             return;
                         }
-                        const html = '<div class="p-2"><div class="text-[10px] uppercase tracking-widest text-slate-400 font-medium px-2 pb-2">' + items.length + ' sonuç bulundu</div>' +
+                        const countLabel = items.length > 8 ? '8+ sonuç bulundu' : (items.length + ' sonuç bulundu');
+                        const html = '<div class="p-2"><div class="text-[10px] uppercase tracking-widest text-slate-400 font-medium px-2 pb-2">' + countLabel + '</div>' +
                             items.slice(0, 8).map(item => {
                                 const title = escapeHtml(item.baslik || '');
                                 const price = item.fiyat ? escapeHtml(item.fiyat) : '';
+                                const detailSegment = item.slug ? `${item.slug}-${item.id}` : String(item.id || '');
                                 const image = item.gorsel ? `<img src="${escapeHtml(item.gorsel)}" alt="${title}" class="w-12 h-12 object-cover rounded-lg" loading="lazy">` : `<div class="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center"><i class="fas fa-image text-slate-400"></i></div>`;
-                                return `<a href="/Urun/Detay/${encodeURIComponent(item.id)}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors hover:bg-slate-50 group">
+                                return `<a href="/Urun/Detay/${encodeURIComponent(detailSegment)}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors hover:bg-slate-50 group">
                                     ${image}
                                     <div class="flex-1 min-w-0">
                                         <div class="text-sm font-semibold text-slate-800 truncate group-hover:text-[#00A4D3] transition-colors">${title}</div>
@@ -1051,7 +1050,10 @@ document.addEventListener('keydown', function(event) {
                 if (!resultsDropdown?.contains(e.target) && !e.target.closest('#desktopSearchInput') && !e.target.closest('#mobileSearchInput')) hideResults();
             });
             document.addEventListener('keydown', function (e) {
-                if (e.key === 'Escape') { hideResults(); window.toggleSearchBar(false); }
+                if (e.key === 'Escape') {
+                    hideResults();
+                    if (window.innerWidth < 768) window.toggleSearchBar(false);
+                }
             });
             window.addEventListener('resize', positionResults);
             window.addEventListener('scroll', positionResults, true);
@@ -1112,8 +1114,8 @@ document.addEventListener('keydown', function(event) {
     <!-- Floating WhatsApp Button -->
     @if (!string.IsNullOrWhiteSpace(siteSettings.WhatsappNumarasi))
     {
-        var waNumber = siteSettings.WhatsappNumarasi.Replace(" ", "").Replace("+", "").TrimStart('0');
-        if (!waNumber.StartsWith("9")) waNumber = "9" + waNumber;
+        var waNumber = new string(siteSettings.WhatsappNumarasi.Where(char.IsDigit).ToArray()).TrimStart('0');
+        if (!string.IsNullOrEmpty(waNumber) && !waNumber.StartsWith("90")) waNumber = "90" + waNumber;
         <a href="https://wa.me/@waNumber" target="_blank" rel="noopener noreferrer"
            class="fixed bottom-6 right-6 z-50 bg-[#25D366] text-white p-4 rounded-full shadow-lg hover:bg-[#20BD5A] hover:scale-110 transition-all duration-300 group whatsapp-btn"
            aria-label="WhatsApp ile iletişim">

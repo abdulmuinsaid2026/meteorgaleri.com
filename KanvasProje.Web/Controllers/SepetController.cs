@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Identity;
 using KanvasProje.Core.Varliklar;
 using KanvasProje.Service.Services;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.RateLimiting;
 
 
 namespace KanvasProje.Web.Controllers
@@ -40,7 +41,7 @@ namespace KanvasProje.Web.Controllers
 
             // Database'den sepeti çek
             var sepetItems = await _sepetService.GetSepetItemsAsync(userId, sessionId);
-            decimal sepetToplami = await _sepetService.GetSepetToplamiAsync(userId, sessionId);
+            decimal sepetToplami = sepetItems.Sum(i => i.Toplam);
 
             // --- KUPON HESAPLAMA ---
             string? kuponKodu = HttpContext.Session.GetString("UygulananKupon");
@@ -64,32 +65,28 @@ namespace KanvasProje.Web.Controllers
             // --- KARGO HESAPLAMA ---
             var siteSettings = _siteSettingsService.GetSettings();
             decimal ucretsizKargoLimiti = siteSettings.UcretsizKargoLimiti;
-            
+
+            var kargoFirmalari = await _context.KargoFirmalari
+                .AsNoTracking()
+                .Where(x => !x.SilindiMi && x.AktifMi)
+                .OrderByDescending(x => x.VarsayilanMi)
+                .ThenBy(x => x.Ad)
+                .ToListAsync();
+
             int? secilenKargoId = HttpContext.Session.GetInt32("SecilenKargoId");
             KargoFirmasi? secilenKargo = null;
             if (secilenKargoId.HasValue)
             {
-                secilenKargo = await _context.KargoFirmalari
-                    .FirstOrDefaultAsync(x => x.Id == secilenKargoId.Value && !x.SilindiMi && x.AktifMi);
+                secilenKargo = kargoFirmalari.FirstOrDefault(x => x.Id == secilenKargoId.Value);
             }
 
-            if (secilenKargo == null)
-            {
-                secilenKargo = await _context.KargoFirmalari
-                    .FirstOrDefaultAsync(x => x.VarsayilanMi && !x.SilindiMi && x.AktifMi);
-            }
+            secilenKargo ??= kargoFirmalari.FirstOrDefault(x => x.VarsayilanMi) ?? kargoFirmalari.FirstOrDefault();
 
             decimal kargoBedeli = secilenKargo?.Fiyat ?? siteSettings.KargoBedeli;
 
             decimal sepetToplamiIndirimli = sepetToplami - indirimTutari;
             decimal gosterilecekKargoBedeli = sepetToplamiIndirimli >= ucretsizKargoLimiti ? 0 : kargoBedeli;
             decimal genelToplam = Math.Max(0, sepetToplamiIndirimli + gosterilecekKargoBedeli);
-
-            var kargoFirmalari = await _context.KargoFirmalari
-                .Where(x => !x.SilindiMi && x.AktifMi)
-                .OrderByDescending(x => x.VarsayilanMi)
-                .ThenBy(x => x.Ad)
-                .ToListAsync();
 
             ViewBag.KargoFirmalari = kargoFirmalari;
             ViewBag.SecilenKargoId = secilenKargo?.Id;
@@ -104,9 +101,11 @@ namespace KanvasProje.Web.Controllers
             // Sepette olmayan tamamlayıcı/popüler 4 ürünü çek
             var sepettekiUrunIdleri = sepetItems.Select(x => x.UrunId).ToList();
             var tamamlayiciUrunler = await _context.Urunler
+                .AsNoTracking()
+                .Include(u => u.Kategori)
                 .Include(u => u.UrunResimleri)
                 .Include(u => u.UrunSecenek)
-                .Where(u => u.AktifMi && !u.SilindiMi && !sepettekiUrunIdleri.Contains(u.Id))
+                .Where(u => u.AktifMi && !u.SilindiMi && (u.Kategori == null || u.Kategori.AktifMi) && !sepettekiUrunIdleri.Contains(u.Id))
                 .OrderByDescending(u => u.YeniUrunMu)
                 .ThenByDescending(u => u.IndirimliFiyat.HasValue && u.IndirimliFiyat.Value > 0 && u.IndirimliFiyat.Value < u.Fiyat ? u.IndirimliFiyat.Value : u.Fiyat)
                 .Take(4)
@@ -117,18 +116,12 @@ namespace KanvasProje.Web.Controllers
             return View(sepetItems);
         }
 
-
-
-
-
-
-        // SepetController içine ekle:
-
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [EnableRateLimiting("auth")]
         public async Task<IActionResult> KuponUygula(string kuponKodu)
         {
-            if (string.IsNullOrEmpty(kuponKodu))
+            if (string.IsNullOrWhiteSpace(kuponKodu))
             {
                 TempData["SepetHata"] = "Lütfen bir kupon kodu giriniz.";
                 return RedirectToAction("Index");
@@ -223,6 +216,10 @@ namespace KanvasProje.Web.Controllers
             {
                 HttpContext.Session.SetInt32("SecilenKargoId", kargoId);
             }
+            else
+            {
+                TempData["SepetHata"] = "Seçilen kargo firması bulunamadı veya aktif değil.";
+            }
             return RedirectToAction("Index");
         }
 
@@ -250,7 +247,7 @@ namespace KanvasProje.Web.Controllers
             }
             else
             {
-                return Json(new { success = false, message = "Ürün sepete eklenemedi" });
+                return Json(new { success = false, message = "Ürün sepete eklenemedi. Lütfen stok ve ölçü bilgilerini kontrol edin." });
             }
         }
 
@@ -265,9 +262,18 @@ namespace KanvasProje.Web.Controllers
             if (!sepetItems.Any(x => x.Id == sepetItemId))
                 return RedirectToAction("Index");
 
-            if (yeniAdet < 1) yeniAdet = 1;
+            if (yeniAdet <= 0)
+            {
+                await _sepetService.SepettenCikarAsync(sepetItemId);
+                return RedirectToAction("Index");
+            }
+
             if (yeniAdet > 100) yeniAdet = 100;
             var success = await _sepetService.AdediGuncelleAsync(sepetItemId, yeniAdet);
+            if (!success)
+            {
+                TempData["SepetHata"] = "İstenen adet stok miktarını veya sipariş sınırını aşıyor.";
+            }
             return RedirectToAction("Index");
         }
 

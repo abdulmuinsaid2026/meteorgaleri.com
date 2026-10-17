@@ -72,13 +72,16 @@ namespace KanvasProje.Service.Services
                     var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
                     var siteSettingsService = scope.ServiceProvider.GetRequiredService<ISiteSettingsService>();
 
-                    // Fiyat düşüşü bildirimi açık olan tüm favorileri çek
+                    // Fiyat düşüşü bildirimi açık olan tüm aktif favorileri çek
                     var favoriler = await context.Favoriler
                         .Include(f => f.Urun)
                         .Include(f => f.AppUser)
                         .Where(f => f.FiyatDustugundaBildir
                                     && !f.SilindiMi
-                                    && f.EskiFiyat.HasValue)
+                                    && f.EskiFiyat.HasValue
+                                    && f.Urun != null
+                                    && f.Urun.AktifMi
+                                    && !f.Urun.SilindiMi)
                         .ToListAsync(stoppingToken);
 
                     if (!favoriler.Any())
@@ -93,7 +96,7 @@ namespace KanvasProje.Service.Services
 
                         foreach (var favori in favoriler)
                         {
-                            if (favori.Urun == null || favori.AppUser == null) continue;
+                            if (favori.Urun == null || favori.AppUser == null || !favori.Urun.AktifMi || favori.Urun.SilindiMi) continue;
                             if (string.IsNullOrWhiteSpace(favori.AppUser.Email)) continue;
                             if (!IsValidEmail(favori.AppUser.Email)) continue;
 
@@ -108,7 +111,7 @@ namespace KanvasProje.Service.Services
                             var eskiFiyat = favori.EskiFiyat!.Value;
 
                             // Fiyat düştü mü?
-                            if (mevcutFiyat < eskiFiyat)
+                            if (mevcutFiyat < eskiFiyat && eskiFiyat > 0)
                             {
                                 var indirimOrani = Math.Round((1 - mevcutFiyat / eskiFiyat) * 100, 0);
                                 var indirimMiktari = eskiFiyat - mevcutFiyat;
@@ -200,8 +203,15 @@ namespace KanvasProje.Service.Services
 
         private bool IsSmtpConfigured()
         {
-            var username = _config["EmailSettings:Username"];
+            var brevoApiKey = _config["Brevo:ApiKey"] ?? Environment.GetEnvironmentVariable("BREVO_API_KEY");
             var password = _config["EmailSettings:Password"];
+            if (!string.IsNullOrWhiteSpace(brevoApiKey) ||
+                (!string.IsNullOrWhiteSpace(password) && password.StartsWith("xkeysib-", StringComparison.OrdinalIgnoreCase)))
+            {
+                return true;
+            }
+
+            var username = _config["EmailSettings:Username"];
             return IsValidEmail(username) && !string.IsNullOrWhiteSpace(password);
         }
 

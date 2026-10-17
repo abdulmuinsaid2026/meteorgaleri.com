@@ -37,13 +37,13 @@ namespace KanvasProje.Core.Varliklar
         public bool SatinAlinabilirMi => AktifMi && (StokAdedi > 0 || OnSipariseAcikMi);
 
         [NotMapped]
-        public decimal EtkinFiyat => Math.Round(SatisFiyati * 0.80m, 0);
+        public decimal EtkinFiyat => KanvasProje.Core.Helpers.FiyatPolitikasiHelper.ApplyDiscount(SatisFiyati, Urun?.KategoriId, Urun?.Kategori, 0);
 
         [NotMapped]
         public decimal EskiFiyat => SatisFiyati;
 
         [NotMapped]
-        public bool IndirimVarMi => SatisFiyati > 0;
+        public bool IndirimVarMi => SatisFiyati > 0 && EtkinFiyat < SatisFiyati;
 
         [NotMapped]
         public string VaryantBasligi

@@ -58,7 +58,7 @@
                             <i class="fas fa-heart text-sm"></i>
                         </button>
 
-                        @if (urun.IndirimVarMi)
+                        @if (urun.IndirimVarMi && urun.Fiyat > 0)
                         {
                             var indirimYuzde = Math.Round((1 - urun.EtkinFiyat / urun.Fiyat) * 100, 0);
                             <span class="absolute top-3 left-3 bg-[#E30613] text-white text-[10px] font-extrabold px-2.5 py-1 rounded-full shadow-sm tracking-wider">

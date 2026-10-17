@@ -8,10 +8,10 @@ namespace KanvasProje.Core.Helpers
     public class TurkceIdentityErrorDescriber : IdentityErrorDescriber
     {
         public override IdentityError DuplicateEmail(string email)
-            => new() { Code = nameof(DuplicateEmail), Description = $"'{email}' e-posta adresi zaten kayıtlı." };
+            => new() { Code = nameof(DuplicateEmail), Description = "Bu e-posta adresi ile kayıtlı bir hesap zaten mevcut. Giriş yapabilir veya şifrenizi sıfırlayabilirsiniz." };
 
         public override IdentityError DuplicateUserName(string userName)
-            => new() { Code = nameof(DuplicateUserName), Description = $"'{userName}' kullanıcı adı zaten kullanılıyor." };
+            => new() { Code = nameof(DuplicateUserName), Description = "Bu e-posta adresi ile kayıtlı bir hesap zaten mevcut." };
 
         public override IdentityError InvalidEmail(string? email)
             => new() { Code = nameof(InvalidEmail), Description = $"'{email}' geçersiz bir e-posta adresidir." };

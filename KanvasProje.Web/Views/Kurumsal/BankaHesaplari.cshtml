@@ -1,0 +1,62 @@
+@inject KanvasProje.Service.Services.ISiteSettingsService SiteSettingsService
+@{
+    ViewData["Title"] = "Banka Hesaplarımız";
+    var settings = SiteSettingsService.GetSettings();
+    var brandName = string.IsNullOrWhiteSpace(settings.MarkaAdi) ? "Meteor Galeri" : settings.MarkaAdi;
+}
+
+<div class="bg-slate-50 border-b border-slate-200 py-3">
+    <div class="container mx-auto px-4 flex items-center gap-2 text-xs text-slate-500">
+        <a href="/" class="hover:text-[#00A4D3] transition-colors">Ana Sayfa</a>
+        <span>/</span>
+        <span class="text-slate-800 font-semibold">Banka Hesaplarımız</span>
+    </div>
+</div>
+
+<div class="container mx-auto px-4 py-12 max-w-4xl">
+    <div class="text-center mb-10">
+        <h1 class="font-heading text-3xl md:text-4xl font-extrabold text-slate-900 mb-3">Ödeme ve Banka Bilgileri</h1>
+        <p class="text-sm text-slate-600 max-w-2xl mx-auto">
+            @brandName üzerinden vereceğiniz siparişlerde güvenli online ödeme (kredi kartı / banka kartı) altyapımız kullanılmaktadır. Kurumsal veya toplu sipariş ödemeleriniz için bizimle iletişime geçebilirsiniz.
+        </p>
+    </div>
+
+    <div class="bg-white border border-slate-200/80 rounded-2xl p-8 shadow-sm space-y-6">
+        <div class="flex items-start gap-4">
+            <div class="w-12 h-12 rounded-xl bg-sky-50 text-[#00A4D3] flex items-center justify-center flex-shrink-0 text-xl">
+                <i class="fas fa-shield-halved"></i>
+            </div>
+            <div>
+                <h2 class="font-heading text-lg font-bold text-slate-900 mb-1">256-Bit SSL Güvenli Online Ödeme</h2>
+                <p class="text-sm text-slate-600 leading-relaxed">
+                    Sitemizdeki tüm kredi ve banka kartı ödemeleri 3D Secure güvencesiyle gerçekleştirilir. Kart bilgileriniz sistemlerimizde kesinlikle saklanmaz.
+                </p>
+            </div>
+        </div>
+
+        <hr class="border-slate-100" />
+
+        <div class="flex items-start gap-4">
+            <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0 text-xl">
+                <i class="fas fa-building-columns"></i>
+            </div>
+            <div>
+                <h2 class="font-heading text-lg font-bold text-slate-900 mb-1">Kurumsal Havale / EFT Talepleri</h2>
+                <p class="text-sm text-slate-600 leading-relaxed mb-4">
+                    Kurumsal faturalı veya toplu siparişlerinizde güncel banka hesap (IBAN) bilgilerimiz için müşteri hizmetlerimizle iletişime geçebilirsiniz.
+                </p>
+                <div class="flex flex-wrap gap-3">
+                    <a href="/Kurumsal/Iletisim" class="inline-flex items-center gap-2 bg-[#00A4D3] hover:bg-[#0284C7] text-white text-xs font-bold tracking-wider uppercase px-6 py-3 rounded-xl transition-all">
+                        <i class="fas fa-envelope"></i> İletişime Geçin
+                    </a>
+                    @if (!string.IsNullOrWhiteSpace(settings.Telefon))
+                    {
+                        <a href="tel:@settings.Telefon.Replace(" ", "")" class="inline-flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold tracking-wider uppercase px-6 py-3 rounded-xl transition-all">
+                            <i class="fas fa-phone"></i> @settings.Telefon
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -52,7 +52,9 @@ namespace KanvasProje.Web.Controllers
 
             ViewBag.SiparisSayisi = siparislerim.Count;
             var toplamHarcama = siparislerim
-                .Where(x => x.Durum is >= 1 and < 4 && x.ToplamTutar > 0 && x.ToplamTutar <= 1_000_000)
+                .Where(x => (x.Durum is 1 or 2 or 3 or 8) &&
+                            x.ToplamTutar > 0 &&
+                            (x.OdemeTamamlandiMi || !string.Equals(x.OdemeSaglayici, "PayTR", StringComparison.OrdinalIgnoreCase)))
                 .Sum(x => x.ToplamTutar);
             ViewBag.ToplamHarcama = toplamHarcama.ToString("N2", new System.Globalization.CultureInfo("tr-TR"));
             return View(user);
@@ -172,7 +174,7 @@ namespace KanvasProje.Web.Controllers
 
             if (mevcutTalep != null)
             {
-                TempData["Bilgi"] = "Bu siparis icin zaten bir iade talebiniz bulunmaktadir.";
+                TempData["Hata"] = "Bu siparis icin zaten bir iade talebiniz bulunmaktadir.";
                 return RedirectToAction(nameof(SiparisDetay), new { id = siparisId });
             }
 
@@ -211,23 +213,40 @@ namespace KanvasProje.Web.Controllers
 
             talep.Neden = talep.Neden?.Trim() ?? string.Empty;
             talep.Aciklama = talep.Aciklama?.Trim();
-            talep.IBAN = talep.IBAN?.Trim();
+            var normalizedIban = string.IsNullOrWhiteSpace(talep.IBAN)
+                ? null
+                : System.Text.RegularExpressions.Regex.Replace(talep.IBAN.Trim().ToUpperInvariant(), @"\s+", "");
 
-            if (string.IsNullOrWhiteSpace(talep.Neden))
+            ViewBag.SeciliNeden = talep.Neden;
+            ViewBag.GirilenAciklama = talep.Aciklama;
+            ViewBag.GirilenIban = normalizedIban;
+
+            var allowedReasons = new[] { "Hasarlı Ürün", "Yanlış Ürün", "Beklentimi Karşılamadı", "Vazgeçtim" };
+            if (string.IsNullOrWhiteSpace(talep.Neden) || !allowedReasons.Contains(talep.Neden))
             {
-                TempData["Hata"] = "Iade nedeni zorunludur.";
-                return RedirectToAction(nameof(IadeOlustur), new { siparisId = talep.SiparisId });
+                ViewBag.Hata = "Lütfen geçerli bir iade nedeni seçiniz.";
+                return View(siparis);
             }
+
+            if (!string.IsNullOrWhiteSpace(normalizedIban) &&
+                !System.Text.RegularExpressions.Regex.IsMatch(normalizedIban, @"^TR\d{24}$"))
+            {
+                ViewBag.Hata = "Lütfen TR ile başlayan 26 haneli geçerli bir IBAN giriniz.";
+                return View(siparis);
+            }
+
+            talep.IBAN = normalizedIban;
 
             var mevcutTalep = await _context.IadeTalepleri
                 .FirstOrDefaultAsync(x => x.SiparisId == talep.SiparisId && !x.SilindiMi);
 
             if (mevcutTalep != null)
             {
-                TempData["Bilgi"] = "Bu siparis icin zaten bir iade talebi bulunuyor.";
+                TempData["Hata"] = "Bu siparis icin zaten bir iade talebi bulunuyor.";
                 return RedirectToAction(nameof(SiparisDetay), new { id = talep.SiparisId });
             }
 
+            talep.Id = 0;
             talep.MusteriId = user.Id;
             talep.OlusturulmaTarihi = DateTime.UtcNow;
             talep.Durum = 0;
@@ -262,7 +281,7 @@ namespace KanvasProje.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AdresEkle(Adres adres)
+        public async Task<IActionResult> AdresEkle([Bind("Baslik,AdSoyad,Telefon,Sehir,Ilce,AcikAdres")] Adres adres)
         {
             var user = await _userManager.GetUserAsync(User);
             if (user == null)
@@ -270,6 +289,14 @@ namespace KanvasProje.Web.Controllers
                 return Challenge();
             }
 
+            var mevcutAdresSayisi = await _context.Adresler.CountAsync(x => x.AppUserId == user.Id && !x.SilindiMi);
+            if (mevcutAdresSayisi >= 20)
+            {
+                TempData["Hata"] = "En fazla 20 adet teslimat adresi kaydedebilirsiniz.";
+                return RedirectToAction(nameof(Adreslerim));
+            }
+
+            adres.Id = 0;
             adres.AppUserId = user.Id;
             adres.Baslik = adres.Baslik?.Trim() ?? string.Empty;
             adres.AdSoyad = adres.AdSoyad?.Trim() ?? string.Empty;
@@ -277,6 +304,18 @@ namespace KanvasProje.Web.Controllers
             adres.Sehir = adres.Sehir?.Trim() ?? string.Empty;
             adres.Ilce = adres.Ilce?.Trim() ?? string.Empty;
             adres.AcikAdres = adres.AcikAdres?.Trim() ?? string.Empty;
+
+            if (string.IsNullOrWhiteSpace(adres.Baslik) ||
+                string.IsNullOrWhiteSpace(adres.AdSoyad) ||
+                string.IsNullOrWhiteSpace(adres.Telefon) ||
+                string.IsNullOrWhiteSpace(adres.Sehir) ||
+                string.IsNullOrWhiteSpace(adres.Ilce) ||
+                string.IsNullOrWhiteSpace(adres.AcikAdres))
+            {
+                TempData["Hata"] = "Lütfen tüm adres alanlarını eksiksiz doldurunuz.";
+                return RedirectToAction(nameof(Adreslerim));
+            }
+
             adres.OlusturulmaTarihi = DateTime.UtcNow;
             adres.SilindiMi = false;
 
@@ -284,6 +323,55 @@ namespace KanvasProje.Web.Controllers
             await _context.SaveChangesAsync();
 
             TempData["Mesaj"] = "Adres basariyla eklendi.";
+            return RedirectToAction(nameof(Adreslerim));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AdresGuncelle([Bind("Id,Baslik,AdSoyad,Telefon,Sehir,Ilce,AcikAdres")] Adres model)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+            {
+                return Challenge();
+            }
+
+            var adres = await _context.Adresler
+                .FirstOrDefaultAsync(x => x.Id == model.Id && x.AppUserId == user.Id && !x.SilindiMi);
+
+            if (adres == null)
+            {
+                TempData["Hata"] = "Düzenlenecek adres bulunamadı.";
+                return RedirectToAction(nameof(Adreslerim));
+            }
+
+            var baslik = model.Baslik?.Trim() ?? string.Empty;
+            var adSoyad = model.AdSoyad?.Trim() ?? string.Empty;
+            var telefon = model.Telefon?.Trim() ?? string.Empty;
+            var sehir = model.Sehir?.Trim() ?? string.Empty;
+            var ilce = model.Ilce?.Trim() ?? string.Empty;
+            var acikAdres = model.AcikAdres?.Trim() ?? string.Empty;
+
+            if (string.IsNullOrWhiteSpace(baslik) ||
+                string.IsNullOrWhiteSpace(adSoyad) ||
+                string.IsNullOrWhiteSpace(telefon) ||
+                string.IsNullOrWhiteSpace(sehir) ||
+                string.IsNullOrWhiteSpace(ilce) ||
+                string.IsNullOrWhiteSpace(acikAdres))
+            {
+                TempData["Hata"] = "Lütfen tüm adres alanlarını eksiksiz doldurunuz.";
+                return RedirectToAction(nameof(Adreslerim));
+            }
+
+            adres.Baslik = baslik;
+            adres.AdSoyad = adSoyad;
+            adres.Telefon = telefon;
+            adres.Sehir = sehir;
+            adres.Ilce = ilce;
+            adres.AcikAdres = acikAdres;
+
+            await _context.SaveChangesAsync();
+            TempData["Mesaj"] = "Adres başarıyla güncellendi.";
             return RedirectToAction(nameof(Adreslerim));
         }
 
@@ -311,14 +399,7 @@ namespace KanvasProje.Web.Controllers
         }
 
         [HttpGet]
-        public IActionResult HesabiSil()
-        {
-            return View();
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> HesabiSilOnayla(string sifre)
+        public async Task<IActionResult> HesabiSil()
         {
             var user = await _userManager.GetUserAsync(User);
             if (user == null)
@@ -326,22 +407,41 @@ namespace KanvasProje.Web.Controllers
                 return Challenge();
             }
 
-            var passwordCheck = await _userManager.CheckPasswordAsync(user, sifre);
-            if (!passwordCheck)
+            ViewBag.HasPassword = await _userManager.HasPasswordAsync(user);
+            return View();
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> HesabiSilOnayla(string? sifre)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
             {
-                ViewBag.Hata = "Girdiginiz sifre yanlis. Lutfen tekrar deneyin.";
-                return View("HesabiSil");
+                return Challenge();
+            }
+
+            var hasPassword = await _userManager.HasPasswordAsync(user);
+            ViewBag.HasPassword = hasPassword;
+
+            if (hasPassword)
+            {
+                if (string.IsNullOrWhiteSpace(sifre) || !await _userManager.CheckPasswordAsync(user, sifre))
+                {
+                    ViewBag.Hata = "Girdiğiniz şifre yanlış. Lütfen tekrar deneyin.";
+                    return View("HesabiSil");
+                }
             }
 
             var result = await _userManager.DeleteAsync(user);
             if (result.Succeeded)
             {
                 await _signInManager.SignOutAsync();
-                TempData["Bilgi"] = "Hesabiniz basariyla silindi. Bizi tercih ettiginiz icin tesekkur ederiz.";
+                TempData["Basari"] = "Hesabınız başarıyla silindi. Bizi tercih ettiğiniz için teşekkür ederiz.";
                 return RedirectToAction("Index", "Home");
             }
 
-            ViewBag.Hata = "Hesap silinirken bir hata olustu. Lutfen tekrar deneyin.";
+            ViewBag.Hata = "Hesap silinirken bir hata oluştu. Lütfen tekrar deneyin.";
             return View("HesabiSil");
         }
 
@@ -356,7 +456,8 @@ namespace KanvasProje.Web.Controllers
 
         private static bool IadeSuresiDevamEdiyor(Siparis siparis)
         {
-            return DateTime.UtcNow <= siparis.OlusturulmaTarihi.ToUniversalTime().AddDays(IadeHakkiGun);
+            var bazTarih = (siparis.OdemeOnayTarihi ?? siparis.OlusturulmaTarihi).ToUniversalTime();
+            return DateTime.UtcNow <= bazTarih.AddDays(IadeHakkiGun);
         }
 
         private async Task SendReturnRequestEmailsAsync(IadeTalebi talep, Siparis siparis)

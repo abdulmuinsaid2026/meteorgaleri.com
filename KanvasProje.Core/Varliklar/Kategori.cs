@@ -19,6 +19,7 @@ namespace KanvasProje.Core.Varliklar
         public string UrunSiralamaTipi { get; set; } = "manual";
         public int Sira { get; set; }
         public bool AktifMi { get; set; } = true;
+        public decimal? IndirimYuzdesi { get; set; }
 
         public int? ParentKategoriId { get; set; }
         public Kategori? ParentKategori { get; set; }

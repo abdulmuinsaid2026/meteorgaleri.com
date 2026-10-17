@@ -1,4 +1,5 @@
 @{
     ViewData["Title"] = "Gizlilik Politikası";
-    Context.Response.Redirect("/Kurumsal/Gizlilik");
+    Context.Response.Redirect("/Kurumsal/Gizlilik", permanent: true);
+    return;
 }

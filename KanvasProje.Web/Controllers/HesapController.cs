@@ -22,6 +22,8 @@ namespace KanvasProje.Web.Controllers
         private readonly IAdminSecurityAuditService _adminSecurityAuditService;
         private readonly IConfiguration _configuration;
 
+        private readonly ILogger<HesapController> _logger;
+
         public HesapController(
             UserManager<AppUser> userManager,
             SignInManager<AppUser> signInManager,
@@ -29,7 +31,8 @@ namespace KanvasProje.Web.Controllers
             IEmailService emailService,
             IAdminSessionStateService adminSessionStateService,
             IAdminSecurityAuditService adminSecurityAuditService,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            ILogger<HesapController> logger)
         {
             _userManager = userManager;
             _signInManager = signInManager;
@@ -38,6 +41,7 @@ namespace KanvasProje.Web.Controllers
             _adminSessionStateService = adminSessionStateService;
             _adminSecurityAuditService = adminSecurityAuditService;
             _configuration = configuration;
+            _logger = logger;
         }
 
         [HttpGet]
@@ -58,10 +62,10 @@ namespace KanvasProje.Web.Controllers
 
             var user = new AppUser
             {
-                UserName = model.Eposta,
-                Email = model.Eposta,
-                AdSoyad = model.AdSoyad,
-                Sehir = model.Sehir,
+                UserName = model.Eposta.Trim(),
+                Email = model.Eposta.Trim(),
+                AdSoyad = model.AdSoyad.Trim(),
+                Sehir = model.Sehir.Trim(),
                 EmailConfirmed = true
             };
 
@@ -94,35 +98,6 @@ namespace KanvasProje.Web.Controllers
         }
 
         [HttpGet]
-        public IActionResult EpostaOnayBilgilendirme()
-        {
-            return View();
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> EpostaDogrula(string userId, string token)
-        {
-            if (string.IsNullOrWhiteSpace(userId) || string.IsNullOrWhiteSpace(token))
-            {
-                return RedirectToAction("Index", "Home");
-            }
-
-            var user = await _userManager.FindByIdAsync(userId);
-            if (user == null)
-            {
-                return NotFound("Kullanici bulunamadi.");
-            }
-
-            var result = await _userManager.ConfirmEmailAsync(user, token);
-            if (result.Succeeded)
-            {
-                return View("DogrulamaBasarili");
-            }
-
-            return Content("Hata: E-posta dogrulanamadi.");
-        }
-
-        [HttpGet]
         public IActionResult GirisYap(string? returnUrl = null)
         {
             ViewBag.ReturnUrl = returnUrl;
@@ -132,9 +107,18 @@ namespace KanvasProje.Web.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("auth")]
-        public async Task<IActionResult> GirisYap(string eposta, string sifre, string? returnUrl = null)
+        public async Task<IActionResult> GirisYap(string? eposta, string? sifre, string? returnUrl = null)
         {
-            var user = await _userManager.FindByEmailAsync(eposta);
+            ViewBag.ReturnUrl = returnUrl;
+            ViewBag.Eposta = eposta;
+
+            if (string.IsNullOrWhiteSpace(eposta) || string.IsNullOrWhiteSpace(sifre))
+            {
+                ViewBag.Hata = "Lütfen e-posta ve şifrenizi giriniz.";
+                return View();
+            }
+
+            var user = await _userManager.FindByEmailAsync(eposta.Trim());
             if (user != null)
             {
                 var result = await _signInManager.PasswordSignInAsync(user, sifre, isPersistent: true, lockoutOnFailure: true);
@@ -179,10 +163,21 @@ namespace KanvasProje.Web.Controllers
 
                     return RedirectToAction("Index", "Home");
                 }
+
+                if (result.IsLockedOut)
+                {
+                    ViewBag.Hata = "Çok fazla başarısız giriş denemesi yapıldı. Hesabınız geçici olarak kilitlendi, lütfen birkaç dakika sonra tekrar deneyin.";
+                    return View();
+                }
+
+                if (result.IsNotAllowed)
+                {
+                    ViewBag.Hata = "Bu hesap ile giriş yapılmasına şu anda izin verilmiyor.";
+                    return View();
+                }
             }
 
             ViewBag.Hata = "E-posta veya şifre hatalı.";
-            TempData["Hata"] = ViewBag.Hata;
             return View();
         }
 
@@ -224,25 +219,26 @@ namespace KanvasProje.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> SifremiUnuttum(string eposta)
+        [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("auth")]
+        public async Task<IActionResult> SifremiUnuttum(string? eposta)
         {
             ViewBag.Eposta = eposta;
             if (string.IsNullOrWhiteSpace(eposta))
             {
                 ViewBag.Hata = "Lütfen kayıtlı e-posta adresinizi yazın.";
-                TempData["Hata"] = ViewBag.Hata;
                 return View();
             }
 
-            var user = await _userManager.FindByEmailAsync(eposta);
+            const string genericSuccessMessage = "Eğer bu e-posta sistemde kayıtlıysa, şifre sıfırlama bağlantısı gönderildi.";
+
+            var user = await _userManager.FindByEmailAsync(eposta.Trim());
             if (user == null)
             {
-                ViewBag.Mesaj = "Eğer bu e-posta sistemde kayıtlıysa, şifre sıfırlama bağlantısı gönderildi.";
-                TempData["Basari"] = ViewBag.Mesaj;
+                ViewBag.Mesaj = genericSuccessMessage;
                 return View();
             }
 
-            user.SifreSifirlamaToken = Guid.NewGuid().ToString();
+            user.SifreSifirlamaToken = Guid.NewGuid().ToString("N");
             user.SifreSifirlamaGecerlilik = DateTime.UtcNow.AddHours(1);
             await _userManager.UpdateAsync(user);
 
@@ -260,13 +256,12 @@ namespace KanvasProje.Web.Controllers
             }
             catch (Exception ex)
             {
-                ViewBag.Hata = "Şifre sıfırlama e-postası gönderilemedi: " + ex.Message;
-                TempData["Hata"] = ViewBag.Hata;
+                _logger.LogError(ex, "Şifre sıfırlama e-postası gönderilemedi.");
+                ViewBag.Hata = "Şifre sıfırlama e-postası şu anda gönderilemedi. Lütfen daha sonra tekrar deneyin.";
                 return View();
             }
 
-            ViewBag.Mesaj = "Şifre sıfırlama bağlantısı e-posta adresinize gönderildi.";
-            TempData["Basari"] = ViewBag.Mesaj;
+            ViewBag.Mesaj = genericSuccessMessage;
             return View();
         }
 
@@ -281,8 +276,7 @@ namespace KanvasProje.Web.Controllers
             var user = await _userManager.Users.FirstOrDefaultAsync(x => x.SifreSifirlamaToken == token && x.SifreSifirlamaGecerlilik > DateTime.UtcNow);
             if (user == null)
             {
-                ViewBag.Hata = "Bu bağlantı geçersiz veya süresi dolmuş.";
-                TempData["Hata"] = ViewBag.Hata;
+                TempData["Hata"] = "Bu bağlantı geçersiz veya süresi dolmuş.";
                 return RedirectToAction("SifremiUnuttum");
             }
 
@@ -291,6 +285,7 @@ namespace KanvasProje.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("auth")]
         public async Task<IActionResult> SifreSifirla(SifreSifirlaViewModel model)
         {
             if (!ModelState.IsValid)
@@ -302,12 +297,11 @@ namespace KanvasProje.Web.Controllers
             if (user == null)
             {
                 ViewBag.Hata = "İşlem başarısız. Bağlantının süresi dolmuş olabilir.";
-                TempData["Hata"] = ViewBag.Hata;
                 return View(model);
             }
 
-            await _userManager.RemovePasswordAsync(user);
-            var result = await _userManager.AddPasswordAsync(user, model.YeniSifre);
+            var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var result = await _userManager.ResetPasswordAsync(user, resetToken, model.YeniSifre);
             if (!result.Succeeded)
             {
                 foreach (var error in result.Errors)
@@ -321,6 +315,7 @@ namespace KanvasProje.Web.Controllers
             user.SifreSifirlamaToken = null;
             user.SifreSifirlamaGecerlilik = null;
             await _userManager.UpdateAsync(user);
+            await _userManager.UpdateSecurityStampAsync(user);
 
             TempData["Basari"] = "Şifreniz başarıyla güncellendi. Giriş yapabilirsiniz.";
             return RedirectToAction("GirisYap");
@@ -334,7 +329,7 @@ namespace KanvasProje.Web.Controllers
         [HttpGet]
         public async Task<IActionResult> SosyalKayitTamamla()
         {
-            if (TempData["SosyalKayitYeni"] == null || TempData["SosyalKayitYeni"]?.ToString() != "true")
+            if (TempData.Peek("SosyalKayitYeni")?.ToString() != "true")
                 return RedirectToAction("Index", "Home");
 
             var user = await _userManager.GetUserAsync(User);
@@ -348,15 +343,21 @@ namespace KanvasProje.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SosyalKayitTamamla(SosyalKayitTamamlaViewModel model)
         {
-            if (!ModelState.IsValid)
-                return View(model);
-
             var user = await _userManager.GetUserAsync(User);
             if (user == null)
                 return RedirectToAction("GirisYap");
 
-            user.Sehir = model.Sehir;
+            if (!ModelState.IsValid)
+            {
+                model.AdSoyad = user.AdSoyad;
+                model.Eposta = user.Email ?? string.Empty;
+                TempData.Keep("SosyalKayitYeni");
+                return View(model);
+            }
+
+            user.Sehir = model.Sehir.Trim();
             await _userManager.UpdateAsync(user);
+            TempData.Remove("SosyalKayitYeni");
 
             TempData["Basari"] = "Hesabınız tamamlandı!";
             return RedirectToAction("Index", "Home");
@@ -434,6 +435,8 @@ namespace KanvasProje.Web.Controllers
 
             var email = info.Principal.FindFirstValue(ClaimTypes.Email);
             var name = info.Principal.FindFirstValue(ClaimTypes.Name);
+            var emailVerifiedClaim = info.Principal.FindFirstValue("email_verified")
+                ?? info.Principal.FindFirstValue("urn:google:email_verified");
 
             if (string.IsNullOrWhiteSpace(email))
             {
@@ -441,9 +444,19 @@ namespace KanvasProje.Web.Controllers
                 return View("GirisYap");
             }
 
+            var isEmailVerified = string.IsNullOrEmpty(emailVerifiedClaim)
+                ? string.Equals(info.LoginProvider, "Google", StringComparison.OrdinalIgnoreCase)
+                : string.Equals(emailVerifiedClaim, "true", StringComparison.OrdinalIgnoreCase);
+
             var existingUser = await _userManager.FindByEmailAsync(email);
             if (existingUser != null)
             {
+                if (!isEmailVerified)
+                {
+                    ViewBag.Hata = "Harici sağlayıcıdaki e-posta adresiniz doğrulanmamış olduğu için mevcut hesabınızla eşleştirilemedi.";
+                    return View("GirisYap");
+                }
+
                 var addLoginResult = await _userManager.AddLoginAsync(existingUser, info);
                 if (addLoginResult.Succeeded)
                 {

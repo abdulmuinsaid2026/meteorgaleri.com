@@ -3,8 +3,7 @@ using System.Threading.Tasks;
 namespace KanvasProje.Service.Interfaces
 {
     /// <summary>
-    /// Ödeme altyapısı için soyut arayüz.
-    /// PayTR, İyzico vb. farklı sağlayıcılar bu arayüzü uygulayabilir.
+    /// PayTR ödeme altyapısı için soyut arayüz.
     /// </summary>
     public interface IPaymentService
     {

@@ -59,36 +59,58 @@
                 var slide = aktifSlaytlar[i];
                 var hasVideo = !string.IsNullOrWhiteSpace(slide.VideoUrl) || !string.IsNullOrWhiteSpace(slide.MobilVideoUrl);
                 var hasOverlay = !string.IsNullOrWhiteSpace(slide.Baslik) || !string.IsNullOrWhiteSpace(slide.AltBaslik) || (!string.IsNullOrWhiteSpace(slide.ButonYazi) && !string.IsNullOrWhiteSpace(slide.ButonUrl));
+                var slideLink = KanvasProje.Core.Helpers.HtmlSanitizerHelper.SanitizeUrl(slide.ButonUrl, "/Urun");
 
                 <div class="hero-slide relative flex-shrink-0 w-full h-full overflow-hidden">
                     @if (hasVideo)
                     {
-                        @if (!string.IsNullOrWhiteSpace(slide.VideoUrl))
-                        {
-                            <video class="@(!string.IsNullOrWhiteSpace(slide.MobilVideoUrl) ? "hidden md:block" : "block") absolute inset-0 w-full h-full object-cover"
-                                   muted
-                                   playsinline
-                                   loop
-                                   preload="metadata"
-                                   data-hero-video>
-                                <source src="@slide.VideoUrl" type="video/mp4">
-                            </video>
-                        }
-                        @if (!string.IsNullOrWhiteSpace(slide.MobilVideoUrl))
-                        {
-                            <video class="block md:hidden absolute inset-0 w-full h-full object-cover"
-                                   muted
-                                   playsinline
-                                   loop
-                                   preload="metadata"
-                                   data-hero-video>
-                                <source src="@slide.MobilVideoUrl" type="video/mp4">
-                            </video>
-                        }
+                        <a href="@slideLink" class="block w-full h-full relative cursor-pointer">
+                            @if (!string.IsNullOrWhiteSpace(slide.VideoUrl))
+                            {
+                                <video class="@(!string.IsNullOrWhiteSpace(slide.MobilVideoUrl) ? "hidden md:block" : "block") absolute inset-0 w-full h-full object-cover"
+                                       muted
+                                       playsinline
+                                       loop
+                                       preload="metadata"
+                                       data-hero-video>
+                                    <source src="@slide.VideoUrl" type="video/mp4">
+                                </video>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(slide.MobilVideoUrl))
+                            {
+                                <video class="block md:hidden absolute inset-0 w-full h-full object-cover"
+                                       muted
+                                       playsinline
+                                       loop
+                                       preload="metadata"
+                                       data-hero-video>
+                                    <source src="@slide.MobilVideoUrl" type="video/mp4">
+                                </video>
+                            }
+                            @if (hasOverlay)
+                            {
+                                <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent flex flex-col justify-end p-5 sm:p-8 md:p-12 z-10">
+                                    @if (!string.IsNullOrWhiteSpace(slide.Baslik))
+                                    {
+                                        <h2 class="text-white font-serif text-xl sm:text-3xl md:text-5xl font-bold drop-shadow-md">@slide.Baslik</h2>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(slide.AltBaslik))
+                                    {
+                                        <p class="text-white/90 text-xs sm:text-sm md:text-base mt-1.5 max-w-xl drop-shadow-sm">@slide.AltBaslik</p>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(slide.ButonYazi))
+                                    {
+                                        <span class="mt-3 inline-flex items-center gap-2 self-start px-5 py-2.5 rounded-full bg-[#00A4D3] hover:bg-[#0284C7] text-white text-xs font-bold uppercase tracking-wider shadow-md transition-all">
+                                            <span>@slide.ButonYazi</span>
+                                            <i class="fas fa-arrow-right text-[10px]"></i>
+                                        </span>
+                                    }
+                                </div>
+                            }
+                        </a>
                     }
                     else
                     {
-                        var slideLink = !string.IsNullOrWhiteSpace(slide.ButonUrl) ? slide.ButonUrl : "/Urun";
                         <a href="@slideLink" class="block w-full h-full cursor-pointer">
                             <picture class="block w-full h-full">
                                 @if (!string.IsNullOrWhiteSpace(slide.MobilResimUrl))
@@ -183,14 +205,11 @@
     function updateDots(idx) {
         dots.forEach((d, i) => {
             if (i === idx) {
-                d.classList.replace('w-1.5', 'w-6');
-                d.classList.replace('bg-white/50', 'bg-white');
+                d.classList.remove('w-2', 'w-1.5', 'bg-white/50');
+                d.classList.add('w-6', 'bg-white');
             } else {
-                d.classList.replace('w-6', 'w-1.5');
-                if (!d.classList.contains('bg-white/50')) {
-                    d.classList.remove('bg-white');
-                    d.classList.add('bg-white/50');
-                }
+                d.classList.remove('w-6', 'w-1.5', 'bg-white');
+                d.classList.add('w-2', 'bg-white/50');
             }
         });
     }
@@ -332,11 +351,25 @@ goTo(0);
         </p>
     </div>
 
+    @{
+        var katList = Model.Kategoriler ?? new List<Kategori>();
+        int ResolveKatId(string keyword, int fallbackId)
+        {
+            var match = katList.FirstOrDefault(k =>
+                (k.Ad != null && k.Ad.Contains(keyword, StringComparison.OrdinalIgnoreCase)) ||
+                (k.Slug != null && k.Slug.Contains(keyword, StringComparison.OrdinalIgnoreCase)));
+            return match?.Id ?? fallbackId;
+        }
+        var kanvasKatId = ResolveKatId("kanvas", 29);
+        var camKatId = ResolveKatId("cam", 30);
+        var kesmeKatId = ResolveKatId("kesme", 32);
+        var aynaKatId = ResolveKatId("ayna", 33);
+    }
     <!-- 4 Kompakt Vitrin Kategori Kartı (2x2 Mobil, 4x1 Masaüstü) -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
         <!-- 01: Kanvas Tablolar -->
         <div class="group relative h-[190px] sm:h-[220px] lg:h-[240px] rounded-xl sm:rounded-2xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-500 bg-slate-900">
-            <a href="/Urun?k=29" class="block w-full h-full relative" aria-label="Kanvas Tablolar Koleksiyonu">
+            <a href="/Urun?k=@kanvasKatId" class="block w-full h-full relative" aria-label="Kanvas Tablolar Koleksiyonu">
                 <img src="/img/banner/muhtesem-gunbatiminda-kosan-atlar-kanvas-6f51.webp" alt="Kanvas Tablolar" class="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-700 ease-out group-hover:scale-108" loading="lazy" decoding="async" />
                 <div class="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/35 to-black/10 transition-opacity duration-500 group-hover:from-slate-950 group-hover:via-slate-950/45"></div>
                 
@@ -364,7 +397,7 @@ goTo(0);
 
         <!-- 02: Temperli Cam Tablolar -->
         <div class="group relative h-[190px] sm:h-[220px] lg:h-[240px] rounded-xl sm:rounded-2xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-500 bg-slate-900">
-            <a href="/Urun?k=30" class="block w-full h-full relative" aria-label="Temperli Cam Tablolar Koleksiyonu">
+            <a href="/Urun?k=@camKatId" class="block w-full h-full relative" aria-label="Temperli Cam Tablolar Koleksiyonu">
                 <img src="/img/categories/cam-tablo.jpg" alt="Temperli Cam Tablo" class="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-108" loading="lazy" decoding="async" />
                 <div class="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/35 to-black/10 transition-opacity duration-500 group-hover:from-slate-950 group-hover:via-slate-950/45"></div>
                 
@@ -392,7 +425,7 @@ goTo(0);
 
         <!-- 03: Kesme Tahtası & Supla -->
         <div class="group relative h-[190px] sm:h-[220px] lg:h-[240px] rounded-xl sm:rounded-2xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-500 bg-slate-900">
-            <a href="/Urun?k=32" class="block w-full h-full relative" aria-label="Kesme Tahtası & Supla Koleksiyonu">
+            <a href="/Urun?k=@kesmeKatId" class="block w-full h-full relative" aria-label="Kesme Tahtası & Supla Koleksiyonu">
                 <img src="/img/categories/cam-kesme-tahtasi.jpg" alt="Kesme Tahtası & Supla" class="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-108" loading="lazy" decoding="async" />
                 <div class="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/35 to-black/10 transition-opacity duration-500 group-hover:from-slate-950 group-hover:via-slate-950/45"></div>
                 
@@ -420,7 +453,7 @@ goTo(0);
 
         <!-- 04: Özel Tasarım Aynalar -->
         <div class="group relative h-[190px] sm:h-[220px] lg:h-[240px] rounded-xl sm:rounded-2xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-500 bg-slate-900">
-            <a href="/Urun?k=33" class="block w-full h-full relative" aria-label="Özel Tasarım Aynalar Koleksiyonu">
+            <a href="/Urun?k=@aynaKatId" class="block w-full h-full relative" aria-label="Özel Tasarım Aynalar Koleksiyonu">
                 <img src="/img/categories/ayna.jpg" alt="Özel Tasarım Aynalar" class="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-108" loading="lazy" decoding="async" />
                 <div class="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/35 to-black/10 transition-opacity duration-500 group-hover:from-slate-950 group-hover:via-slate-950/45"></div>
                 
@@ -481,7 +514,8 @@ goTo(0);
                             </div>
                             @if (!string.IsNullOrWhiteSpace(homeSection.ViewAllUrl))
                             {
-                                <a href="@(homeSection.ViewAllUrl)" class="inline-flex items-center gap-2 self-start md:self-auto px-5 py-2.5 rounded-full border border-slate-200 bg-white hover:bg-[#00A4D3] hover:text-white hover:border-[#00A4D3] text-xs font-bold tracking-wider uppercase text-slate-800 transition-all shadow-2xs group">
+                                var safeViewAllUrl = KanvasProje.Core.Helpers.HtmlSanitizerHelper.SanitizeUrl(homeSection.ViewAllUrl, "/Urun");
+                                <a href="@safeViewAllUrl" class="inline-flex items-center gap-2 self-start md:self-auto px-5 py-2.5 rounded-full border border-slate-200 bg-white hover:bg-[#00A4D3] hover:text-white hover:border-[#00A4D3] text-xs font-bold tracking-wider uppercase text-slate-800 transition-all shadow-2xs group">
                                     <span>@(string.IsNullOrWhiteSpace(homeSection.ViewAllText) ? "Tümünü Gör" : homeSection.ViewAllText)</span>
                                     <i class="fas fa-arrow-right text-[10px] group-hover:translate-x-1 transition-transform"></i>
                                 </a>
@@ -502,18 +536,36 @@ goTo(0);
         // -------------------------------------------------------------
         else if (homeSection.SectionType == HomePageSectionType.CustomBanner && !string.IsNullOrWhiteSpace(homeSection.ImageUrl))
         {
+            var hasBannerUrl = !string.IsNullOrWhiteSpace(homeSection.ButtonUrl);
+            var safeBannerUrl = hasBannerUrl ? KanvasProje.Core.Helpers.HtmlSanitizerHelper.SanitizeUrl(homeSection.ButtonUrl, "/Urun") : string.Empty;
             <section class="py-8" data-motion-section>
                 <div class="container mx-auto px-4">
-                    <a href="@(string.IsNullOrWhiteSpace(homeSection.ButtonUrl) ? "#" : homeSection.ButtonUrl)" class="block relative group overflow-hidden rounded-2xl">
-                        <img src="@(homeSection.ImageUrl)" alt="@(homeSection.Title)" class="w-full h-auto transition-transform duration-700 group-hover:scale-105" loading="lazy" decoding="async" />
-                        @if (!string.IsNullOrWhiteSpace(homeSection.Title) || !string.IsNullOrWhiteSpace(homeSection.Subtitle))
-                        {
-                            <div class="absolute inset-0 bg-black/35 flex flex-col justify-center items-center text-center p-4">
-                                <h3 class="text-white font-serif text-3xl md:text-5xl font-bold mb-2 drop-shadow-md">@homeSection.Title</h3>
-                                <p class="text-white/90 text-sm md:base drop-shadow-md">@homeSection.Subtitle</p>
-                            </div>
-                        }
-                    </a>
+                    @if (hasBannerUrl)
+                    {
+                        <a href="@safeBannerUrl" class="block relative group overflow-hidden rounded-2xl">
+                            <img src="@(homeSection.ImageUrl)" alt="@(homeSection.Title)" class="w-full h-auto transition-transform duration-700 group-hover:scale-105" loading="lazy" decoding="async" />
+                            @if (!string.IsNullOrWhiteSpace(homeSection.Title) || !string.IsNullOrWhiteSpace(homeSection.Subtitle))
+                            {
+                                <div class="absolute inset-0 bg-black/35 flex flex-col justify-center items-center text-center p-4">
+                                    <h3 class="text-white font-serif text-3xl md:text-5xl font-bold mb-2 drop-shadow-md">@homeSection.Title</h3>
+                                    <p class="text-white/90 text-sm md:base drop-shadow-md">@homeSection.Subtitle</p>
+                                </div>
+                            }
+                        </a>
+                    }
+                    else
+                    {
+                        <div class="block relative overflow-hidden rounded-2xl">
+                            <img src="@(homeSection.ImageUrl)" alt="@(homeSection.Title)" class="w-full h-auto" loading="lazy" decoding="async" />
+                            @if (!string.IsNullOrWhiteSpace(homeSection.Title) || !string.IsNullOrWhiteSpace(homeSection.Subtitle))
+                            {
+                                <div class="absolute inset-0 bg-black/35 flex flex-col justify-center items-center text-center p-4">
+                                    <h3 class="text-white font-serif text-3xl md:text-5xl font-bold mb-2 drop-shadow-md">@homeSection.Title</h3>
+                                    <p class="text-white/90 text-sm md:base drop-shadow-md">@homeSection.Subtitle</p>
+                                </div>
+                            }
+                        </div>
+                    }
                 </div>
             </section>
         }
@@ -522,6 +574,7 @@ goTo(0);
         // -------------------------------------------------------------
         else if (homeSection.SectionType == HomePageSectionType.AutoBesParcali && Model.BesParcaliKoleksiyon != null && Model.BesParcaliKoleksiyon.Any())
         {
+            var safeBesParcaliUrl = KanvasProje.Core.Helpers.HtmlSanitizerHelper.SanitizeUrl(homeSection.ViewAllUrl, "/Urun?s=5%20Par%C3%A7a");
             <section class="bg-[#F8FAFC] py-14 md:py-16">
                 <div class="container mx-auto px-4">
                     <div class="mb-10 flex flex-col gap-3 md:flex-row md:items-end md:justify-between pb-4 border-b border-slate-200">
@@ -537,7 +590,7 @@ goTo(0);
                                 @(string.IsNullOrWhiteSpace(homeSection.Subtitle) ? "Geniş duvarlara derinlik ve şıklık katan 5 parçalı kanvas tablolar." : homeSection.Subtitle)
                             </p>
                         </div>
-                        <a href="@(string.IsNullOrWhiteSpace(homeSection.ViewAllUrl) ? "/Urun?s=5%20Par%C3%A7a" : homeSection.ViewAllUrl)" class="inline-flex items-center gap-2 self-start md:self-auto px-5 py-2.5 rounded-full border border-slate-200 bg-white hover:bg-[#00A4D3] hover:text-white hover:border-[#00A4D3] text-xs font-bold tracking-wider uppercase text-slate-800 transition-all shadow-2xs group">
+                        <a href="@safeBesParcaliUrl" class="inline-flex items-center gap-2 self-start md:self-auto px-5 py-2.5 rounded-full border border-slate-200 bg-white hover:bg-[#00A4D3] hover:text-white hover:border-[#00A4D3] text-xs font-bold tracking-wider uppercase text-slate-800 transition-all shadow-2xs group">
                             <span>@(string.IsNullOrWhiteSpace(homeSection.ViewAllText) ? "Tümünü İncele" : homeSection.ViewAllText)</span>
                             <i class="fas fa-arrow-right text-[10px] group-hover:translate-x-1 transition-transform"></i>
                         </a>
@@ -556,6 +609,7 @@ goTo(0);
         // -------------------------------------------------------------
         else if (homeSection.SectionType == HomePageSectionType.AutoVitrin && Model.VitrinUrunleri != null && Model.VitrinUrunleri.Any())
         {
+            var safeVitrinUrl = KanvasProje.Core.Helpers.HtmlSanitizerHelper.SanitizeUrl(homeSection.ViewAllUrl, "/Urun");
             <section class="py-16 bg-white border-y border-slate-200">
                 <div class="container mx-auto px-4">
                     <div class="text-center max-w-3xl mx-auto mb-12">
@@ -579,7 +633,7 @@ goTo(0);
                         }
                     </div>
                     <div class="text-center mt-12">
-                        <a href="@(string.IsNullOrWhiteSpace(homeSection.ViewAllUrl) ? "/Urun" : homeSection.ViewAllUrl)" class="inline-flex items-center gap-2 border border-[#00A4D3] text-[#00A4D3] px-8 py-3 text-xs tracking-widest hover:bg-[#00A4D3] hover:text-white transition-all uppercase rounded-full font-bold shadow-xs">
+                        <a href="@safeVitrinUrl" class="inline-flex items-center gap-2 border border-[#00A4D3] text-[#00A4D3] px-8 py-3 text-xs tracking-widest hover:bg-[#00A4D3] hover:text-white transition-all uppercase rounded-full font-bold shadow-xs">
                             <span>@(string.IsNullOrWhiteSpace(homeSection.ViewAllText) ? "Tümünü Keşfet" : homeSection.ViewAllText)</span>
                             <i class="fas fa-arrow-right text-[10px]"></i>
                         </a>
@@ -592,6 +646,7 @@ goTo(0);
         // -------------------------------------------------------------
         else if (homeSection.SectionType == HomePageSectionType.AutoCokSatanlar && Model.CokSatanlar != null && Model.CokSatanlar.Any())
         {
+            var safeCokSatanUrl = KanvasProje.Core.Helpers.HtmlSanitizerHelper.SanitizeUrl(homeSection.ViewAllUrl, "/Urun?sort=popularity");
             <section class="container mx-auto px-4 py-14 md:py-16">
                 <div class="mb-10 flex flex-col gap-3 md:flex-row md:items-end md:justify-between pb-4 border-b border-slate-200">
                     <div>
@@ -606,7 +661,7 @@ goTo(0);
                             @(string.IsNullOrWhiteSpace(homeSection.Subtitle) ? "Müşterilerimizin en çok beğendiği ve en yüksek puanlı tablolar." : homeSection.Subtitle)
                         </p>
                     </div>
-                    <a href="@(string.IsNullOrWhiteSpace(homeSection.ViewAllUrl) ? "/Urun?sort=popularity" : homeSection.ViewAllUrl)" class="inline-flex items-center gap-2 self-start md:self-auto px-5 py-2.5 rounded-full border border-slate-200 bg-white hover:bg-[#00A4D3] hover:text-white hover:border-[#00A4D3] text-xs font-bold tracking-wider uppercase text-slate-800 transition-all shadow-2xs group">
+                    <a href="@safeCokSatanUrl" class="inline-flex items-center gap-2 self-start md:self-auto px-5 py-2.5 rounded-full border border-slate-200 bg-white hover:bg-[#00A4D3] hover:text-white hover:border-[#00A4D3] text-xs font-bold tracking-wider uppercase text-slate-800 transition-all shadow-2xs group">
                         <span>@(string.IsNullOrWhiteSpace(homeSection.ViewAllText) ? "Tümünü İncele" : homeSection.ViewAllText)</span>
                         <i class="fas fa-arrow-right text-[10px] group-hover:translate-x-1 transition-transform"></i>
                     </a>
@@ -624,6 +679,7 @@ goTo(0);
         // -------------------------------------------------------------
         else if (homeSection.SectionType == HomePageSectionType.AutoFirsatUrunleri && Model.FirsatUrunleri != null && Model.FirsatUrunleri.Any())
         {
+            var safeFirsatUrl = KanvasProje.Core.Helpers.HtmlSanitizerHelper.SanitizeUrl(homeSection.ViewAllUrl, "/Urun?sort=price_asc");
             <section class="bg-[#F8FAFC] py-14 md:py-16 border-y border-slate-200">
                 <div class="container mx-auto px-4">
                     <div class="mb-10 flex flex-col gap-3 md:flex-row md:items-end md:justify-between pb-4 border-b border-slate-200">
@@ -639,7 +695,7 @@ goTo(0);
                                 @(string.IsNullOrWhiteSpace(homeSection.Subtitle) ? "Sınırlı süreye özel avantajlı fiyatlara sahip seçili ürünler." : homeSection.Subtitle)
                             </p>
                         </div>
-                        <a href="@(string.IsNullOrWhiteSpace(homeSection.ViewAllUrl) ? "/Urun?sort=price_asc" : homeSection.ViewAllUrl)" class="inline-flex items-center gap-2 self-start md:self-auto px-5 py-2.5 rounded-full border border-slate-200 bg-white hover:bg-[#E30613] hover:text-white hover:border-[#E30613] text-xs font-bold tracking-wider uppercase text-slate-800 transition-all shadow-2xs group">
+                        <a href="@safeFirsatUrl" class="inline-flex items-center gap-2 self-start md:self-auto px-5 py-2.5 rounded-full border border-slate-200 bg-white hover:bg-[#E30613] hover:text-white hover:border-[#E30613] text-xs font-bold tracking-wider uppercase text-slate-800 transition-all shadow-2xs group">
                             <span>@(string.IsNullOrWhiteSpace(homeSection.ViewAllText) ? "Tüm Fırsatları Gör" : homeSection.ViewAllText)</span>
                             <i class="fas fa-arrow-right text-[10px] group-hover:translate-x-1 transition-transform"></i>
                         </a>
