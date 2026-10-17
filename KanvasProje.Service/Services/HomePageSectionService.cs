@@ -13,6 +13,7 @@ namespace KanvasProje.Service.Services
         Task CreateSectionAsync(HomePageSection section);
         Task UpdateSectionAsync(HomePageSection section);
         Task DeleteSectionAsync(int id);
+        Task<bool?> ToggleSectionEnabledAsync(int id);
         Task SetSectionProductsAsync(int sectionId, IList<int> orderedProductIds);
     }
 
@@ -76,6 +77,20 @@ namespace KanvasProje.Service.Services
                 await _context.SaveChangesAsync();
                 _cache.Remove(CacheKey);
             }
+        }
+
+        public async Task<bool?> ToggleSectionEnabledAsync(int id)
+        {
+            var entity = await _context.HomePageSections.FindAsync(id);
+            if (entity == null)
+            {
+                return null;
+            }
+
+            entity.Enabled = !entity.Enabled;
+            await _context.SaveChangesAsync();
+            _cache.Remove(CacheKey);
+            return entity.Enabled;
         }
 
         public async Task SetSectionProductsAsync(int sectionId, IList<int> orderedProductIds)

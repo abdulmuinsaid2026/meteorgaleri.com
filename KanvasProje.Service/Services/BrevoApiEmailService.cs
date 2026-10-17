@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Mime;
 using System.Text;
 using System.Text.Json;
@@ -115,12 +115,13 @@ namespace KanvasProje.Service.Services
 </html>";
 
             var fromEmail = GetFromEmail();
+            var fromName = GetFromName();
             if (string.IsNullOrWhiteSpace(fromEmail))
                 throw new InvalidOperationException("Gönderici e-posta adresi ayarlanmamis.");
 
             var payload = new
             {
-                sender = new { email = fromEmail, name = brandName },
+                sender = new { email = fromEmail, name = fromName },
                 to = new[] { new { email = to, name = adSoyad } },
                 subject = baslik,
                 htmlContent = emailHtml
@@ -175,6 +176,7 @@ namespace KanvasProje.Service.Services
                 }
 
                 var fromEmail = GetFromEmail();
+                var fromName = GetFromName();
                 if (string.IsNullOrWhiteSpace(fromEmail))
                     return false;
 
@@ -196,13 +198,9 @@ namespace KanvasProje.Service.Services
                         </p>
                     </div>";
 
-                var brandName = string.IsNullOrWhiteSpace(_siteSettingsService.GetSettings().MarkaAdi)
-                    ? _siteSettingsService.GetSettings().SiteAdi
-                    : _siteSettingsService.GetSettings().MarkaAdi;
-
                 var payload = new
                 {
-                    sender = new { email = fromEmail, name = brandName },
+                    sender = new { email = fromEmail, name = fromName },
                     to = new[] { new { email = toEmail, name = musteriAdi } },
                     subject = $"Sipariş Faturanız Hazır - {siparisNo}",
                     htmlContent = body,
@@ -229,7 +227,10 @@ namespace KanvasProje.Service.Services
 
         private async Task SendViaApiAsync(object payload)
         {
-            var apiKey = _config["EmailSettings:Password"];
+            var apiKey = _config["EmailSettings:Password"]
+                ?? _config["EmailSettings:ApiKey"]
+                ?? _config["Brevo:ApiKey"]
+                ?? _config["BREVO_API_KEY"];
             if (string.IsNullOrWhiteSpace(apiKey))
                 throw new InvalidOperationException("Brevo API anahtari (EmailSettings:Password) eksik.");
 

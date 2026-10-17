@@ -110,8 +110,9 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // GET: /admin/homesections/delete/5
-        [HttpGet]
+        // POST: /admin/homesections/delete/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
             await _sectionService.DeleteSectionAsync(id);
@@ -121,15 +122,13 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
 
         // POST: /admin/homesections/toggleenabled
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> ToggleEnabled(int id)
         {
-            var section = await _context.HomePageSections.FindAsync(id);
-            if (section == null) return NotFound();
+            var enabled = await _sectionService.ToggleSectionEnabledAsync(id);
+            if (enabled == null) return NotFound();
 
-            section.Enabled = !section.Enabled;
-            await _context.SaveChangesAsync();
-
-            return Json(new { success = true, enabled = section.Enabled });
+            return Json(new { success = true, enabled = enabled.Value });
         }
     }
 }

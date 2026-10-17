@@ -31,9 +31,10 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
 
         public async Task<IActionResult> Index()
         {
-            await HazirlaKargoFirmaSecenekleriAsync();
+            var settings = _siteSettingsService.GetSettings();
+            await HazirlaKargoFirmaSecenekleriAsync(settings);
             HazirlaPaytrDurumu();
-            return View(_siteSettingsService.GetSettings());
+            return View(settings);
         }
 
         [HttpPost]
@@ -44,7 +45,14 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
             {
                 var paytrKeyKayitli = _siteSettingsService.HasPaytrMerchantKey();
                 var paytrSaltKayitli = _siteSettingsService.HasPaytrMerchantSalt();
-                model.IyzicoAktifMi = false;
+                var currentSettings = _siteSettingsService.GetSettings();
+
+                // View'da Iyzico alanları bulunmadığı için mevcut Iyzico ayarlarını koru
+                model.IyzicoAktifMi = currentSettings.IyzicoAktifMi;
+                model.IyzicoTestModu = currentSettings.IyzicoTestModu;
+                model.IyzicoApiKey = currentSettings.IyzicoApiKey;
+                model.IyzicoBaseUrl = currentSettings.IyzicoBaseUrl;
+                model.IyzicoCallbackUrl = currentSettings.IyzicoCallbackUrl;
 
                 if (model.PaytrAktifMi)
                 {
@@ -158,7 +166,7 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
             ViewBag.PaytrMerchantSaltKayitli = _siteSettingsService.HasPaytrMerchantSalt();
         }
 
-        private async Task HazirlaKargoFirmaSecenekleriAsync()
+        private async Task HazirlaKargoFirmaSecenekleriAsync(SiteAyarlari settings)
         {
             var firmalar = await _context.KargoFirmalari
                 .IgnoreQueryFilters()
@@ -172,17 +180,24 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
                 firmalar = VarsayilanKargoFirmalari();
             }
 
-            var seciliFirma = _siteSettingsService.GetSettings().KargoFirmasi;
-            if (!string.IsNullOrWhiteSpace(seciliFirma) &&
-                firmalar.All(x => !string.Equals(x.Ad, seciliFirma, StringComparison.OrdinalIgnoreCase)))
+            var seciliFirma = settings.KargoFirmasi;
+            if (!string.IsNullOrWhiteSpace(seciliFirma))
             {
-                firmalar.Insert(0, new KargoFirmasi
+                var eslesen = firmalar.FirstOrDefault(x => string.Equals(x.Ad, seciliFirma.Trim(), StringComparison.OrdinalIgnoreCase));
+                if (eslesen != null)
                 {
-                    Ad = seciliFirma,
-                    Kod = seciliFirma.ToLowerInvariant().Replace(" ", "-"),
-                    AktifMi = true,
-                    VarsayilanMi = true
-                });
+                    settings.KargoFirmasi = eslesen.Ad;
+                }
+                else
+                {
+                    firmalar.Insert(0, new KargoFirmasi
+                    {
+                        Ad = seciliFirma,
+                        Kod = seciliFirma.ToLowerInvariant().Replace(" ", "-"),
+                        AktifMi = true,
+                        VarsayilanMi = true
+                    });
+                }
             }
 
             ViewBag.KargoFirmalari = firmalar;

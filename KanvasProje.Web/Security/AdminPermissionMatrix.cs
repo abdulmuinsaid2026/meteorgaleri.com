@@ -151,7 +151,29 @@ namespace KanvasProje.Web.Security
                     AdminSecurityRoles.LegacyAdmin,
                     AdminSecurityRoles.SuperAdmin,
                     AdminSecurityRoles.Yonetici
-                }
+                },
+                ["UrunOzellik"] = new[]
+                {
+                    AdminSecurityRoles.LegacyAdmin,
+                    AdminSecurityRoles.SuperAdmin,
+                    AdminSecurityRoles.Yonetici,
+                    AdminSecurityRoles.UrunYoneticisi
+                },
+                ["UrunImport"] = new[]
+                {
+                    AdminSecurityRoles.LegacyAdmin,
+                    AdminSecurityRoles.SuperAdmin,
+                    AdminSecurityRoles.Yonetici,
+                    AdminSecurityRoles.UrunYoneticisi
+                },
+                ["HomeSections"] = new[]
+                {
+                    AdminSecurityRoles.LegacyAdmin,
+                    AdminSecurityRoles.SuperAdmin,
+                    AdminSecurityRoles.Yonetici,
+                    AdminSecurityRoles.IcerikYoneticisi
+                },
+                ["XyzSecretMonitor"] = FullAccessRoles
             };
 
         public static bool CanAccess(ClaimsPrincipal user, string? controllerName, string? httpMethod)
@@ -185,13 +207,17 @@ namespace KanvasProje.Web.Security
 
         public static string[] GetAllowedRoles(string? controllerName)
         {
-            if (!string.IsNullOrWhiteSpace(controllerName) &&
-                ControllerPermissions.TryGetValue(controllerName, out var roles))
+            if (string.IsNullOrWhiteSpace(controllerName))
+            {
+                return DashboardRoles;
+            }
+
+            if (ControllerPermissions.TryGetValue(controllerName, out var roles))
             {
                 return roles;
             }
 
-            return DashboardRoles;
+            return FullAccessRoles;
         }
 
         public static bool CanViewDashboard(ClaimsPrincipal user) => CanAccess(user, "Home", HttpMethods.Get);

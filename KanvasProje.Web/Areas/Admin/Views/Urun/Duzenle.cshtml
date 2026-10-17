@@ -1,4 +1,4 @@
-﻿@model KanvasProje.Core.Varliklar.Urun
+@model KanvasProje.Core.Varliklar.Urun
 @{
     Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
     ViewData["Title"] = "Ürün Düzenle";
@@ -585,15 +585,15 @@
                                 </div>
                                 <div class="col-lg-5">
                                     <label class="ca-label">Yeni Ana Görsel Yükle</label>
-                                    <input type="file" name="anaResimDosyasi" form="productMediaUploadForm" class="ca-input" accept=".jpg,.jpeg,.png,.webp" onchange="previewFile(event,'mainImgPreview')" />
+                                    <input type="file" name="anaResimDosyasi" class="ca-input" accept=".jpg,.jpeg,.png,.webp" onchange="previewFile(event,'mainImgPreview')" />
                                 </div>
                                 <div class="col-12">
                                     <label class="ca-label">Galeri Görselleri</label>
-                                    <input type="file" name="galeriDosyalari" form="productMediaUploadForm" multiple class="ca-input" accept=".jpg,.jpeg,.png,.webp" />
-                                    <small class="ca-text-muted">PNG dosyaları otomatik olarak WebP'ye dönüştürülür. Her dosya en fazla 30 MB olabilir.</small>
+                                    <input type="file" name="galeriDosyalari" multiple class="ca-input" accept=".jpg,.jpeg,.png,.webp" />
+                                    <small class="ca-text-muted">PNG dosyaları otomatik olarak WebP'ye dönüştürülür. Her dosya en fazla 10 MB olabilir.</small>
                                 </div>
                                 <div class="col-12">
-                                    <button type="submit" form="productMediaUploadForm" class="ca-btn ca-btn-primary">
+                                    <button type="submit" formaction="/Admin/Urun/GorselYukle/@Model.Id" formnovalidate class="ca-btn ca-btn-primary">
                                         <i class="fas fa-cloud-arrow-up"></i> Seçilen Görselleri Yükle
                                     </button>
                                 </div>
@@ -604,7 +604,7 @@
                                 {
                                     <div style="position:relative; aspect-ratio:1/1; border-radius:var(--ca-radius); overflow:hidden; border:1px solid var(--ca-border); background:#fff;">
                                         <img src="@r.ResimYolu" alt="@Model.Baslik galeri görseli" loading="lazy" decoding="async" style="width:100%; height:100%; object-fit:cover;" />
-                                        <a href="/Admin/Urun/ResimSil/@r.Id" title="Görseli sil" style="position:absolute; top:6px; right:6px; width:24px; height:24px; border-radius:50%; background:rgba(239,68,68,.92); color:#fff; display:flex; align-items:center; justify-content:center; font-size:.72rem; text-decoration:none;">×</a>
+                                        <button type="submit" formaction="/Admin/Urun/ResimSil/@r.Id" formnovalidate onclick="return confirm('Bu görseli silmek istediğinize emin misiniz?');" title="Görseli sil" style="position:absolute; top:6px; right:6px; width:24px; height:24px; border-radius:50%; background:rgba(239,68,68,.92); color:#fff; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:.72rem; text-decoration:none;">×</button>
                                     </div>
                                 }
                             </div>
@@ -675,11 +675,6 @@
                 </div>
             </aside>
         </div>
-    </form>
-
-    <form id="productMediaUploadForm" asp-action="GorselYukle" method="post" enctype="multipart/form-data" class="d-none">
-        @Html.AntiForgeryToken()
-        <input type="hidden" name="id" value="@Model.Id" />
     </form>
 
 </div>

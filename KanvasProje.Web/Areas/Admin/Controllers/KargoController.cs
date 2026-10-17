@@ -1,3 +1,4 @@
+using KanvasProje.Core.Helpers;
 using KanvasProje.Core.Varliklar;
 using KanvasProje.Data;
 using Microsoft.AspNetCore.Mvc;
@@ -40,10 +41,29 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
                     return RedirectToAction(nameof(Index));
                 }
 
+                if (model.Fiyat < 0)
+                {
+                    TempData["Mesaj"] = "Kargo ücreti negatif olamaz.";
+                    TempData["Durum"] = "danger";
+                    return RedirectToAction(nameof(Index));
+                }
+
                 model.Ad = model.Ad.Trim();
-                model.Kod = string.IsNullOrWhiteSpace(model.Kod)
-                    ? model.Ad.ToLowerInvariant().Replace(" ", "-")
-                    : model.Kod.Trim().ToLowerInvariant();
+                model.Kod = SlugHelper.GenerateSlug(string.IsNullOrWhiteSpace(model.Kod) ? model.Ad : model.Kod);
+                if (string.IsNullOrWhiteSpace(model.Kod))
+                {
+                    model.Kod = "kargo-" + Guid.NewGuid().ToString("N")[..6];
+                }
+
+                var duplicateExists = await _context.KargoFirmalari
+                    .IgnoreQueryFilters()
+                    .AnyAsync(x => x.Id != model.Id && !x.SilindiMi && x.Kod == model.Kod);
+                if (duplicateExists)
+                {
+                    TempData["Mesaj"] = $"'{model.Kod}' koduna sahip başka bir kargo firması zaten mevcut.";
+                    TempData["Durum"] = "danger";
+                    return RedirectToAction(nameof(Index));
+                }
 
                 if (model.VarsayilanMi)
                 {
@@ -55,12 +75,13 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
                 if (model.Id == 0)
                 {
                     model.OlusturulmaTarihi = DateTime.UtcNow;
+                    model.SilindiMi = false;
                     _context.KargoFirmalari.Add(model);
                     TempData["Mesaj"] = $"{model.Ad} kargo firması eklendi.";
                 }
                 else
                 {
-                    var firma = await _context.KargoFirmalari.FirstOrDefaultAsync(x => x.Id == model.Id);
+                    var firma = await _context.KargoFirmalari.FirstOrDefaultAsync(x => x.Id == model.Id && !x.SilindiMi);
                     if (firma == null)
                     {
                         TempData["Mesaj"] = "Kargo firması bulunamadı.";
@@ -92,6 +113,34 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
                 TempData["Durum"] = "danger";
                 return RedirectToAction(nameof(Index));
             }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Sil(int id)
+        {
+            var firma = await _context.KargoFirmalari.FirstOrDefaultAsync(x => x.Id == id && !x.SilindiMi);
+            if (firma == null)
+            {
+                TempData["Mesaj"] = "Kargo firması bulunamadı.";
+                TempData["Durum"] = "danger";
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (firma.VarsayilanMi)
+            {
+                TempData["Mesaj"] = "Varsayılan kargo firması silinemez. Önce başka bir firmayı varsayılan yapın.";
+                TempData["Durum"] = "warning";
+                return RedirectToAction(nameof(Index));
+            }
+
+            firma.SilindiMi = true;
+            firma.AktifMi = false;
+            await _context.SaveChangesAsync();
+
+            TempData["Mesaj"] = $"{firma.Ad} kargo firması silindi.";
+            TempData["Durum"] = "success";
+            return RedirectToAction(nameof(Index));
         }
 
         [HttpPost]

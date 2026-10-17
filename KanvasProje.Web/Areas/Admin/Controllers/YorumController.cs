@@ -85,7 +85,10 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
                 worksheet.Cells[row, 7].Value = yorum.OlusturulmaTarihi.ToTurkeyString();
             }
 
-            worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+            if (worksheet.Dimension != null)
+            {
+                worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+            }
 
             return File(
                 package.GetAsByteArray(),
@@ -97,9 +100,10 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Onayla(int id)
         {
-            var yorum = await _context.Yorumlar.FirstOrDefaultAsync(x => x.Id == id && !x.SilindiMi);
+            var yorum = await _context.Yorumlar.FirstOrDefaultAsync(x => x.Id == id);
             if (yorum != null)
             {
+                yorum.SilindiMi = false;
                 yorum.OnayliMi = true;
                 await _context.SaveChangesAsync();
                 TempData["Mesaj"] = "Yorum onaylandı ve ürün sayfasında yayınlanabilir hale geldi.";
@@ -127,9 +131,9 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> TopluOnayla(List<int> yorumIds)
+        public async Task<IActionResult> TopluOnayla(List<int>? yorumIds)
         {
-            yorumIds = yorumIds.Where(x => x > 0).Distinct().ToList();
+            yorumIds = (yorumIds ?? new List<int>()).Where(x => x > 0).Distinct().ToList();
             if (!yorumIds.Any())
             {
                 TempData["Hata"] = "Onaylamak için en az bir yorum seçin.";
@@ -138,11 +142,12 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
             }
 
             var yorumlar = await _context.Yorumlar
-                .Where(x => yorumIds.Contains(x.Id) && !x.SilindiMi)
+                .Where(x => yorumIds.Contains(x.Id))
                 .ToListAsync();
 
             foreach (var yorum in yorumlar)
             {
+                yorum.SilindiMi = false;
                 yorum.OnayliMi = true;
             }
 
@@ -175,14 +180,14 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
             var query = _context.Yorumlar
                 .AsNoTracking()
                 .Include(x => x.Urun)
-                .Where(x => !x.SilindiMi)
                 .AsQueryable();
 
             query = durum switch
             {
-                1 => query.Where(x => x.OnayliMi),
-                2 => query,
-                _ => query.Where(x => !x.OnayliMi)
+                1 => query.Where(x => !x.SilindiMi && x.OnayliMi),
+                2 => query.Where(x => !x.SilindiMi),
+                3 => query.Where(x => x.SilindiMi),
+                _ => query.Where(x => !x.SilindiMi && !x.OnayliMi)
             };
 
             if (!string.IsNullOrWhiteSpace(q))

@@ -1,5 +1,7 @@
 using KanvasProje.Data;
+using KanvasProje.Core.Helpers;
 using KanvasProje.Core.Models;
+using KanvasProje.Service.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,10 +11,12 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
     public class HomeController : AdminBaseController
     {
         private readonly KanvasDbContext _context;
+        private readonly ISiteSettingsService _settingsService;
 
-        public HomeController(KanvasDbContext context)
+        public HomeController(KanvasDbContext context, ISiteSettingsService settingsService)
         {
             _context = context;
+            _settingsService = settingsService;
         }
 
         public async Task<IActionResult> Index()
@@ -21,6 +25,8 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
             var today = now.Date;
             var weekStart = today.AddDays(-6);
             var monthStart = new DateTime(now.Year, now.Month, 1);
+            var settings = _settingsService.GetSettings();
+            var stokUyariLimiti = settings.StokUyariLimiti > 0 ? settings.StokUyariLimiti : 5;
 
             var siparisler = await _context.Siparisler
                 .AsNoTracking()
@@ -73,7 +79,15 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
                 .Where(x => x.OlusturulmaTarihi >= weekStart)
                 .ToListAsync();
 
-            var odenmisSiparisler = siparisler.Where(x => x.Durum >= 1 && x.Durum < 4).ToList();
+            var odenmisSiparisler = siparisler
+                .Where(x =>
+                    (x.Durum == SiparisDurumHelper.UretimHazirlaniyor ||
+                     x.Durum == SiparisDurumHelper.Paketleniyor ||
+                     x.Durum == SiparisDurumHelper.KargoyaVerildi ||
+                     x.Durum == SiparisDurumHelper.TeslimEdildi) &&
+                    (!string.Equals(x.OdemeSaglayici, "PayTR", StringComparison.OrdinalIgnoreCase) || x.OdemeTamamlandiMi))
+                .ToList();
+            var odenmisSiparisIdSet = odenmisSiparisler.Select(x => x.Id).ToHashSet();
             var aktifUrunler = urunler.Where(x => x.AktifMi).ToList();
             var stokLookup = stokOzeti.ToDictionary(x => x.UrunId, x => x);
             var bekleyenSiparisSayisi = siparisler.Count(x => x.Durum == 0);
@@ -93,7 +107,7 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
                 .ToList();
 
             var topSellingProducts = siparisDetaylari
-                .Where(x => x.Urun != null)
+                .Where(x => x.Urun != null && odenmisSiparisIdSet.Contains(x.SiparisId))
                 .GroupBy(x => new { x.UrunId, x.Urun.Baslik, x.Urun.AnaGorselUrl })
                 .Select(x => new DashboardProductStatItem
                 {
@@ -122,7 +136,7 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
                 })
                 .ToList();
 
-            var lowStockProducts = aktifUrunler
+            var allLowStockProducts = aktifUrunler
                 .Select(x =>
                 {
                     stokLookup.TryGetValue(x.Id, out var stock);
@@ -135,11 +149,12 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
                         PreorderOpen = stock?.OnSiparis ?? false
                     };
                 })
-                .Where(x => stokLookup.ContainsKey(x.ProductId) && x.Stock <= 5)
+                .Where(x => stokLookup.ContainsKey(x.ProductId) && x.Stock <= stokUyariLimiti)
                 .OrderBy(x => x.Stock)
                 .ThenBy(x => x.ProductName)
-                .Take(6)
                 .ToList();
+
+            var lowStockProducts = allLowStockProducts.Take(6).ToList();
 
             var alerts = new List<DashboardAlertItem>();
             if (okunmamisMesajSayisi > 0)
@@ -217,11 +232,11 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
                 TotalOrders = siparisler.Count,
                 TodayOrders = siparisler.Count(x => x.OlusturulmaTarihi.Date == today),
                 PendingOrders = bekleyenSiparisSayisi,
-                ReadyToShipOrders = siparisler.Count(x => x.Durum == 1),
-                ShippedOrders = siparisler.Count(x => x.Durum == 2),
-                CancelledOrReturnedOrders = siparisler.Count(x => x.Durum >= 4),
+                ReadyToShipOrders = siparisler.Count(x => x.Durum == SiparisDurumHelper.UretimHazirlaniyor || x.Durum == SiparisDurumHelper.Paketleniyor),
+                ShippedOrders = siparisler.Count(x => x.Durum == SiparisDurumHelper.KargoyaVerildi),
+                CancelledOrReturnedOrders = siparisler.Count(x => SiparisDurumHelper.IsCancelled(x.Durum) || SiparisDurumHelper.IsReturn(x.Durum)),
                 ActiveProductCount = aktifUrunler.Count,
-                LowStockProductCount = lowStockProducts.Count,
+                LowStockProductCount = allLowStockProducts.Count,
                 UnreadContactCount = okunmamisMesajSayisi,
                 TotalVisitsLast7Days = ziyaretler.Count,
                 UniqueVisitorsLast7Days = ziyaretler

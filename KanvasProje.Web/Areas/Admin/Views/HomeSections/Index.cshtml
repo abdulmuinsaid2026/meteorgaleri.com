@@ -41,7 +41,10 @@
                 <td>@sec.SortOrder</td>
                 <td>
                     <a href="@Url.Action("Edit", "HomeSections", new { id = sec.Id })" class="ca-btn ca-btn-sm ca-btn-outline"><i class="fas fa-edit"></i></a>
-                    <a href="@Url.Action("Delete", "HomeSections", new { id = sec.Id })" class="ca-btn ca-btn-sm ca-btn-danger" onclick="return confirm('Silmek istediğine emin misin?');"><i class="fas fa-trash"></i></a>
+                    <form method="post" action="@Url.Action("Delete", "HomeSections", new { id = sec.Id })" style="display:inline;" onsubmit="return confirm('Silmek istediğine emin misin?');">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="ca-btn ca-btn-sm ca-btn-danger"><i class="fas fa-trash"></i></button>
+                    </form>
                 </td>
             </tr>
         }

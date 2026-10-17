@@ -18,12 +18,18 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
         private readonly KanvasDbContext _context;
         private readonly IEmailService _emailService;
         private readonly ISiteSettingsService _siteSettingsService;
+        private readonly ILogger<BultenController> _logger;
 
-        public BultenController(KanvasDbContext context, IEmailService emailService, ISiteSettingsService siteSettingsService)
+        public BultenController(
+            KanvasDbContext context,
+            IEmailService emailService,
+            ISiteSettingsService siteSettingsService,
+            ILogger<BultenController> logger)
         {
             _context = context;
             _emailService = emailService;
             _siteSettingsService = siteSettingsService;
+            _logger = logger;
         }
 
         public async Task<IActionResult> Index(int durum = 1, string? q = null, int page = 1, int pageSize = 20)
@@ -146,9 +152,9 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> TopluPasifYap(List<int> aboneIds, int durum = 1, string? q = null, int page = 1, int pageSize = 20)
+        public async Task<IActionResult> TopluPasifYap(List<int>? aboneIds, int durum = 1, string? q = null, int page = 1, int pageSize = 20)
         {
-            aboneIds = aboneIds.Where(x => x > 0).Distinct().ToList();
+            aboneIds = (aboneIds ?? new List<int>()).Where(x => x > 0).Distinct().ToList();
             if (!aboneIds.Any())
             {
                 TempData["Hata"] = "İşlem yapmak için en az bir abone seçin.";
@@ -198,6 +204,13 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
                 return RedirectToAction(nameof(Index), new { durum, q, page, pageSize });
             }
 
+            if (baslik.Length > 200 || icerik.Length > 20000)
+            {
+                TempData["Hata"] = "Mail başlığı en fazla 200, içerik en fazla 20.000 karakter olabilir.";
+                TempData["Durum"] = "warning";
+                return RedirectToAction(nameof(Index), new { durum, q, page, pageSize });
+            }
+
             IQueryable<BultenAboneligi> query;
             if (hedef == "secili")
             {
@@ -215,9 +228,15 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
             {
                 query = BuildSubscriberQuery(durum, q).Where(x => x.AktifMi);
             }
-            else
+            else if (hedef == "aktif")
             {
                 query = _context.BultenAbonelikleri.Where(x => x.AktifMi);
+            }
+            else
+            {
+                TempData["Hata"] = "Geçersiz hedef kitle seçimi.";
+                TempData["Durum"] = "warning";
+                return RedirectToAction(nameof(Index), new { durum, q, page, pageSize });
             }
 
             var aboneler = await query
@@ -259,9 +278,10 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
                         string.IsNullOrWhiteSpace(butonYazi) ? "Koleksiyonu İncele" : butonYazi);
                     sent++;
                 }
-                catch
+                catch (Exception ex)
                 {
                     failed++;
+                    _logger.LogWarning(ex, "Bulten maili gonderilemedi: {Email}", email);
                 }
             }
 

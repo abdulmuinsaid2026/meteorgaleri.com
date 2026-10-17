@@ -138,11 +138,11 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteAllProducts([FromBody] DeleteProductsRequest request)
+        public async Task<IActionResult> DeleteAllProducts([FromBody] DeleteProductsRequest? request)
         {
             try
             {
-                if (request.kategoriIds != null && request.kategoriIds.Any())
+                if (request?.kategoriIds != null && request.kategoriIds.Any())
                 {
                     var urunler = await _context.Urunler
                         .Where(x => request.kategoriIds.Contains(x.KategoriId))
@@ -196,13 +196,21 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
                         ozellikDegeri.SilindiMi = true;
                     }
 
+                    var yorumlar = await _context.Yorumlar
+                        .Where(x => urunIdleri.Contains(x.UrunId))
+                        .ToListAsync();
+                    foreach (var yorum in yorumlar)
+                    {
+                        yorum.SilindiMi = true;
+                        yorum.OnayliMi = false;
+                    }
+
                     foreach (var urun in urunler)
                     {
                         urun.SilindiMi = true;
                         urun.AktifMi = false;
                     }
                     await _context.SaveChangesAsync();
-                    var yorumlar = new List<object>();
 
                     return Json(new { success = true, message = urunler.Count + " ürün, " + secenekler.Count + " varyasyon, " + resimler.Count + " resim, " + sepetItems.Count + " sepet, " + yorumlar.Count + " yorum, " + favoriler.Count + " favori silindi" });
                 }
@@ -210,16 +218,20 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = "Hata: " + ex.InnerException?.Message ?? ex.Message });
+                return Json(new { success = false, message = "Hata: " + (ex.InnerException?.Message ?? ex.Message) });
             }
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ImportJson([FromBody] ImportJsonRequest request)
+        public async Task<IActionResult> ImportJson([FromBody] ImportJsonRequest? request)
         {
             try
             {
+                if (request == null || string.IsNullOrWhiteSpace(request.categoryName))
+                {
+                    return Json(new { success = false, message = "Kategori adı gerekli." });
+                }
                 var jsonPath = GetImportJsonPath(request.categoryName);
                 
                 if (!System.IO.File.Exists(jsonPath))
@@ -624,7 +636,7 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
             {
                 UrunId = urunId,
                 Olcu = "Standart",
-                CerceveTipi = "Cercevesiz",
+                CerceveTipi = "Çerçevesiz",
                 CerceveRengi = string.Empty,
                 CerceveKalinligi = string.Empty,
                 MalzemeTuru = string.Empty,

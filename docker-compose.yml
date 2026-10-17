@@ -42,10 +42,12 @@ services:
       - EmailSettings__Host=${EMAIL_HOST:-smtp-relay.brevo.com}
       - EmailSettings__Port=${EMAIL_PORT:-587}
       - EmailSettings__EnableSSL=${EMAIL_ENABLE_SSL:-true}
-      - EmailSettings__Username=${EMAIL_USERNAME:-}
+      - EmailSettings__Username=${EMAIL_USERNAME:-info@meteorgaleri.com}
       - EmailSettings__Password=${EMAIL_PASSWORD:-}
-      - EmailSettings__FromEmail=${EMAIL_FROM_EMAIL:-}
-      - EmailSettings__FromName=${EMAIL_FROM_NAME:-MeteorGaleri}
+      - EmailSettings__FromEmail=${EMAIL_FROM_EMAIL:-info@meteorgaleri.com}
+      - EmailSettings__FromName=${EMAIL_FROM_NAME:-Meteor Galeri}
+      - Authentication__Google__ClientId=${GOOGLE_CLIENT_ID:-}
+      - Authentication__Google__ClientSecret=${GOOGLE_CLIENT_SECRET:-}
     volumes:
       - app_slider_uploads:/app/storage/uploads
       - app_uploads:/app/storage/img/products

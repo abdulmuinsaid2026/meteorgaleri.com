@@ -2,15 +2,22 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using KanvasProje.Data;
+using KanvasProje.Web.Security;
 
 namespace KanvasProje.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
     [Authorize]
-    public class XyzSecretMonitorController : Controller
+    public class XyzSecretMonitorController : AdminBaseController
     {
         private readonly IWebHostEnvironment _env;
         private readonly KanvasDbContext _db;
+        private static readonly string[] AllowedMonitorRoles =
+        {
+            AdminSecurityRoles.LegacyAdmin,
+            AdminSecurityRoles.SuperAdmin,
+            AdminSecurityRoles.Yonetici
+        };
 
         public XyzSecretMonitorController(IWebHostEnvironment env, KanvasDbContext db)
         {
@@ -117,9 +124,8 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
 
         private bool IsAuthorizedAdmin()
         {
-            if (!User.Identity?.IsAuthenticated ?? false) return false;
-            var roller = User.Claims.Where(c => c.Type.Contains("role")).Select(c => c.Value).ToList();
-            return roller.Contains("Admin") || roller.Contains("SuperAdmin") || roller.Contains("Yonetici");
+            return User.Identity?.IsAuthenticated == true &&
+                   AdminSecurityRoles.UserHasAnyRole(User, AllowedMonitorRoles);
         }
 
         public class LogEntry

@@ -229,7 +229,6 @@ namespace KanvasProje.Service.Services
 
             return normalized
                 .OrderBy(slide => slide.SortOrder)
-                .Take(defaultList.Count)
                 .ToList();
         }
 
@@ -282,7 +281,7 @@ namespace KanvasProje.Service.Services
 
         private static int NormalizeSortOrder(int currentValue, int defaultValue)
         {
-            return currentValue <= 0 ? defaultValue : currentValue;
+            return currentValue < 0 ? defaultValue : currentValue;
         }
 
         private static string NormalizeText(string? value, string fallback)

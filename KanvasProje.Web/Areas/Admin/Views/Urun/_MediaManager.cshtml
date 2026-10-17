@@ -230,7 +230,7 @@
                             </div>
 
                             <div class="d-flex justify-content-end gap-2 mt-3">
-                                <a href="/Admin/Urun/MedyaSil/@medya.Id" class="ca-btn ca-btn-outline text-danger">Sil</a>
+                                <button type="submit" formaction="/Admin/Urun/MedyaSil/@medya.Id" formnovalidate onclick="return confirm('Bu medyayı silmek istediğinize emin misiniz?');" class="ca-btn ca-btn-outline text-danger">Sil</button>
                                 <button type="submit" class="ca-btn ca-btn-success">
                                     <i class="fas fa-save"></i> Medyayı Güncelle
                                 </button>

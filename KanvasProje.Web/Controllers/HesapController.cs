@@ -366,10 +366,8 @@ namespace KanvasProje.Web.Controllers
         {
             return provider switch
             {
-                "Google" => !string.IsNullOrWhiteSpace(_configuration["Authentication:Google:ClientId"])
-                    && !string.IsNullOrWhiteSpace(_configuration["Authentication:Google:ClientSecret"]),
-                "Facebook" => !string.IsNullOrWhiteSpace(_configuration["Authentication:Facebook:AppId"])
-                    && !string.IsNullOrWhiteSpace(_configuration["Authentication:Facebook:AppSecret"]),
+                "Google" => !string.IsNullOrWhiteSpace(_configuration["Authentication:Google:ClientId"] ?? _configuration["Google:ClientId"])
+                    && !string.IsNullOrWhiteSpace(_configuration["Authentication:Google:ClientSecret"] ?? _configuration["Google:ClientSecret"]),
                 _ => false
             };
         }

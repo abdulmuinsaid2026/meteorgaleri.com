@@ -45,9 +45,9 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
 
             if (!string.IsNullOrWhiteSpace(cerceve))
             {
-                if (cerceve == "Standart" || cerceve == "Cercevesiz")
+                if (cerceve == "Standart" || cerceve == "Cercevesiz" || cerceve == "Çerçevesiz" || cerceve == "Çerçevesiz / Standart")
                 {
-                    query = query.Where(x => string.IsNullOrWhiteSpace(x.CerceveTipi) || x.CerceveTipi == "Standart" || x.CerceveTipi == "Çerçevesiz");
+                    query = query.Where(x => string.IsNullOrWhiteSpace(x.CerceveTipi) || x.CerceveTipi == "Standart" || x.CerceveTipi == "Çerçevesiz" || x.CerceveTipi == "Cercevesiz");
                 }
                 else
                 {
@@ -59,7 +59,7 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
                 .GroupBy(x => new 
                 { 
                     x.Olcu, 
-                    CerceveTipi = string.IsNullOrWhiteSpace(x.CerceveTipi) || x.CerceveTipi == "Standart" || x.CerceveTipi == "Çerçevesiz"
+                    CerceveTipi = string.IsNullOrWhiteSpace(x.CerceveTipi) || x.CerceveTipi == "Standart" || x.CerceveTipi == "Çerçevesiz" || x.CerceveTipi == "Cercevesiz"
                         ? "Çerçevesiz / Standart"
                         : x.CerceveTipi
                 })
@@ -84,6 +84,7 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> FiyatGuncelle(string olcu, string? cerceveTipi, string yeniFiyat)
         {
             try
@@ -96,14 +97,15 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
                 var isStandart = string.IsNullOrWhiteSpace(cerceveTipi) 
                     || cerceveTipi == "Çerçevesiz / Standart" 
                     || cerceveTipi == "Standart" 
-                    || cerceveTipi == "Cercevesiz";
+                    || cerceveTipi == "Cercevesiz"
+                    || cerceveTipi == "Çerçevesiz";
 
                 var query = GetKanvasSecenekQuery(asNoTracking: false)
                     .Where(x => x.Olcu == olcu);
 
                 if (isStandart)
                 {
-                    query = query.Where(x => string.IsNullOrWhiteSpace(x.CerceveTipi) || x.CerceveTipi == "Standart" || x.CerceveTipi == "Çerçevesiz");
+                    query = query.Where(x => string.IsNullOrWhiteSpace(x.CerceveTipi) || x.CerceveTipi == "Standart" || x.CerceveTipi == "Çerçevesiz" || x.CerceveTipi == "Cercevesiz");
                 }
                 else
                 {
@@ -116,6 +118,8 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
                 {
                     return Json(new { success = false, message = "Kanvas tablo ölçüsü bulunamadı" });
                 }
+
+                await using var transaction = await _context.Database.BeginTransactionAsync();
 
                 var urunIdler = varyasyonlar.Select(x => x.UrunId).Distinct().ToList();
 
@@ -145,6 +149,7 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
                 }
 
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
 
                 return Json(new { success = true, message = $"{varyasyonlar.Count} kanvas tablo varyasyonu güncellendi ({cerceveTipi ?? "Standart"})" });
             }
@@ -164,19 +169,23 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
+            await using var transaction = await _context.Database.BeginTransactionAsync();
             int guncellenenSayisi = 0;
+            var affectedUrunIds = new HashSet<int>();
 
             foreach (var item in fiyatlar.Where(x => x.YeniFiyat.HasValue && x.YeniFiyat > 0 && !string.IsNullOrWhiteSpace(x.Olcu)))
             {
                 var isStandart = string.IsNullOrWhiteSpace(item.CerceveTipi) 
                     || item.CerceveTipi == "Çerçevesiz / Standart" 
-                    || item.CerceveTipi == "Standart";
+                    || item.CerceveTipi == "Standart"
+                    || item.CerceveTipi == "Cercevesiz"
+                    || item.CerceveTipi == "Çerçevesiz";
 
                 var query = GetKanvasSecenekQuery(asNoTracking: false)
                     .Where(x => x.Olcu == item.Olcu);
 
                 if (isStandart)
-                    query = query.Where(x => string.IsNullOrWhiteSpace(x.CerceveTipi) || x.CerceveTipi == "Standart" || x.CerceveTipi == "Çerçevesiz");
+                    query = query.Where(x => string.IsNullOrWhiteSpace(x.CerceveTipi) || x.CerceveTipi == "Standart" || x.CerceveTipi == "Çerçevesiz" || x.CerceveTipi == "Cercevesiz");
                 else
                     query = query.Where(x => x.CerceveTipi == item.CerceveTipi);
 
@@ -186,25 +195,14 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
                 {
                     varyasyon.SatisFiyati = item.YeniFiyat!.Value;
                     varyasyon.MaliyetFiyati = Math.Round(item.YeniFiyat.Value * 0.6m, 2);
+                    affectedUrunIds.Add(varyasyon.UrunId);
                 }
 
                 guncellenenSayisi += varyasyonlar.Count;
             }
 
-            if (guncellenenSayisi > 0)
+            if (guncellenenSayisi > 0 && affectedUrunIds.Count > 0)
             {
-                var modifiedOlculer = fiyatlar
-                    .Where(x => x.YeniFiyat.HasValue && x.YeniFiyat > 0 && !string.IsNullOrWhiteSpace(x.Olcu))
-                    .Select(x => x.Olcu)
-                    .Distinct()
-                    .ToList();
-
-                var affectedUrunIds = await GetKanvasSecenekQuery(asNoTracking: true)
-                    .Where(x => modifiedOlculer.Contains(x.Olcu))
-                    .Select(x => x.UrunId)
-                    .Distinct()
-                    .ToListAsync();
-
                 var urunler = await _context.Urunler
                     .Where(x => affectedUrunIds.Contains(x.Id))
                     .Include(x => x.UrunSecenek)
@@ -226,12 +224,14 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
             }
 
             await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
 
             TempData["Basari"] = $"{guncellenenSayisi} kanvas varyasyon güncellendi.";
             return RedirectToAction(nameof(Index));
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> NormalizeOlcu()
         {
             try

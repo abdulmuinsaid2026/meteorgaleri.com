@@ -12,6 +12,19 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
         private readonly KanvasDbContext _db;
         private readonly IWebHostEnvironment _env;
 
+        private static readonly HashSet<string> AllowedImageExtensions = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ".jpg", ".jpeg", ".png", ".webp"
+        };
+
+        private static readonly HashSet<string> AllowedVideoExtensions = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ".mp4", ".webm", ".mov"
+        };
+
+        private const long MaxSliderImageBytes = 10 * 1024 * 1024;
+        private const long MaxSliderVideoBytes = 60 * 1024 * 1024;
+
         public SlaytController(KanvasDbContext db, IWebHostEnvironment env)
         {
             _db = db;
@@ -54,32 +67,39 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
                 return View(model);
             }
 
-            if (Resim != null)
+            try
             {
-                var resimPath = await SaveFileAsync(Resim, "uploads/slider");
-                model.ResimUrl = resimPath;
+                if (Resim != null)
+                {
+                    model.ResimUrl = await SaveFileAsync(Resim, "uploads/slider", isVideo: false);
+                }
+
+                if (Video != null)
+                {
+                    model.VideoUrl = await SaveFileAsync(Video, "uploads/slider", isVideo: true);
+                }
+
+                if (MobilResim != null)
+                {
+                    model.MobilResimUrl = await SaveFileAsync(MobilResim, "uploads/slider", isVideo: false);
+                }
+
+                if (MobilVideo != null)
+                {
+                    model.MobilVideoUrl = await SaveFileAsync(MobilVideo, "uploads/slider", isVideo: true);
+                }
+            }
+            catch (InvalidOperationException ex)
+            {
+                ModelState.AddModelError(string.Empty, ex.Message);
+                return View(model);
             }
 
-            if (Video != null)
+            if (model.Sira <= 0)
             {
-                var videoPath = await SaveFileAsync(Video, "uploads/slider");
-                model.VideoUrl = videoPath;
+                var maxSira = await _db.Slaytlar.MaxAsync(s => (int?)s.Sira) ?? 0;
+                model.Sira = maxSira + 1;
             }
-
-            if (MobilResim != null)
-            {
-                var mobilResimPath = await SaveFileAsync(MobilResim, "uploads/slider");
-                model.MobilResimUrl = mobilResimPath;
-            }
-
-            if (MobilVideo != null)
-            {
-                var mobilVideoPath = await SaveFileAsync(MobilVideo, "uploads/slider");
-                model.MobilVideoUrl = mobilVideoPath;
-            }
-
-            var maxSira = await _db.Slaytlar.MaxAsync(s => (int?)s.Sira) ?? 0;
-            model.Sira = maxSira + 1;
             model.OlusturmaTarihi = DateTime.UtcNow;
 
             _db.Slaytlar.Add(model);
@@ -114,7 +134,18 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
             }
 
             if (!ModelState.IsValid)
-                return View(slayt);
+            {
+                model.ResimUrl ??= slayt.ResimUrl;
+                model.VideoUrl ??= slayt.VideoUrl;
+                model.MobilResimUrl ??= slayt.MobilResimUrl;
+                model.MobilVideoUrl ??= slayt.MobilVideoUrl;
+                return View(model);
+            }
+
+            var oldResimUrl = slayt.ResimUrl;
+            var oldVideoUrl = slayt.VideoUrl;
+            var oldMobilResimUrl = slayt.MobilResimUrl;
+            var oldMobilVideoUrl = slayt.MobilVideoUrl;
 
             slayt.Baslik = model.Baslik;
             slayt.AltBaslik = model.AltBaslik;
@@ -122,79 +153,83 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
             slayt.ButonYazi = model.ButonYazi;
             slayt.ButonUrl = model.ButonUrl;
             slayt.Tur = model.Tur;
-            slayt.Sira = model.Sira;
+            slayt.Sira = model.Sira > 0 ? model.Sira : slayt.Sira;
             slayt.AktifMi = model.AktifMi;
 
-            if (Resim != null)
+            try
             {
-                if (!string.IsNullOrEmpty(slayt.ResimUrl))
+                if (Resim != null)
+                {
+                    var newPath = await SaveFileAsync(Resim, "uploads/slider", isVideo: false);
+                    if (!string.IsNullOrEmpty(slayt.ResimUrl))
+                        DeleteFile(slayt.ResimUrl);
+                    slayt.ResimUrl = newPath;
+                }
+                else if (ResimSil == true && !string.IsNullOrEmpty(slayt.ResimUrl))
+                {
                     DeleteFile(slayt.ResimUrl);
-                slayt.ResimUrl = await SaveFileAsync(Resim, "uploads/slider");
-            }
+                    slayt.ResimUrl = null;
+                }
+                else if (!string.IsNullOrWhiteSpace(model.ResimUrl) && model.ResimUrl != oldResimUrl)
+                {
+                    slayt.ResimUrl = model.ResimUrl.Trim();
+                }
 
-            if (Video != null)
-            {
-                if (!string.IsNullOrEmpty(slayt.VideoUrl))
+                if (Video != null)
+                {
+                    var newPath = await SaveFileAsync(Video, "uploads/slider", isVideo: true);
+                    if (!string.IsNullOrEmpty(slayt.VideoUrl))
+                        DeleteFile(slayt.VideoUrl);
+                    slayt.VideoUrl = newPath;
+                }
+                else if (VideoSil == true && !string.IsNullOrEmpty(slayt.VideoUrl))
+                {
                     DeleteFile(slayt.VideoUrl);
-                slayt.VideoUrl = await SaveFileAsync(Video, "uploads/slider");
-            }
+                    slayt.VideoUrl = null;
+                }
+                else if (!string.IsNullOrWhiteSpace(model.VideoUrl) && model.VideoUrl != oldVideoUrl)
+                {
+                    slayt.VideoUrl = model.VideoUrl.Trim();
+                }
 
-            if (MobilResim != null)
-            {
-                if (!string.IsNullOrEmpty(slayt.MobilResimUrl))
+                if (MobilResim != null)
+                {
+                    var newPath = await SaveFileAsync(MobilResim, "uploads/slider", isVideo: false);
+                    if (!string.IsNullOrEmpty(slayt.MobilResimUrl))
+                        DeleteFile(slayt.MobilResimUrl);
+                    slayt.MobilResimUrl = newPath;
+                }
+                else if (MobilResimSil == true && !string.IsNullOrEmpty(slayt.MobilResimUrl))
+                {
                     DeleteFile(slayt.MobilResimUrl);
-                slayt.MobilResimUrl = await SaveFileAsync(MobilResim, "uploads/slider");
-            }
+                    slayt.MobilResimUrl = null;
+                }
+                else if (!string.IsNullOrWhiteSpace(model.MobilResimUrl) && model.MobilResimUrl != oldMobilResimUrl)
+                {
+                    slayt.MobilResimUrl = model.MobilResimUrl.Trim();
+                }
 
-            if (MobilVideo != null)
-            {
-                if (!string.IsNullOrEmpty(slayt.MobilVideoUrl))
+                if (MobilVideo != null)
+                {
+                    var newPath = await SaveFileAsync(MobilVideo, "uploads/slider", isVideo: true);
+                    if (!string.IsNullOrEmpty(slayt.MobilVideoUrl))
+                        DeleteFile(slayt.MobilVideoUrl);
+                    slayt.MobilVideoUrl = newPath;
+                }
+                else if (MobilVideoSil == true && !string.IsNullOrEmpty(slayt.MobilVideoUrl))
+                {
                     DeleteFile(slayt.MobilVideoUrl);
-                slayt.MobilVideoUrl = await SaveFileAsync(MobilVideo, "uploads/slider");
+                    slayt.MobilVideoUrl = null;
+                }
+                else if (!string.IsNullOrWhiteSpace(model.MobilVideoUrl) && model.MobilVideoUrl != oldMobilVideoUrl)
+                {
+                    slayt.MobilVideoUrl = model.MobilVideoUrl.Trim();
+                }
             }
-
-            if (ResimSil == true && !string.IsNullOrEmpty(slayt.ResimUrl))
+            catch (InvalidOperationException ex)
             {
-                DeleteFile(slayt.ResimUrl);
-                slayt.ResimUrl = null;
-            }
-
-            if (VideoSil == true && !string.IsNullOrEmpty(slayt.VideoUrl))
-            {
-                DeleteFile(slayt.VideoUrl);
-                slayt.VideoUrl = null;
-            }
-
-            if (MobilResimSil == true && !string.IsNullOrEmpty(slayt.MobilResimUrl))
-            {
-                DeleteFile(slayt.MobilResimUrl);
-                slayt.MobilResimUrl = null;
-            }
-
-            if (MobilVideoSil == true && !string.IsNullOrEmpty(slayt.MobilVideoUrl))
-            {
-                DeleteFile(slayt.MobilVideoUrl);
-                slayt.MobilVideoUrl = null;
-            }
-
-            if (!string.IsNullOrWhiteSpace(model.ResimUrl) && model.ResimUrl != slayt.ResimUrl)
-            {
-                slayt.ResimUrl = model.ResimUrl;
-            }
-
-            if (!string.IsNullOrWhiteSpace(model.VideoUrl) && model.VideoUrl != slayt.VideoUrl)
-            {
-                slayt.VideoUrl = model.VideoUrl;
-            }
-
-            if (!string.IsNullOrWhiteSpace(model.MobilResimUrl) && model.MobilResimUrl != slayt.MobilResimUrl)
-            {
-                slayt.MobilResimUrl = model.MobilResimUrl;
-            }
-
-            if (!string.IsNullOrWhiteSpace(model.MobilVideoUrl) && model.MobilVideoUrl != slayt.MobilVideoUrl)
-            {
-                slayt.MobilVideoUrl = model.MobilVideoUrl;
+                ModelState.AddModelError(string.Empty, ex.Message);
+                return View(slayt);
             }
 
             await _db.SaveChangesAsync();
@@ -293,6 +328,12 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
             if (!string.IsNullOrEmpty(slayt.VideoUrl))
                 DeleteFile(slayt.VideoUrl);
 
+            if (!string.IsNullOrEmpty(slayt.MobilResimUrl))
+                DeleteFile(slayt.MobilResimUrl);
+
+            if (!string.IsNullOrEmpty(slayt.MobilVideoUrl))
+                DeleteFile(slayt.MobilVideoUrl);
+
             _db.Slaytlar.Remove(slayt);
             await _db.SaveChangesAsync();
 
@@ -301,8 +342,13 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Siralama(List<int> ids)
+        public async Task<IActionResult> Siralama([FromBody] List<int>? ids)
         {
+            if (ids == null || ids.Count == 0)
+            {
+                return Json(new { success = false, message = "Geçersiz sıralama verisi." });
+            }
+
             var slaytlar = await _db.Slaytlar.ToListAsync();
             for (int i = 0; i < ids.Count; i++)
             {
@@ -314,16 +360,41 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
             return Json(new { success = true });
         }
 
-        private async Task<string> SaveFileAsync(IFormFile file, string subFolder)
+        private async Task<string> SaveFileAsync(IFormFile file, string subFolder, bool isVideo)
         {
+            var ext = Path.GetExtension(file.FileName);
+            if (isVideo)
+            {
+                if (string.IsNullOrWhiteSpace(ext) || !AllowedVideoExtensions.Contains(ext))
+                {
+                    throw new InvalidOperationException("Desteklenmeyen video formatı. Sadece MP4, WebM veya MOV yüklenebilir.");
+                }
+                if (file.Length <= 0 || file.Length > MaxSliderVideoBytes)
+                {
+                    throw new InvalidOperationException("Video dosyası en fazla 60 MB olabilir.");
+                }
+            }
+            else
+            {
+                if (string.IsNullOrWhiteSpace(ext) || !AllowedImageExtensions.Contains(ext))
+                {
+                    throw new InvalidOperationException("Desteklenmeyen görsel formatı. Sadece JPG, PNG veya WebP yüklenebilir.");
+                }
+                if (file.Length <= 0 || file.Length > MaxSliderImageBytes)
+                {
+                    throw new InvalidOperationException("Görsel dosyası en fazla 10 MB olabilir.");
+                }
+            }
+
             var uploadsFolder = Path.Combine(_env.WebRootPath, subFolder);
             if (!Directory.Exists(uploadsFolder))
                 Directory.CreateDirectory(uploadsFolder);
 
-            var uniqueFileName = Guid.NewGuid().ToString("N") + "_" + Path.GetFileName(file.FileName);
+            var safeExt = ext.ToLowerInvariant();
+            var uniqueFileName = Guid.NewGuid().ToString("N") + safeExt;
             var filePath = Path.Combine(uploadsFolder, uniqueFileName);
 
-            using var stream = new FileStream(filePath, FileMode.Create);
+            await using var stream = new FileStream(filePath, FileMode.Create);
             await file.CopyToAsync(stream);
 
             return "/" + subFolder.Replace("\\", "/") + "/" + uniqueFileName;
@@ -331,12 +402,25 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
 
         private void DeleteFile(string? url)
         {
-            if (string.IsNullOrEmpty(url)) return;
-            var relativePath = url.TrimStart('/').Replace("/", "\\");
-            var fullPath = System.IO.Path.Combine(_env.WebRootPath, relativePath);
-            if (System.IO.File.Exists(fullPath))
+            if (string.IsNullOrWhiteSpace(url)) return;
+            var trimmed = url.Trim();
+            if (!trimmed.StartsWith("/uploads/", StringComparison.OrdinalIgnoreCase))
             {
-                try { System.IO.File.Delete(fullPath); } catch { }
+                return;
+            }
+
+            try
+            {
+                var relativePath = trimmed.TrimStart('/').Replace('/', Path.DirectorySeparatorChar).Replace('\\', Path.DirectorySeparatorChar);
+                var fullPath = Path.GetFullPath(Path.Combine(_env.WebRootPath, relativePath));
+                var webRootFullPath = Path.GetFullPath(_env.WebRootPath);
+                if (fullPath.StartsWith(webRootFullPath, StringComparison.Ordinal) && System.IO.File.Exists(fullPath))
+                {
+                    System.IO.File.Delete(fullPath);
+                }
+            }
+            catch
+            {
             }
         }
     }

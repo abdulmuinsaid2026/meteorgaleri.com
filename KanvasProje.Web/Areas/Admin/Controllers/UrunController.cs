@@ -60,24 +60,29 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
             }
 
             var urunlerQuery = _context.Urunler
+                .Where(u => !u.SilindiMi)
                 .Include(u => u.Kategori)
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(search))
             {
                 var term = search.Trim().ToLowerInvariant();
+                var hasParsedId = int.TryParse(term, out var parsedId);
                 urunlerQuery = urunlerQuery.Where(x =>
                     x.Baslik.ToLower().Contains(term) ||
-                    x.SKU.ToLower().Contains(term) ||
-                    x.Barkod.ToLower().Contains(term) ||
-                    x.Id.ToString() == term);
+                    (x.SKU != null && x.SKU.ToLower().Contains(term)) ||
+                    (x.Barkod != null && x.Barkod.ToLower().Contains(term)) ||
+                    (hasParsedId && x.Id == parsedId));
             }
 
             if (kategoriId.HasValue)
             {
-                urunlerQuery = urunlerQuery.Where(x =>
-                    x.KategoriId == kategoriId.Value ||
-                    (x.Kategori != null && x.Kategori.ParentKategoriId == kategoriId.Value));
+                var tumKategoriler = await _context.Kategoriler
+                    .AsNoTracking()
+                    .Where(x => !x.SilindiMi)
+                    .ToListAsync();
+                var kategoriIdSet = CategoryTreeHelper.GetDescendantIds(tumKategoriler, kategoriId.Value);
+                urunlerQuery = urunlerQuery.Where(x => kategoriIdSet.Contains(x.KategoriId));
             }
 
             ViewBag.CurrentSearch = search;
@@ -301,29 +306,45 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
             SanitizeVariantScope(postedVariants, supportsCanvasOptions);
 
             urun.OlusturulmaTarihi = DateTime.UtcNow;
+            urun.SatisSayisi = 0;
+            urun.GoruntulenmeSayisi = 0;
+            urun.FavoriSayisi = 0;
+            urun.SilindiMi = false;
             urun.Sira = await NormalizeProductOrderAsync(urun.Sira);
             urun.UrlYolu = SlugHelper.GenerateSlug(string.IsNullOrWhiteSpace(urun.UrlYolu) ? urun.Baslik : urun.UrlYolu);
             urun.Slug = await GenerateUniqueProductSlugAsync(urun.Slug, urun.Baslik, null);
             urun.UrunSecenek = new List<UrunSecenek>();
             urun.UrunOzellikleri = new List<UrunOzellikDegeri>();
 
-            if (resimDosyasi != null)
+            try
             {
-                urun.AnaGorselUrl = await SaveImageAsync(resimDosyasi, urun.Baslik, "ana");
-            }
-            else
-            {
-                urun.AnaGorselUrl = urun.AnaGorselUrl.Trim();
-            }
+                if (resimDosyasi != null)
+                {
+                    urun.AnaGorselUrl = await SaveImageAsync(resimDosyasi, urun.Baslik, "ana");
+                }
+                else
+                {
+                    urun.AnaGorselUrl = urun.AnaGorselUrl.Trim();
+                }
 
-            _context.Urunler.Add(urun);
-            await _context.SaveChangesAsync();
-            await EnsureProductSkuAsync(urun);
-            await SyncVariantsAsync(urun, postedVariants);
-            await SyncFeatureValuesAsync(urun, postedFeatureValues);
-            await SaveGalleryImagesAsync(urun, galeriDosyalari);
-            await _context.SaveChangesAsync();
-            await EnsureVariantSkusAsync(urun.Id);
+                await using var tx = await _context.Database.BeginTransactionAsync();
+                _context.Urunler.Add(urun);
+                await _context.SaveChangesAsync();
+                await EnsureProductSkuAsync(urun);
+                await SyncVariantsAsync(urun, postedVariants);
+                await SyncFeatureValuesAsync(urun, postedFeatureValues);
+                await SaveGalleryImagesAsync(urun, galeriDosyalari);
+                await _context.SaveChangesAsync();
+                await EnsureVariantSkusAsync(urun.Id);
+                await tx.CommitAsync();
+            }
+            catch (InvalidOperationException ex)
+            {
+                ModelState.AddModelError(string.Empty, ex.Message);
+                await PopulateCategorySelectListAsync(urun.KategoriId);
+                await PopulateProductMetadataAsync(urun.UrunTipi);
+                return View(urun);
+            }
 
             TempData["Mesaj"] = "Ürün başarıyla eklendi.";
             return RedirectToAction(nameof(Duzenle), new { id = urun.Id });
@@ -389,6 +410,7 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
                 return View(model);
             }
 
+            var oldEffectivePrice = urun.IndirimliFiyat ?? urun.Fiyat;
             NormalizeProductInput(model);
             ApplyProductFields(model, urun);
             var supportsCanvasOptions = await SupportsCanvasOptionsAsync(model.KategoriId);
@@ -397,38 +419,103 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
             urun.UrlYolu = SlugHelper.GenerateSlug(string.IsNullOrWhiteSpace(model.UrlYolu) ? model.Baslik : model.UrlYolu);
             urun.Slug = await GenerateUniqueProductSlugAsync(model.Slug, model.Baslik, id);
 
-            if (anaResimDosyasi != null)
+            try
             {
-                urun.AnaGorselUrl = await SaveImageAsync(anaResimDosyasi, urun.Baslik, "ana");
+                var uploadedNewMainImage = false;
+                if (anaResimDosyasi != null && anaResimDosyasi.Length > 0)
+                {
+                    urun.AnaGorselUrl = await SaveImageAsync(anaResimDosyasi, urun.Baslik, "ana");
+                    uploadedNewMainImage = true;
+                }
+                else if (!string.IsNullOrWhiteSpace(model.AnaGorselUrl))
+                {
+                    urun.AnaGorselUrl = model.AnaGorselUrl.Trim();
+                }
+
+                await using var tx = await _context.Database.BeginTransactionAsync();
+                await SyncVariantsAsync(urun, model.UrunSecenek);
+                await EnsureProductSkuAsync(urun);
+                await EnsureVariantSkusAsync(urun.Id);
+                await SyncFeatureValuesAsync(urun, model.UrunOzellikleri);
+                await SaveGalleryImagesAsync(urun, galeriDosyalari);
+                await EnsureDefaultProductMediaAsync(urun, overwriteMainImage: !uploadedNewMainImage && string.IsNullOrWhiteSpace(urun.AnaGorselUrl));
+
+                await _context.SaveChangesAsync();
+
+                await SyncProductPricesWithVariantsAsync(urun, model, oldEffectivePrice);
+                await tx.CommitAsync();
             }
-            else if (!string.IsNullOrWhiteSpace(model.AnaGorselUrl))
+            catch (InvalidOperationException ex)
             {
-                urun.AnaGorselUrl = model.AnaGorselUrl.Trim();
+                ModelState.AddModelError(string.Empty, ex.Message);
+                await PopulateCategorySelectListAsync(model.KategoriId);
+                await PopulateProductMetadataAsync(model.UrunTipi);
+                model.UrunResimleri = urun.UrunResimleri;
+                model.GoruntulenmeSayisi = urun.GoruntulenmeSayisi;
+                model.SatisSayisi = urun.SatisSayisi;
+                model.FavoriSayisi = urun.FavoriSayisi;
+                RepairProductTextForDisplay(model);
+                PopulateMediaMetadata(urun);
+                return View(model);
             }
-
-            await SyncVariantsAsync(urun, model.UrunSecenek);
-            await EnsureProductSkuAsync(urun);
-            await EnsureVariantSkusAsync(urun.Id);
-            await SyncFeatureValuesAsync(urun, model.UrunOzellikleri);
-            await SaveGalleryImagesAsync(urun, galeriDosyalari);
-            await EnsureDefaultProductMediaAsync(urun);
-
-await _context.SaveChangesAsync();
-
-            await SyncProductPricesWithVariantsAsync(urun, model);
 
             TempData["Mesaj"] = "Ürün başarıyla güncellendi.";
             return RedirectToAction(nameof(Index));
         }
 
-        private async Task SyncProductPricesWithVariantsAsync(Urun urun, Urun model)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> GorselYukle(int id, IFormFile? anaResimDosyasi, List<IFormFile>? galeriDosyalari)
+        {
+            var urun = await _context.Urunler
+                .Include(x => x.UrunResimleri)
+                .FirstOrDefaultAsync(x => x.Id == id);
+
+            if (urun == null)
+            {
+                return NotFound();
+            }
+
+            var hasAnaResim = anaResimDosyasi != null && anaResimDosyasi.Length > 0;
+            var hasGaleri = galeriDosyalari != null && galeriDosyalari.Any(x => x.Length > 0);
+            if (!hasAnaResim && !hasGaleri)
+            {
+                TempData["Hata"] = "Lütfen yüklenecek en az bir görsel seçin.";
+                return RedirectToAction(nameof(Duzenle), new { id });
+            }
+
+            try
+            {
+                if (hasAnaResim)
+                {
+                    urun.AnaGorselUrl = await SaveImageAsync(anaResimDosyasi!, urun.Baslik, "ana");
+                }
+
+                if (hasGaleri)
+                {
+                    await SaveGalleryImagesAsync(urun, galeriDosyalari);
+                }
+
+                await EnsureDefaultProductMediaAsync(urun, overwriteMainImage: !hasAnaResim && string.IsNullOrWhiteSpace(urun.AnaGorselUrl));
+                await _context.SaveChangesAsync();
+                TempData["Mesaj"] = "Seçilen görseller başarıyla yüklendi.";
+            }
+            catch (InvalidOperationException ex)
+            {
+                TempData["Hata"] = ex.Message;
+            }
+
+            return RedirectToAction(nameof(Duzenle), new { id });
+        }
+
+        private async Task SyncProductPricesWithVariantsAsync(Urun urun, Urun model, decimal? previousBasePrice = null)
         {
             var basePrice = model.IndirimliFiyat ?? model.Fiyat;
             var defaultVariant = urun.UrunSecenek
                 .FirstOrDefault(x => x.VarsayilanMi && !x.SilindiMi)
                 ?? urun.UrunSecenek.FirstOrDefault(x => !x.SilindiMi);
 
-            if (defaultVariant != null && defaultVariant.SatisFiyati == 0)
+            if (defaultVariant != null && (defaultVariant.SatisFiyati == 0 || (previousBasePrice.HasValue && defaultVariant.SatisFiyati == previousBasePrice.Value)))
             {
                 defaultVariant.SatisFiyati = basePrice > 0 ? basePrice : 0;
             }
@@ -436,7 +523,7 @@ await _context.SaveChangesAsync();
             var otherVariants = urun.UrunSecenek.Where(x => !x.SilindiMi && x.Id != defaultVariant?.Id);
             foreach (var variant in otherVariants)
             {
-                if (variant.SatisFiyati == 0 && variant.FiyatFarki != 0)
+                if ((variant.SatisFiyati == 0 || (previousBasePrice.HasValue && variant.SatisFiyati == previousBasePrice.Value + variant.FiyatFarki)) && variant.FiyatFarki != 0)
                 {
                     variant.SatisFiyati = basePrice + variant.FiyatFarki;
                 }
@@ -771,12 +858,24 @@ await _context.SaveChangesAsync();
                 .Where(x => deletableIds.Contains(x.Id))
                 .ToListAsync();
 
+            var filesToDelete = media
+                .SelectMany(m => new[] { m.ResimYolu, m.ThumbnailYolu, m.MobilResimYolu })
+                .Concat(products.Select(p => p.AnaGorselUrl))
+                .Where(p => !string.IsNullOrWhiteSpace(p))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
             _context.UrunResimleri.RemoveRange(media);
             _context.UrunSecenekleri.RemoveRange(variants);
             _context.UrunOzellikDegerleri.RemoveRange(featureValues);
             _context.Urunler.RemoveRange(products);
 
             await _context.SaveChangesAsync();
+
+            foreach (var filePath in filesToDelete)
+            {
+                DeletePhysicalProductFile(filePath);
+            }
 
             if (blockedIds.Count > 0)
             {
@@ -786,6 +885,8 @@ await _context.SaveChangesAsync();
             return (products.Count, 0, $"{products.Count} ürün kalıcı olarak silindi.");
         }
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> ResimSil(int id)
         {
             var resim = await _context.UrunResimleri
@@ -794,10 +895,20 @@ await _context.SaveChangesAsync();
                 .FirstOrDefaultAsync(x => x.Id == id);
             if (resim != null)
             {
+                var filesToDelete = new[] { resim.ResimYolu, resim.ThumbnailYolu, resim.MobilResimYolu };
+                var wasMain = string.Equals(resim.Urun.AnaGorselUrl, resim.ResimYolu, StringComparison.OrdinalIgnoreCase);
                 _context.UrunResimleri.Remove(resim);
                 resim.Urun.UrunResimleri.Remove(resim);
-                await EnsureDefaultProductMediaAsync(resim.Urun);
+                if (wasMain)
+                {
+                    resim.Urun.AnaGorselUrl = string.Empty;
+                }
+                await EnsureDefaultProductMediaAsync(resim.Urun, overwriteMainImage: wasMain || string.IsNullOrWhiteSpace(resim.Urun.AnaGorselUrl));
                 await _context.SaveChangesAsync();
+                foreach (var f in filesToDelete)
+                {
+                    DeletePhysicalProductFile(f);
+                }
                 return RedirectToAction(nameof(Duzenle), new { id = resim.UrunId });
             }
 
@@ -890,6 +1001,8 @@ await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Duzenle), new { id = model.UrunId });
         }
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> MedyaSil(int id)
         {
             var medya = await _context.UrunResimleri
@@ -903,10 +1016,21 @@ await _context.SaveChangesAsync();
             }
 
             var urunId = medya.UrunId;
+            var filesToDelete = new[] { medya.ResimYolu, medya.ThumbnailYolu, medya.MobilResimYolu };
+            var wasMain = string.Equals(medya.Urun.AnaGorselUrl, medya.ResimYolu, StringComparison.OrdinalIgnoreCase);
             _context.UrunResimleri.Remove(medya);
             medya.Urun.UrunResimleri.Remove(medya);
-            await EnsureDefaultProductMediaAsync(medya.Urun);
+            if (wasMain)
+            {
+                medya.Urun.AnaGorselUrl = string.Empty;
+            }
+            await EnsureDefaultProductMediaAsync(medya.Urun, overwriteMainImage: wasMain || string.IsNullOrWhiteSpace(medya.Urun.AnaGorselUrl));
             await _context.SaveChangesAsync();
+
+            foreach (var f in filesToDelete)
+            {
+                DeletePhysicalProductFile(f);
+            }
 
             TempData["Mesaj"] = "Urun medyasi silindi.";
             return RedirectToAction(nameof(Duzenle), new { id = urunId });
@@ -2785,7 +2909,37 @@ await _context.SaveChangesAsync();
             return null;
         }
 
-        private Task EnsureDefaultProductMediaAsync(Urun urun, UrunResim? requestedDefault = null)
+        private void DeletePhysicalProductFile(string? relativeUrl)
+        {
+            if (string.IsNullOrWhiteSpace(relativeUrl))
+            {
+                return;
+            }
+
+            var trimmed = relativeUrl.Trim();
+            if (!trimmed.StartsWith("/img/products/", StringComparison.OrdinalIgnoreCase) &&
+                !trimmed.StartsWith("/media/products/videos/", StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            try
+            {
+                var relativePath = trimmed.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
+                var fullPath = Path.GetFullPath(Path.Combine(_webHost.WebRootPath, relativePath));
+                var webRootFullPath = Path.GetFullPath(_webHost.WebRootPath);
+                if (fullPath.StartsWith(webRootFullPath, StringComparison.Ordinal) && System.IO.File.Exists(fullPath))
+                {
+                    System.IO.File.Delete(fullPath);
+                }
+            }
+            catch
+            {
+                // Fiziksel dosya silme hatası ana işlemi kesmemeli.
+            }
+        }
+
+        private Task EnsureDefaultProductMediaAsync(Urun urun, UrunResim? requestedDefault = null, bool overwriteMainImage = true)
         {
             var activeMedia = urun.UrunResimleri
                 .Where(x => !x.SilindiMi)
@@ -2815,7 +2969,7 @@ await _context.SaveChangesAsync();
                     ? defaultMedia.ThumbnailYolu
                     : defaultMedia.MobilResimYolu);
 
-            if (!string.IsNullOrWhiteSpace(previewImage))
+            if (!string.IsNullOrWhiteSpace(previewImage) && (overwriteMainImage || requestedDefault != null || string.IsNullOrWhiteSpace(urun.AnaGorselUrl)))
             {
                 urun.AnaGorselUrl = previewImage;
             }
@@ -2911,13 +3065,14 @@ await _context.SaveChangesAsync();
         {
             incomingValues ??= new List<UrunOzellikDegeri>();
 
-            var allowedDefinitionIds = await _context.UrunOzellikTanimlari
+            var allowedDefinitionIds = (await _context.UrunOzellikTanimlari
                 .AsNoTracking()
                 .Where(x =>
                     x.AktifMi &&
                     (x.UrunTipi == urun.UrunTipi || x.UrunTipi == UrunOzellikCatalog.Genel))
                 .Select(x => x.Id)
-                .ToListAsync();
+                .ToListAsync())
+                .ToHashSet();
 
             var validIncoming = incomingValues
                 .Where(x => allowedDefinitionIds.Contains(x.UrunOzellikTanimiId))
@@ -2936,7 +3091,7 @@ await _context.SaveChangesAsync();
                 .ToHashSet();
 
             var toRemove = urun.UrunOzellikleri
-                .Where(x => !incomingDefinitionIds.Contains(x.UrunOzellikTanimiId))
+                .Where(x => allowedDefinitionIds.Contains(x.UrunOzellikTanimiId) && !incomingDefinitionIds.Contains(x.UrunOzellikTanimiId))
                 .ToList();
 
             if (toRemove.Count > 0)

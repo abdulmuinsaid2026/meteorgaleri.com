@@ -4,19 +4,34 @@ using Microsoft.EntityFrameworkCore;
 using KanvasProje.Data;
 using KanvasProje.Core.Varliklar;
 using KanvasProje.Core.Helpers;
+using KanvasProje.Service.Services;
 
 namespace KanvasProje.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
     public class IadeController : AdminBaseController
     {
-        private const int IadeHakkiGun = 14;
+        private const int DefaultIadeHakkiGun = 14;
 
         private readonly KanvasDbContext _context;
+        private readonly ISiteSettingsService _siteSettingsService;
 
-        public IadeController(KanvasDbContext context)
+        public IadeController(KanvasDbContext context, ISiteSettingsService siteSettingsService)
         {
             _context = context;
+            _siteSettingsService = siteSettingsService;
+        }
+
+        private int GetIadeHakkiGun()
+        {
+            var configured = _siteSettingsService.GetSettings().IadeHakkiGun;
+            return configured > 0 ? configured : DefaultIadeHakkiGun;
+        }
+
+        private int GetTeslimSuresiGun()
+        {
+            var configured = _siteSettingsService.GetSettings().SiparisTeslimSuresiGun;
+            return configured >= 0 ? configured : 3;
         }
 
         public async Task<IActionResult> Index()
@@ -38,8 +53,9 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
                 return NotFound();
             }
 
-            ViewBag.IadeHakkiGun = IadeHakkiGun;
-            ViewBag.IadeSonTarih = talep.Siparis.OlusturulmaTarihi.ToUniversalTime().AddDays(IadeHakkiGun);
+            var iadeHakkiGun = GetIadeHakkiGun();
+            ViewBag.IadeHakkiGun = iadeHakkiGun;
+            ViewBag.IadeSonTarih = GetIadeSonTarihUtc(talep);
             ViewBag.IadeTalepZamanindaMi = IadeTalebiZamanindaMi(talep);
 
             return View(talep);
@@ -51,6 +67,8 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
         {
             var talep = await _context.IadeTalepleri
                 .Include(x => x.Siparis)
+                    .ThenInclude(s => s.SiparisDetaylari)
+                        .ThenInclude(d => d.UrunSecenek)
                 .FirstOrDefaultAsync(x => x.Id == id);
 
             if (talep == null) return NotFound();
@@ -61,21 +79,54 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
                 return RedirectToAction(nameof(Detay), new { id });
             }
 
-            if (durum == 1 && !IadeTalebiZamanindaMi(talep))
+            if (talep.Durum is 2 or 3 && talep.Durum != durum)
             {
-                TempData["Hata"] = $"{IadeHakkiGun} gunluk iade suresi disindaki talep onaylanamaz.";
+                TempData["Hata"] = "Tamamlanmış veya reddedilmiş bir iade talebinin durumu değiştirilemez.";
                 return RedirectToAction(nameof(Detay), new { id });
             }
 
+            if (durum == 2 && talep.Durum != 1 && talep.Durum != 2)
+            {
+                TempData["Hata"] = "İade tamamlanmadan önce talep onaylanmalıdır.";
+                return RedirectToAction(nameof(Detay), new { id });
+            }
+
+            var iadeHakkiGun = GetIadeHakkiGun();
+            if (durum == 1 && !IadeTalebiZamanindaMi(talep))
+            {
+                TempData["Hata"] = $"{iadeHakkiGun} gunluk iade suresi disindaki talep onaylanamaz.";
+                return RedirectToAction(nameof(Detay), new { id });
+            }
+
+            var eskiDurum = talep.Durum;
             talep.Durum = durum; // 1: Onay, 2: Tamamlandı, 3: Red
             talep.AdminNotu = adminNotu?.Trim();
 
             var siparis = talep.Siparis;
             if (siparis != null)
             {
-                if (durum == 1) siparis.Durum = SiparisDurumHelper.IadeOnaylandi;
-                else if (durum == 2) siparis.Durum = SiparisDurumHelper.IadeTamamlandi;
-                else if (durum == 3) siparis.Durum = SiparisDurumHelper.TeslimEdildi;
+                if (durum == 1)
+                {
+                    siparis.Durum = SiparisDurumHelper.IadeOnaylandi;
+                }
+                else if (durum == 2)
+                {
+                    siparis.Durum = SiparisDurumHelper.IadeTamamlandi;
+                    if (eskiDurum != 2 && siparis.SiparisDetaylari != null)
+                    {
+                        foreach (var detay in siparis.SiparisDetaylari.Where(d => !d.SilindiMi))
+                        {
+                            if (detay.UrunSecenek != null)
+                            {
+                                detay.UrunSecenek.StokAdedi += detay.Adet;
+                            }
+                        }
+                    }
+                }
+                else if (durum == 3 && SiparisDurumHelper.IsReturn(siparis.Durum))
+                {
+                    siparis.Durum = SiparisDurumHelper.TeslimEdildi;
+                }
             }
 
             await _context.SaveChangesAsync();
@@ -97,10 +148,15 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
                 .Where(x => !x.SilindiMi);
         }
 
-        private static bool IadeTalebiZamanindaMi(IadeTalebi talep)
+        private DateTime GetIadeSonTarihUtc(IadeTalebi talep)
         {
-            var sonTarih = talep.Siparis.OlusturulmaTarihi.ToUniversalTime().AddDays(IadeHakkiGun);
-            return talep.OlusturulmaTarihi.ToUniversalTime() <= sonTarih;
+            var bazTarih = (talep.Siparis.OdemeOnayTarihi ?? talep.Siparis.OlusturulmaTarihi).ToUniversalTime();
+            return bazTarih.AddDays(GetTeslimSuresiGun() + GetIadeHakkiGun());
+        }
+
+        private bool IadeTalebiZamanindaMi(IadeTalebi talep)
+        {
+            return talep.OlusturulmaTarihi.ToUniversalTime() <= GetIadeSonTarihUtc(talep);
         }
     }
 }

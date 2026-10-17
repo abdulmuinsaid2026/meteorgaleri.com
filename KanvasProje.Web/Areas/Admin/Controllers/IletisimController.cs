@@ -41,11 +41,15 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
             ViewBag.TotalCount = await _context.IletisimMesajlari.CountAsync();
             ViewBag.UnreadCount = await _context.IletisimMesajlari.CountAsync(x => !x.OkunduMu);
             ViewBag.ReadCount = await _context.IletisimMesajlari.CountAsync(x => x.OkunduMu);
-            ViewBag.TodayCount = await _context.IletisimMesajlari.CountAsync(x => x.Tarih >= DateTime.UtcNow.Date);
+            var turkeyTodayDate = DateTime.UtcNow.AddHours(3).Date;
+            var todayStartUtc = DateTime.SpecifyKind(turkeyTodayDate.AddHours(-3), DateTimeKind.Utc);
+            var todayStartLocal = DateTime.SpecifyKind(turkeyTodayDate, DateTimeKind.Utc);
+            ViewBag.TodayCount = await _context.IletisimMesajlari.CountAsync(x => x.Tarih >= todayStartUtc || x.Tarih >= todayStartLocal);
 
             var messages = await query
                 .OrderBy(x => x.OkunduMu)
                 .ThenByDescending(x => x.Tarih)
+                .Take(500)
                 .ToListAsync();
 
             return View(messages);
@@ -85,9 +89,9 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> TopluOkunduYap(List<int> mesajIds)
+        public async Task<IActionResult> TopluOkunduYap(List<int>? mesajIds)
         {
-            mesajIds = mesajIds.Where(x => x > 0).Distinct().ToList();
+            mesajIds = (mesajIds ?? new List<int>()).Where(x => x > 0).Distinct().ToList();
             if (!mesajIds.Any())
             {
                 TempData["Hata"] = "İşlem yapmak için en az bir mesaj seçin.";
@@ -121,6 +125,13 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
                 TempData["Durum"] = "warning";
                 return RedirectToAction(nameof(Index));
             }
+
+            if (!message.OkunduMu)
+            {
+                message.OkunduMu = true;
+                await _context.SaveChangesAsync();
+            }
+
             return View(message);
         }
 

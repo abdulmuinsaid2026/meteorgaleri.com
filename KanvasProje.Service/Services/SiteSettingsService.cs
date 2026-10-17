@@ -108,12 +108,15 @@ namespace KanvasProje.Service.Services
                 existing.PaytrBasarisizDonusUrl = normalized.PaytrBasarisizDonusUrl;
                 ApplyPaytrSecrets(existing, paytrMerchantKey, paytrMerchantSalt);
                 
-                // Iyzico Ayarları
-                existing.IyzicoAktifMi = normalized.IyzicoAktifMi;
-                existing.IyzicoTestModu = normalized.IyzicoTestModu;
-                existing.IyzicoApiKey = normalized.IyzicoApiKey;
-                existing.IyzicoBaseUrl = normalized.IyzicoBaseUrl;
-                existing.IyzicoCallbackUrl = normalized.IyzicoCallbackUrl;
+                // Iyzico Ayarları (formda gönderilmediyse mevcut değerleri koru)
+                if (!string.IsNullOrWhiteSpace(normalized.IyzicoApiKey) || !string.IsNullOrWhiteSpace(iyzicoSecretKey))
+                {
+                    existing.IyzicoAktifMi = normalized.IyzicoAktifMi;
+                    existing.IyzicoTestModu = normalized.IyzicoTestModu;
+                    existing.IyzicoApiKey = normalized.IyzicoApiKey;
+                    existing.IyzicoBaseUrl = normalized.IyzicoBaseUrl;
+                    existing.IyzicoCallbackUrl = normalized.IyzicoCallbackUrl;
+                }
                 if (!string.IsNullOrWhiteSpace(iyzicoSecretKey))
                 {
                     existing.IyzicoSecretKeyProtected = _iyzicoProtector.Protect(iyzicoSecretKey.Trim());

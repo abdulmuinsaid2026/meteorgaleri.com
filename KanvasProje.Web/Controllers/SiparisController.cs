@@ -223,10 +223,10 @@ namespace KanvasProje.Web.Controllers
                     });
                 }
 
-                if (!string.IsNullOrWhiteSpace(siparis.KuponKodu))
+                if (!string.IsNullOrWhiteSpace(siparis.KuponKodu) && !_siteSettingsService.GetSettings().PaytrAktifMi)
                 {
                     var kupon = await _context.Kuponlar.FirstOrDefaultAsync(x => x.Kod == siparis.KuponKodu);
-                    if (kupon != null)
+                    if (kupon != null && (kupon.KullanimLimiti <= 0 || kupon.KullanilanMiktar < kupon.KullanimLimiti))
                     {
                         kupon.KullanilanMiktar++;
                     }
@@ -430,6 +430,15 @@ namespace KanvasProje.Web.Controllers
                 siparis.OdemeHataMesaji = null;
                 siparis.Durum = SiparisDurumHelper.UretimHazirlaniyor;
                 siparis.Aciklama = "PayTR ile ödeme başarıyla tamamlandı.";
+
+                if (!string.IsNullOrWhiteSpace(siparis.KuponKodu))
+                {
+                    var kupon = await _context.Kuponlar.FirstOrDefaultAsync(k => k.Kod == siparis.KuponKodu);
+                    if (kupon != null)
+                    {
+                        kupon.KullanilanMiktar++;
+                    }
+                }
 
                 await _context.SaveChangesAsync();
 

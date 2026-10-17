@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using KanvasProje.Data;
 using KanvasProje.Core.Varliklar;
+using KanvasProje.Core.Helpers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 
@@ -44,7 +45,7 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
             {
                 if (model.Id == 0) // Yeni Kayıt
                 {
-                    model.UrlSlug = FriendlyUrl(model.Baslik); // Link oluştur
+                    model.UrlSlug = await GenerateUniquePageSlugAsync(model.Baslik);
                     _context.KurumsalSayfalar.Add(model);
                 }
                 else // Güncelleme
@@ -78,15 +79,20 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // Yardımcı: URL Dostu İsim Oluşturucu (Örn: "Gizlilik Politikası" -> "gizlilik-politikasi")
-        private string FriendlyUrl(string text)
+        private async Task<string> GenerateUniquePageSlugAsync(string? text)
         {
-            if (string.IsNullOrEmpty(text)) return "";
-            return text.ToLower()
-                .Replace("ı", "i").Replace("ğ", "g").Replace("ü", "u")
-                .Replace("ş", "s").Replace("ö", "o").Replace("ç", "c")
-                .Replace(" ", "-").Replace(".", "").Replace("/", "")
-                + "-" + new Random().Next(100,999); // Sonuna rastgele sayı ekledim ki çakışma olmasın
+            var baseSlug = SlugHelper.GenerateSlug(text ?? string.Empty);
+            if (string.IsNullOrWhiteSpace(baseSlug))
+            {
+                baseSlug = "sayfa";
+            }
+
+            var existingSlugs = await _context.KurumsalSayfalar
+                .Where(x => x.UrlSlug != null && x.UrlSlug != "")
+                .Select(x => x.UrlSlug!)
+                .ToListAsync();
+
+            return SlugHelper.EnsureUnique(baseSlug, existingSlugs);
         }
     }
 }

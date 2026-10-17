@@ -224,8 +224,8 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
 
         private static DateTime ToUtcEndOfDay(DateTime date)
         {
-            var dayEnd = date.Date.AddDays(1).AddTicks(-1);
-            return DateTime.SpecifyKind(dayEnd, DateTimeKind.Utc);
+            var turkeyDayEndUnspecified = DateTime.SpecifyKind(date.Date.AddDays(1).AddTicks(-1), DateTimeKind.Unspecified);
+            return DateTime.SpecifyKind(turkeyDayEndUnspecified.AddHours(-3), DateTimeKind.Utc);
         }
 
         private static bool IsCouponUsable(Kupon kupon, DateTime now)

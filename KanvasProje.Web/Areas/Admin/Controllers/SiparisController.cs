@@ -277,12 +277,21 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
 
             worksheet.Column(7).Style.Numberformat.Format = "dd.mm.yyyy hh:mm";
             worksheet.Column(8).Style.Numberformat.Format = "#,##0.00 TL";
-            worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+            if (worksheet.Dimension != null)
+            {
+                worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+            }
 
             return File(
                 package.GetAsByteArray(),
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 $"siparisler-{DateTime.Now:yyyyMMdd-HHmm}.xlsx");
+        }
+
+        private static bool IsUnpaidPaytrOrder(Siparis siparis)
+        {
+            return string.Equals(siparis.OdemeSaglayici, "PayTR", StringComparison.OrdinalIgnoreCase) &&
+                   !siparis.OdemeTamamlandiMi;
         }
 
         [HttpPost]
@@ -357,15 +366,18 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            var siparisler = await _context.Siparisler
+            var adaySiparisler = await _context.Siparisler
                 .Where(x => siparisIds.Contains(x.Id) &&
-                            x.Durum == SiparisDurumHelper.SiparisAlindi &&
-                            (x.OdemeSaglayici != "PayTR" || x.OdemeTamamlandiMi))
+                            x.Durum == SiparisDurumHelper.SiparisAlindi)
                 .ToListAsync();
+
+            var siparisler = adaySiparisler
+                .Where(x => !IsUnpaidPaytrOrder(x))
+                .ToList();
 
             if (!siparisler.Any())
             {
-                TempData["Mesaj"] = "Onaylanacak 'Yeni' durumlu sipariş bulunamadı.";
+                TempData["Mesaj"] = "Onaylanacak ödemesi tamamlanmış 'Yeni' durumlu sipariş bulunamadı.";
                 TempData["Durum"] = "warning";
                 return RedirectToAction(nameof(Index));
             }
@@ -397,27 +409,51 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
             }
 
             var validDurumlar = new[] { SiparisDurumHelper.UretimHazirlaniyor, SiparisDurumHelper.Paketleniyor };
-            var siparisler = await _context.Siparisler
+            var adaySiparisler = await _context.Siparisler
                 .Where(x => siparisIds.Contains(x.Id) && validDurumlar.Contains(x.Durum))
                 .ToListAsync();
 
+            var siparisler = adaySiparisler
+                .Where(x => !IsUnpaidPaytrOrder(x))
+                .ToList();
+
             if (!siparisler.Any())
             {
-                TempData["Mesaj"] = "Kargoya verilecek 'Hazırlanıyor' veya 'Paketleniyor' durumlu sipariş bulunamadı.";
+                TempData["Mesaj"] = "Kargoya verilecek ödemesi tamamlanmış 'Hazırlanıyor' veya 'Paketleniyor' durumlu sipariş bulunamadı.";
                 TempData["Durum"] = "warning";
                 return RedirectToAction(nameof(Index));
             }
 
+            var trimmedKargoNo = kargoNo?.Trim();
+            var tekSiparisMi = siparisler.Count == 1;
+
             foreach (var siparis in siparisler)
             {
+                var seciliKargoFirmasi = await ResolveKargoFirmasiAsync(siparis, kargoFirmasiId);
                 siparis.Durum = SiparisDurumHelper.KargoyaVerildi;
-                if (kargoFirmasiId.HasValue)
-                    siparis.KargoFirmasiId = kargoFirmasiId.Value;
-                if (!string.IsNullOrWhiteSpace(kargoNo))
-                    siparis.KargoTakipNo = kargoNo;
+                if (seciliKargoFirmasi != null)
+                {
+                    siparis.KargoFirmasiId = seciliKargoFirmasi.Id;
+                    siparis.KargoFirmasi = seciliKargoFirmasi.Ad;
+                }
+                if (tekSiparisMi && !string.IsNullOrWhiteSpace(trimmedKargoNo))
+                {
+                    siparis.KargoTakipNo = trimmedKargoNo;
+                }
             }
 
             await _context.SaveChangesAsync();
+
+            var varsayilanFirmaAdi = _siteSettingsService.GetSettings().KargoFirmasi ?? "Standart Kargo";
+            foreach (var siparis in siparisler)
+            {
+                await SendStatusNotificationAsync(
+                    siparis,
+                    SiparisDurumHelper.UretimHazirlaniyor,
+                    SiparisDurumHelper.KargoyaVerildi,
+                    string.IsNullOrWhiteSpace(siparis.KargoFirmasi) ? varsayilanFirmaAdi : siparis.KargoFirmasi,
+                    siparis.KargoTakipNo ?? string.Empty);
+            }
 
             TempData["Mesaj"] = $"{siparisler.Count} sipariş 'Kargoya Verildi' durumuna alındı.";
             TempData["Durum"] = "success";
@@ -438,9 +474,13 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
                 return RedirectToAction(nameof(Index), new { durum = SiparisDurumHelper.KargoyaVerildi });
             }
 
-            var siparisler = await _context.Siparisler
+            var adaySiparisler = await _context.Siparisler
                 .Where(x => siparisIds.Contains(x.Id) && x.Durum == SiparisDurumHelper.KargoyaVerildi)
                 .ToListAsync();
+
+            var siparisler = adaySiparisler
+                .Where(x => !IsUnpaidPaytrOrder(x))
+                .ToList();
 
             if (!siparisler.Any())
             {
@@ -493,12 +533,13 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
 
             var durumAd = SiparisDurumHelper.GetLabel(yeniDurum);
             var guncellenecekler = siparisler
-                .Where(x => CanMoveOrderStatusForward(x.Durum, yeniDurum))
+                .Where(x => CanMoveOrderStatusForward(x.Durum, yeniDurum) &&
+                            (yeniDurum == SiparisDurumHelper.IptalEdildi || !IsUnpaidPaytrOrder(x)))
                 .ToList();
 
             if (!guncellenecekler.Any())
             {
-                TempData["Mesaj"] = $"Seçili siparişler '{durumAd}' durumuna alınamaz. Sipariş durumu geriye döndürülemez.";
+                TempData["Mesaj"] = $"Seçili siparişler '{durumAd}' durumuna alınamaz. Ödemesi tamamlanmamış veya durumu uygun olmayan siparişler ilerletilemez.";
                 TempData["Durum"] = "warning";
                 return RedirectToAction(nameof(Index));
             }
@@ -536,7 +577,7 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            var siparisler = await _context.Siparisler
+            var adaySiparisler = await _context.Siparisler
                 .Where(x =>
                     idList.Contains(x.Id) &&
                     x.Durum != SiparisDurumHelper.KargoyaVerildi &&
@@ -544,9 +585,13 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
                     x.Durum != SiparisDurumHelper.IptalEdildi)
                 .ToListAsync();
 
+            var siparisler = adaySiparisler
+                .Where(x => !SiparisDurumHelper.IsReturn(x.Durum))
+                .ToList();
+
             if (!siparisler.Any())
             {
-                TempData["Mesaj"] = "İptal edilebilecek (Kargoya Verilmemiş) sipariş bulunamadı.";
+                TempData["Mesaj"] = "İptal edilebilecek (Kargoya Verilmemiş / Teslim Edilmemiş) sipariş bulunamadı.";
                 TempData["Durum"] = "warning";
                 return RedirectToAction(nameof(Index));
             }
@@ -554,14 +599,17 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
             foreach (var siparis in siparisler)
             {
                 siparis.Durum = SiparisDurumHelper.IptalEdildi;
-                
+            }
+
+            await _context.SaveChangesAsync();
+
+            foreach (var siparis in siparisler)
+            {
                 if (!string.IsNullOrWhiteSpace(siparis.Eposta))
                 {
                     await SendIptalEmailAsync(siparis);
                 }
             }
-
-            await _context.SaveChangesAsync();
 
             TempData["Mesaj"] = $"{siparisler.Count} sipariş iptal edildi ve müşterilere e-posta gönderildi.";
             TempData["Durum"] = "success";
@@ -582,9 +630,12 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            if (siparis.Durum == SiparisDurumHelper.KargoyaVerildi)
+            if (siparis.Durum == SiparisDurumHelper.KargoyaVerildi ||
+                siparis.Durum == SiparisDurumHelper.TeslimEdildi ||
+                SiparisDurumHelper.IsCancelled(siparis.Durum) ||
+                SiparisDurumHelper.IsReturn(siparis.Durum))
             {
-                TempData["Mesaj"] = "Kargoya verilmiş sipariş iptal edilemez!";
+                TempData["Mesaj"] = "Kargoya verilmiş, teslim edilmiş, iade sürecinde veya zaten iptal edilmiş sipariş iptal edilemez!";
                 TempData["Durum"] = "danger";
                 return RedirectToAction(nameof(Detay), new { id });
             }
@@ -611,6 +662,9 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
                     return;
 
                 var siparisNo = string.IsNullOrWhiteSpace(siparis.SiparisNo) ? $"#{siparis.Id}" : siparis.SiparisNo;
+                var iadeBilgisi = siparis.OdemeTamamlandiMi
+                    ? "<p>Ödemeniz alınmış olup, ücret iadeniz 3-5 iş günü içinde ödeme yaptığınız karta/hesaba yansıtılacaktır.</p>"
+                    : "<p>Bu sipariş için herhangi bir tahsilat yapılmamıştır.</p>";
                 
                 var icerik = $@"
                     <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;'>
@@ -621,7 +675,7 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
                             <p><strong>Sipariş No:</strong> {siparisNo}</p>
                             <p><strong>İptal Tarihi:</strong> {DateTime.Now:dd.MM.yyyy HH:mm}</p>
                         </div>
-                        <p>Ödeme yapıldıysa, iadeniz 3-5 iş günü içinde hesabınıza yapılacaktır.</p>
+                        {iadeBilgisi}
                         <p>Herhangi bir sorunuz varsa bizimle iletişime geçebilirsiniz.</p>
                         <p style='margin-top: 30px;'>Saygılarımızla,<br/><strong>MeteorGaleri</strong></p>
                     </div>";

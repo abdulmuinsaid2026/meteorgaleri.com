@@ -113,21 +113,6 @@ if (!string.IsNullOrWhiteSpace(googleClientId) && !string.IsNullOrWhiteSpace(goo
         });
 }
 
-// Facebook ile GiriÅŸ (sadece AppId ve AppSecret tanımlıysa aktif)
-var facebookAppId = builder.Configuration["Authentication:Facebook:AppId"] ?? "";
-var facebookAppSecret = builder.Configuration["Authentication:Facebook:AppSecret"] ?? "";
-if (!string.IsNullOrWhiteSpace(facebookAppId) && !string.IsNullOrWhiteSpace(facebookAppSecret))
-{
-    builder.Services.AddAuthentication()
-        .AddFacebook(options =>
-        {
-            options.AppId = facebookAppId;
-            options.AppSecret = facebookAppSecret;
-            options.Scope.Add("email");
-            options.Scope.Add("public_profile");
-        });
-}
-
 // 3. Cookie (Ã‡erez) AyarlarÄ±
 builder.Services.ConfigureApplicationCookie(options =>
 {
@@ -162,7 +147,7 @@ builder.Services.ConfigureApplicationCookie(options =>
             var signInManager = context.HttpContext.RequestServices.GetRequiredService<SignInManager<AppUser>>();
             var user = await userManager.GetUserAsync(context.Principal);
 
-            if (user == null)
+            if (user == null || await userManager.IsLockedOutAsync(user))
             {
                 context.RejectPrincipal();
                 await signInManager.SignOutAsync();
@@ -626,7 +611,10 @@ static bool IsMaintenanceAllowedPath(PathString path)
 
     return value.StartsWith("/admin", StringComparison.OrdinalIgnoreCase)
         || value.StartsWith("/hesap", StringComparison.OrdinalIgnoreCase)
-        || value.StartsWith("/api/admin", StringComparison.OrdinalIgnoreCase);
+        || value.StartsWith("/api/admin", StringComparison.OrdinalIgnoreCase)
+        || value.StartsWith("/siparis/paytrbildirim", StringComparison.OrdinalIgnoreCase)
+        || value.StartsWith("/siparis/odemesonuc", StringComparison.OrdinalIgnoreCase)
+        || value.StartsWith("/siparis/iyzico", StringComparison.OrdinalIgnoreCase);
 }
 
 static bool IsAdminSecuredPath(PathString path)

@@ -1,6 +1,7 @@
 using KanvasProje.Core.Models;
 using KanvasProje.Core.Varliklar;
 using KanvasProje.Data;
+using KanvasProje.Web.Security;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OfficeOpenXml;
@@ -41,12 +42,16 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
                 .Take(pageSize)
                 .ToListAsync();
 
-            var now = DateTime.UtcNow.AddHours(3);
-            var todayStart = DateTime.SpecifyKind(now.Date, DateTimeKind.Utc);
-            var onlineStart = now.AddMinutes(-5);
+            var utcNow = DateTime.UtcNow;
+            var turkeyTodayDate = utcNow.AddHours(3).Date;
+            var todayStart = DateTime.SpecifyKind(turkeyTodayDate.AddHours(-3), DateTimeKind.Utc);
+            var onlineStart = utcNow.AddMinutes(-5);
 
             var allLogsQuery = _context.ZiyaretciLoglari.AsNoTracking();
-            var filteredLogs = await query.ToListAsync();
+            var filteredLogs = await query
+                .OrderByDescending(x => x.OlusturulmaTarihi)
+                .Take(10000)
+                .ToListAsync();
 
             var topPages = filteredLogs
                 .Where(x => string.Equals(x.Metod, "GET", StringComparison.OrdinalIgnoreCase))
@@ -113,6 +118,7 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
             ExcelPackage.License.SetNonCommercialOrganization("MeteorGaleri");
             var kayitlar = await BuildFilteredQuery(q, metod, cihaz, baslangic, bitis)
                 .OrderByDescending(x => x.OlusturulmaTarihi)
+                .Take(10000)
                 .ToListAsync();
 
             using var package = new ExcelPackage();
@@ -183,8 +189,18 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Temizle()
         {
+            if (!AdminSecurityRoles.UserHasAnyRole(
+                    User,
+                    new[] { AdminSecurityRoles.SuperAdmin, AdminSecurityRoles.LegacyAdmin, AdminSecurityRoles.Yonetici }))
+            {
+                TempData["Hata"] = "Ziyaretçi trafik geçmişini temizleme yetkiniz yok.";
+                return RedirectToAction(nameof(Index));
+            }
+
             await _context.Database.ExecuteSqlRawAsync("TRUNCATE TABLE \"ZiyaretciLoglari\"");
             TempData["Basari"] = "Ziyaretçi trafik geçmişi temizlendi.";
+            TempData["Mesaj"] = "Ziyaretçi trafik geçmişi temizlendi.";
+            TempData["Durum"] = "success";
             return RedirectToAction(nameof(Index));
         }
 

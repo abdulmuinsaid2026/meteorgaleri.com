@@ -698,12 +698,22 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
 
         private static bool IsRevenueOrder(Siparis order)
         {
-            return !SiparisDurumHelper.IsCancelled(order.Durum) && !SiparisDurumHelper.IsReturn(order.Durum);
+            if (SiparisDurumHelper.IsCancelled(order.Durum) || SiparisDurumHelper.IsReturn(order.Durum))
+            {
+                return false;
+            }
+
+            if (string.Equals(order.OdemeSaglayici, "PayTR", StringComparison.OrdinalIgnoreCase) && !order.OdemeTamamlandiMi)
+            {
+                return false;
+            }
+
+            return order.Durum != SiparisDurumHelper.SiparisAlindi || order.OdemeTamamlandiMi;
         }
 
         private static DateTime ToTurkeyLocal(DateTime value)
         {
-            return value.Kind == DateTimeKind.Utc ? value.AddHours(3) : value;
+            return value.Kind == DateTimeKind.Local ? value : value.AddHours(3);
         }
 
         private static string GetCustomerKey(Siparis order)

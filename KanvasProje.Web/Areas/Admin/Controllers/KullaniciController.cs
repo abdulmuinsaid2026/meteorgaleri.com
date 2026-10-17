@@ -1,6 +1,7 @@
 using System.Text;
 using KanvasProje.Core.Models;
 using KanvasProje.Core.Varliklar;
+using KanvasProje.Data;
 using KanvasProje.Service.Services;
 using KanvasProje.Web.Security;
 using Microsoft.AspNetCore.Identity;
@@ -13,22 +14,25 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
     public class KullaniciController : AdminBaseController
     {
         private readonly UserManager<AppUser> _userManager;
+        private readonly KanvasDbContext _context;
         private readonly IAdminSessionStateService _adminSessionStateService;
         private readonly IAdminSecurityAuditService _auditService;
 
         public KullaniciController(
             UserManager<AppUser> userManager,
+            KanvasDbContext context,
             IAdminSessionStateService adminSessionStateService,
             IAdminSecurityAuditService auditService)
         {
             _userManager = userManager;
+            _context = context;
             _adminSessionStateService = adminSessionStateService;
             _auditService = auditService;
         }
 
         public async Task<IActionResult> Index(string? search)
         {
-            var query = _userManager.Users.AsQueryable();
+            var query = _userManager.Users.AsNoTracking().AsQueryable();
             var term = search?.Trim();
 
             if (!string.IsNullOrWhiteSpace(term))
@@ -44,14 +48,15 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
                 .OrderByDescending(u => u.Id)
                 .ToListAsync();
 
+            var userRolesLookup = await GetUserRolesLookupAsync(users.Select(x => x.Id));
             var states = await _adminSessionStateService.GetStatesAsync(users.Select(x => x.Id));
             var currentUserId = _userManager.GetUserId(User);
             var items = new List<KullaniciListItemViewModel>(users.Count);
 
             foreach (var user in users)
             {
-                var roles = await _userManager.GetRolesAsync(user);
-                var primaryRole = roles.Count == 0
+                userRolesLookup.TryGetValue(user.Id, out var roles);
+                var primaryRole = roles == null || roles.Count == 0
                     ? AdminSecurityRoles.Uye
                     : AdminSecurityRoles.GetPrimaryRole(roles);
 
@@ -105,7 +110,21 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
+            var targetRoles = await _userManager.GetRolesAsync(user);
+            if (IsSuperAdminRoleSet(targetRoles) && !IsCallerSuperAdmin())
+            {
+                TempData["Hata"] = "Süper Admin hesabının durumunu değiştirme yetkiniz yok.";
+                return RedirectToAction(nameof(Index));
+            }
+
             var isBanned = user.LockoutEnd.HasValue && user.LockoutEnd.Value > DateTime.UtcNow;
+            if (!isBanned && IsSuperAdminRoleSet(targetRoles) && !await HasAnotherActiveSuperAdminAsync(user.Id))
+            {
+                TempData["Hata"] = "Sistemdeki son aktif Süper Admin hesabı engellenemez.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            user.LockoutEnabled = true;
             user.LockoutEnd = isBanned ? null : DateTimeOffset.UtcNow.AddYears(100);
 
             var result = await _userManager.UpdateAsync(user);
@@ -115,6 +134,7 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
+            await _userManager.UpdateSecurityStampAsync(user);
             await _adminSessionStateService.ClearSessionAsync(user.Id);
 
             await _auditService.LogAsync(
@@ -146,6 +166,13 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
+            var targetRoles = await _userManager.GetRolesAsync(user);
+            if (IsSuperAdminRoleSet(targetRoles) && !IsCallerSuperAdmin())
+            {
+                TempData["Hata"] = "Süper Admin hesabının şifresini sıfırlama yetkiniz yok.";
+                return RedirectToAction(nameof(Index));
+            }
+
             return View(user);
         }
 
@@ -157,6 +184,13 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
             if (user == null)
             {
                 TempData["Hata"] = "Kullanıcı bulunamadı.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var targetRoles = await _userManager.GetRolesAsync(user);
+            if (IsSuperAdminRoleSet(targetRoles) && !IsCallerSuperAdmin())
+            {
+                TempData["Hata"] = "Süper Admin hesabının şifresini sıfırlama yetkiniz yok.";
                 return RedirectToAction(nameof(Index));
             }
 
@@ -181,6 +215,7 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
                 return View(user);
             }
 
+            await _userManager.UpdateSecurityStampAsync(user);
             await _adminSessionStateService.ClearSessionAsync(user.Id);
 
             await _auditService.LogAsync(
@@ -209,6 +244,13 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
+            var targetRoles = await _userManager.GetRolesAsync(user);
+            if (IsSuperAdminRoleSet(targetRoles) && !IsCallerSuperAdmin())
+            {
+                TempData["Hata"] = "Süper Admin hesabını düzenleme yetkiniz yok.";
+                return RedirectToAction(nameof(Index));
+            }
+
             return View(await BuildEditModelAsync(user));
         }
 
@@ -223,6 +265,12 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
             }
 
             var currentRoles = await _userManager.GetRolesAsync(user);
+            if (IsSuperAdminRoleSet(currentRoles) && !IsCallerSuperAdmin())
+            {
+                TempData["Hata"] = "Süper Admin hesabını düzenleme yetkiniz yok.";
+                return RedirectToAction(nameof(Index));
+            }
+
             var currentPrimaryRole = currentRoles.Count == 0
                 ? AdminSecurityRoles.Uye
                 : AdminSecurityRoles.GetPrimaryRole(currentRoles);
@@ -231,13 +279,13 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
             var selectedRole = string.IsNullOrWhiteSpace(model.SelectedRole)
                 ? AdminSecurityRoles.Uye
                 : model.SelectedRole;
-            var allowedRoles = AdminSecurityRoles.GetAssignableRoleOptions()
+            var allowedRoles = GetCallerAssignableRoleOptions()
                 .Select(x => x.Value)
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
             if (!allowedRoles.Contains(selectedRole))
             {
-                ModelState.AddModelError(string.Empty, "Seçilen rol geçersiz.");
+                ModelState.AddModelError(string.Empty, "Seçilen rol geçersiz veya bu rolü atama yetkiniz yok.");
                 var invalidRoleModel = await BuildEditModelAsync(user);
                 invalidRoleModel.SelectedRole = currentEditableRole;
                 return View(invalidRoleModel);
@@ -251,6 +299,17 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
                 return RedirectToAction(nameof(Duzenle), new { id = user.Id });
             }
 
+            var roleChanged = !string.Equals(currentEditableRole, selectedRole, StringComparison.OrdinalIgnoreCase);
+            if (roleChanged &&
+                string.Equals(currentEditableRole, AdminSecurityRoles.SuperAdmin, StringComparison.OrdinalIgnoreCase) &&
+                !await HasAnotherActiveSuperAdminAsync(user.Id))
+            {
+                TempData["Hata"] = "Sistemdeki son aktif Süper Admin hesabının rolü düşürülemez.";
+                return RedirectToAction(nameof(Duzenle), new { id = user.Id });
+            }
+
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+
             user.AdSoyad = model.AdSoyad?.Trim() ?? string.Empty;
             user.PhoneNumber = model.PhoneNumber?.Trim();
             user.Sehir = model.Sehir?.Trim() ?? string.Empty;
@@ -258,6 +317,7 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
             var updateResult = await _userManager.UpdateAsync(user);
             if (!updateResult.Succeeded)
             {
+                await transaction.RollbackAsync();
                 AddErrors(updateResult);
                 var failedModel = await BuildEditModelAsync(user);
                 failedModel.SelectedRole = selectedRole;
@@ -273,6 +333,7 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
                 var removeResult = await _userManager.RemoveFromRolesAsync(user, rolesToRemove);
                 if (!removeResult.Succeeded)
                 {
+                    await transaction.RollbackAsync();
                     AddErrors(removeResult);
                     var failedModel = await BuildEditModelAsync(user);
                     failedModel.SelectedRole = currentEditableRole;
@@ -283,13 +344,20 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
             var addRoleResult = await _userManager.AddToRoleAsync(user, selectedRole);
             if (!addRoleResult.Succeeded)
             {
+                await transaction.RollbackAsync();
                 AddErrors(addRoleResult);
                 var failedModel = await BuildEditModelAsync(user);
                 failedModel.SelectedRole = currentEditableRole;
                 return View(failedModel);
             }
 
-            var roleChanged = !string.Equals(currentEditableRole, selectedRole, StringComparison.OrdinalIgnoreCase);
+            if (roleChanged)
+            {
+                await _userManager.UpdateSecurityStampAsync(user);
+            }
+
+            await transaction.CommitAsync();
+
             if (roleChanged)
             {
                 await _adminSessionStateService.ClearSessionAsync(user.Id);
@@ -324,6 +392,22 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
+            var targetRoles = await _userManager.GetRolesAsync(user);
+            if (IsSuperAdminRoleSet(targetRoles))
+            {
+                if (!IsCallerSuperAdmin())
+                {
+                    TempData["Hata"] = "Süper Admin hesabını silme yetkiniz yok.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                if (!await HasAnotherActiveSuperAdminAsync(user.Id))
+                {
+                    TempData["Hata"] = "Sistemdeki son aktif Süper Admin hesabı silinemez.";
+                    return RedirectToAction(nameof(Index));
+                }
+            }
+
             await _adminSessionStateService.ClearSessionAsync(user.Id);
             var result = await _userManager.DeleteAsync(user);
 
@@ -345,7 +429,8 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
 
         public async Task<IActionResult> ExcelExport()
         {
-            var users = await _userManager.Users.ToListAsync();
+            var users = await _userManager.Users.AsNoTracking().ToListAsync();
+            var userRolesLookup = await GetUserRolesLookupAsync(users.Select(x => x.Id));
             var states = await _adminSessionStateService.GetStatesAsync(users.Select(x => x.Id));
             var builder = new StringBuilder();
 
@@ -353,8 +438,8 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
 
             foreach (var user in users)
             {
-                var roles = await _userManager.GetRolesAsync(user);
-                var primaryRole = roles.Count == 0
+                userRolesLookup.TryGetValue(user.Id, out var roles);
+                var primaryRole = roles == null || roles.Count == 0
                     ? AdminSecurityRoles.Uye
                     : AdminSecurityRoles.GetPrimaryRole(roles);
 
@@ -371,7 +456,13 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
                     EscapeCsv(lastLogin)));
             }
 
-            return File(Encoding.UTF8.GetBytes(builder.ToString()), "text/csv", "kullanicilar.csv");
+            var preamble = Encoding.UTF8.GetPreamble();
+            var payload = Encoding.UTF8.GetBytes(builder.ToString());
+            var bytes = new byte[preamble.Length + payload.Length];
+            Buffer.BlockCopy(preamble, 0, bytes, 0, preamble.Length);
+            Buffer.BlockCopy(payload, 0, bytes, preamble.Length, payload.Length);
+
+            return File(bytes, "text/csv; charset=utf-8", "kullanicilar.csv");
         }
 
         private async Task<KullaniciDuzenleViewModel> BuildEditModelAsync(AppUser user)
@@ -399,8 +490,70 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
                 IsBanned = user.LockoutEnd.HasValue && user.LockoutEnd.Value > DateTime.UtcNow,
                 LastAdminLoginUtc = sessionState?.CurrentLoginUtc,
                 PreviousAdminLoginUtc = sessionState?.PreviousLoginUtc,
-                RoleOptions = AdminSecurityRoles.GetAssignableRoleOptions().ToList()
+                RoleOptions = GetCallerAssignableRoleOptions().ToList()
             };
+        }
+
+        private bool IsCallerSuperAdmin()
+        {
+            return AdminSecurityRoles.UserHasAnyRole(
+                User,
+                new[] { AdminSecurityRoles.SuperAdmin, AdminSecurityRoles.LegacyAdmin });
+        }
+
+        private static bool IsSuperAdminRoleSet(IEnumerable<string> roles)
+        {
+            return roles.Any(r =>
+                string.Equals(r, AdminSecurityRoles.SuperAdmin, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(r, AdminSecurityRoles.LegacyAdmin, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private IReadOnlyList<AdminRoleOption> GetCallerAssignableRoleOptions()
+        {
+            var options = AdminSecurityRoles.GetAssignableRoleOptions();
+            if (IsCallerSuperAdmin())
+            {
+                return options;
+            }
+
+            return options
+                .Where(x => !string.Equals(x.Value, AdminSecurityRoles.SuperAdmin, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+        private async Task<bool> HasAnotherActiveSuperAdminAsync(string excludedUserId)
+        {
+            var now = DateTimeOffset.UtcNow;
+            return await (from ur in _context.UserRoles.AsNoTracking()
+                          join r in _context.Roles.AsNoTracking() on ur.RoleId equals r.Id
+                          join u in _context.Users.AsNoTracking() on ur.UserId equals u.Id
+                          where u.Id != excludedUserId &&
+                                (r.Name == AdminSecurityRoles.SuperAdmin || r.Name == AdminSecurityRoles.LegacyAdmin) &&
+                                (!u.LockoutEnd.HasValue || u.LockoutEnd.Value <= now)
+                          select u.Id)
+                .AnyAsync();
+        }
+
+        private async Task<Dictionary<string, List<string>>> GetUserRolesLookupAsync(IEnumerable<string> userIds)
+        {
+            var ids = userIds.Where(x => !string.IsNullOrWhiteSpace(x)).Distinct().ToList();
+            if (ids.Count == 0)
+            {
+                return new Dictionary<string, List<string>>(StringComparer.Ordinal);
+            }
+
+            var pairs = await (from ur in _context.UserRoles.AsNoTracking()
+                               join r in _context.Roles.AsNoTracking() on ur.RoleId equals r.Id
+                               where ids.Contains(ur.UserId) && r.Name != null
+                               select new { ur.UserId, RoleName = r.Name! })
+                .ToListAsync();
+
+            return pairs
+                .GroupBy(x => x.UserId, StringComparer.Ordinal)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Select(x => x.RoleName).ToList(),
+                    StringComparer.Ordinal);
         }
 
         private void AddErrors(IdentityResult result)
@@ -425,7 +578,15 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
                 return string.Empty;
             }
 
-            return $"\"{value.Replace("\"", "\"\"")}\"";
+            var sanitized = value;
+            if (sanitized.Length > 0 &&
+                (sanitized[0] == '=' || sanitized[0] == '+' || sanitized[0] == '-' ||
+                 sanitized[0] == '@' || sanitized[0] == '\t' || sanitized[0] == '\r'))
+            {
+                sanitized = "'" + sanitized;
+            }
+
+            return $"\"{sanitized.Replace("\"", "\"\"")}\"";
         }
     }
 }

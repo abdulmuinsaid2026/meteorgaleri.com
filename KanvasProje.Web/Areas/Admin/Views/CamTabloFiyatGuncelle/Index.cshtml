@@ -1,4 +1,4 @@
-﻿@model List<KanvasProje.Web.Areas.Admin.Controllers.OlcuFiyatModel>
+@model List<KanvasProje.Web.Areas.Admin.Controllers.OlcuFiyatModel>
 @{
     Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
     ViewData["Title"] = "Cam Tablo Fiyat Güncelleme";
@@ -425,7 +425,7 @@
                                    placeholder="@item.MevcutFiyat.ToString("N2")"
                                    step="0.01" 
                                    min="0" />
-                            <button type="button" class="tf-save-btn" onclick="kaydet('@item.Olcu', '@item.CerceveTipi', '@inputId', @item.MevcutFiyat)">
+                            <button type="button" class="tf-save-btn" onclick="kaydet(this)">
                                 <i class="fas fa-save"></i> Kaydet
                             </button>
                         </div>
@@ -466,9 +466,12 @@ function filtrele() {
     });
 }
 
-function kaydet(olcu, cerceveTipi, inputId, mevcutFiyat) {
-    const input = document.getElementById(inputId);
-    const rawVal = (input.value || '').trim().replace(',', '.');
+function kaydet(btn) {
+    const card = btn.closest('.tf-card');
+    const olcu = card?.getAttribute('data-olcu') || '';
+    const cerceveTipi = card?.getAttribute('data-cerceve') || '';
+    const input = card?.querySelector('input[type="number"]');
+    const rawVal = (input?.value || '').trim().replace(',', '.');
     const yeniFiyat = parseFloat(rawVal);
     
     if (isNaN(yeniFiyat) || yeniFiyat <= 0) {
@@ -476,7 +479,6 @@ function kaydet(olcu, cerceveTipi, inputId, mevcutFiyat) {
         return;
     }
     
-    const btn = input.closest('.tf-input-row').querySelector('.tf-save-btn');
     btn.classList.add('loading');
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
     

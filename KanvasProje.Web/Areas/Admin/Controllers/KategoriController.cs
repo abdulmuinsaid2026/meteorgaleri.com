@@ -93,7 +93,10 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
                 range.Style.Font.Color.SetColor(System.Drawing.Color.White);
             }
 
-            worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+            if (worksheet.Dimension != null)
+            {
+                worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+            }
             return File(
                 package.GetAsByteArray(),
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -201,6 +204,7 @@ namespace KanvasProje.Web.Areas.Admin.Controllers
             }
 
             kategori.OlusturulmaTarihi = DateTime.UtcNow;
+            kategori.SilindiMi = false;
             kategori.Sira = await NormalizeCategoryOrderAsync(kategori.Sira);
             kategori.UrunSiralamaTipi = NormalizeSortType(kategori.UrunSiralamaTipi);
             kategori.Slug = await GenerateUniqueCategorySlugAsync(kategori.Slug, kategori.Ad, null);
