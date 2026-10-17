@@ -9,6 +9,84 @@ document.addEventListener('DOMContentLoaded', function () {
     const toggleBtn = document.getElementById('caSidebarToggle');
     const overlay = document.getElementById('caOverlay');
     const themeToggle = document.getElementById('caThemeToggle');
+    const mobileMenuBtn = document.getElementById('caMobileMenuBtn');
+    const mobileMenuIcon = document.getElementById('caMobileMenuIcon');
+    const mobileNavPanel = document.getElementById('caMobileNavPanel');
+    const mobileNavBackdrop = document.getElementById('caMobileNavBackdrop');
+
+    // =============================================
+    // MOBILE TOP-DOWN MENU TOGGLE
+    // =============================================
+    function closeMobileMenu() {
+        if (!mobileNavPanel || !mobileMenuBtn) return;
+        mobileNavPanel.classList.remove('open');
+        if (mobileNavBackdrop) mobileNavBackdrop.classList.remove('open');
+        mobileMenuBtn.classList.remove('active');
+        mobileMenuBtn.setAttribute('aria-expanded', 'false');
+        if (mobileMenuIcon) {
+            mobileMenuIcon.className = 'fas fa-bars';
+        }
+        document.body.style.overflow = '';
+    }
+
+    function openMobileMenu() {
+        if (!mobileNavPanel || !mobileMenuBtn) return;
+        mobileNavPanel.classList.add('open');
+        if (mobileNavBackdrop) mobileNavBackdrop.classList.add('open');
+        mobileMenuBtn.classList.add('active');
+        mobileMenuBtn.setAttribute('aria-expanded', 'true');
+        if (mobileMenuIcon) {
+            mobileMenuIcon.className = 'fas fa-xmark';
+        }
+        document.body.style.overflow = 'hidden';
+    }
+
+    if (mobileMenuBtn && mobileNavPanel) {
+        mobileMenuBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            if (mobileNavPanel.classList.contains('open')) {
+                closeMobileMenu();
+            } else {
+                openMobileMenu();
+            }
+        });
+
+        if (mobileNavBackdrop) {
+            mobileNavBackdrop.addEventListener('click', closeMobileMenu);
+        }
+
+        // Accordion toggles inside mobile menu
+        mobileNavPanel.querySelectorAll('.ca-mobile-group-toggle').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                const group = btn.closest('.ca-mobile-nav-group');
+                if (!group) return;
+                const isOpen = group.classList.contains('open');
+                // Close other open groups for a clean accordion feel
+                mobileNavPanel.querySelectorAll('.ca-mobile-nav-group.open').forEach(function (other) {
+                    if (other !== group) {
+                        other.classList.remove('open');
+                        const otherBtn = other.querySelector('.ca-mobile-group-toggle');
+                        if (otherBtn) otherBtn.setAttribute('aria-expanded', 'false');
+                    }
+                });
+                group.classList.toggle('open', !isOpen);
+                btn.setAttribute('aria-expanded', !isOpen ? 'true' : 'false');
+            });
+        });
+
+        // Close on Escape key or desktop resize
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && mobileNavPanel.classList.contains('open')) {
+                closeMobileMenu();
+            }
+        });
+
+        window.addEventListener('resize', function () {
+            if (window.innerWidth > 1080 && mobileNavPanel.classList.contains('open')) {
+                closeMobileMenu();
+            }
+        });
+    }
 
     // =============================================
     // SIDEBAR TOGGLE

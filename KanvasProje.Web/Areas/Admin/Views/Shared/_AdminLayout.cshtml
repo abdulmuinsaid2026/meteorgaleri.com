@@ -57,7 +57,7 @@
     <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-    <link href="~/css/admin.css" rel="stylesheet" />
+    <link href="~/css/admin.css" asp-append-version="true" rel="stylesheet" />
 </head>
 <body>
     <div class="ca-admin-shell">
@@ -213,8 +213,178 @@
                         </li>
                     </ul>
                 </div>
+
+                <button type="button"
+                        class="ca-mobile-menu-btn"
+                        id="caMobileMenuBtn"
+                        aria-label="Menüyü aç/kapat"
+                        aria-expanded="false"
+                        aria-controls="caMobileNavPanel">
+                    <i class="fas fa-bars" id="caMobileMenuIcon"></i>
+                    @if ((ViewBag.BekleyenSiparis != null && (int)ViewBag.BekleyenSiparis > 0) || (ViewBag.OkunmamisIletisim != null && (int)ViewBag.OkunmamisIletisim > 0))
+                    {
+                        <span class="ca-mobile-btn-dot"></span>
+                    }
+                </button>
             </div>
         </header>
+
+        <!-- Mobil Açılır Menü (Aşağı Doğru) -->
+        <div class="ca-mobile-nav-backdrop" id="caMobileNavBackdrop"></div>
+        <nav class="ca-mobile-nav-panel" id="caMobileNavPanel" aria-label="Mobil admin menüsü">
+            <div class="ca-mobile-nav-inner">
+                @if (canViewDashboard)
+                {
+                    <form action="/Admin/Search" method="get" class="ca-mobile-search">
+                        <i class="fas fa-search"></i>
+                        <input type="text" name="q" placeholder="Sipariş, ürün veya üye ara..." />
+                    </form>
+                }
+
+                <div class="ca-mobile-nav-list">
+                    @if (canViewDashboard)
+                    {
+                        <a href="/Admin/Home" class="ca-mobile-nav-item @(currentController == "Home" ? "active" : "")">
+                            <span class="ca-mobile-nav-item-left">
+                                <i class="fas fa-chart-line"></i>
+                                <span>Panel</span>
+                            </span>
+                            <i class="fas fa-chevron-right ca-mobile-nav-arrow"></i>
+                        </a>
+                    }
+
+                    @if (canManageOrders)
+                    {
+                        var isOrdersActive = currentController == "Siparis" || currentController == "Iade" || currentController == "Kargo";
+                        <div class="ca-mobile-nav-group @(isOrdersActive ? "open" : "")">
+                            <button type="button" class="ca-mobile-nav-item ca-mobile-group-toggle @(isOrdersActive ? "active" : "")" aria-expanded="@(isOrdersActive ? "true" : "false")">
+                                <span class="ca-mobile-nav-item-left">
+                                    <i class="fas fa-bag-shopping"></i>
+                                    <span>Sipariş Yönetimi</span>
+                                    @if (ViewBag.BekleyenSiparis != null && (int)ViewBag.BekleyenSiparis > 0)
+                                    {
+                                        <span class="ca-top-badge">@ViewBag.BekleyenSiparis</span>
+                                    }
+                                </span>
+                                <i class="fas fa-chevron-down ca-mobile-group-chevron"></i>
+                            </button>
+                            <div class="ca-mobile-sublist">
+                                <a href="/Admin/Siparis" class="ca-mobile-subitem"><i class="fas fa-list-check"></i> Tüm Siparişler</a>
+                                <a href="/Admin/Siparis?durum=0" class="ca-mobile-subitem"><i class="fas fa-clock"></i> Yeni Siparişler</a>
+                                <a href="/Admin/Siparis?durum=8" class="ca-mobile-subitem"><i class="fas fa-box"></i> Paketleniyor</a>
+                                <a href="/Admin/Kargo" class="ca-mobile-subitem"><i class="fas fa-truck-fast"></i> Kargo Firmaları</a>
+                                <a href="/Admin/Iade" class="ca-mobile-subitem"><i class="fas fa-rotate-left"></i> İade Talepleri</a>
+                            </div>
+                        </div>
+                    }
+
+                    @if (canManageProducts)
+                    {
+                        var isProductsActive = productControllers.Contains(currentController);
+                        <div class="ca-mobile-nav-group @(isProductsActive ? "open" : "")">
+                            <button type="button" class="ca-mobile-nav-item ca-mobile-group-toggle @(isProductsActive ? "active" : "")" aria-expanded="@(isProductsActive ? "true" : "false")">
+                                <span class="ca-mobile-nav-item-left">
+                                    <i class="fas fa-cubes"></i>
+                                    <span>Ürün Yönetimi</span>
+                                </span>
+                                <i class="fas fa-chevron-down ca-mobile-group-chevron"></i>
+                            </button>
+                            <div class="ca-mobile-sublist">
+                                <a href="/Admin/Urun" class="ca-mobile-subitem"><i class="fas fa-box-open"></i> Ürünler</a>
+                                <a href="/Admin/Urun/Ekle" class="ca-mobile-subitem"><i class="fas fa-plus"></i> Yeni Ürün Ekle</a>
+                                <a href="/Admin/Kategori" class="ca-mobile-subitem"><i class="fas fa-layer-group"></i> Kategoriler</a>
+                                <a href="/Admin/UrunOzellik" class="ca-mobile-subitem"><i class="fas fa-sliders"></i> Ürün Özellikleri</a>
+                                <a href="/Admin/Urun/Excel" class="ca-mobile-subitem"><i class="fas fa-file-excel"></i> Excel Ürün İşlemleri</a>
+                                <a href="/Admin/Urun/KanvasGorselYukle" class="ca-mobile-subitem"><i class="fas fa-images"></i> Kanvas Görsellerini Yükle</a>
+                                <a href="/Admin/TopluFiyatGuncelle" class="ca-mobile-subitem"><i class="fas fa-tags"></i> Kanvas Tablo Fiyat Güncelleme</a>
+                                <a href="/Admin/CamTabloFiyatGuncelle" class="ca-mobile-subitem"><i class="fas fa-layer-group"></i> Cam Tablo Fiyat Güncelleme</a>
+                                <a href="/Admin/TopluIndirim" class="ca-mobile-subitem"><i class="fas fa-percent"></i> Toplu İndirim Yönetimi</a>
+                            </div>
+                        </div>
+                    }
+
+                    @if (canManageContent)
+                    {
+                        var isContentActive = contentControllers.Contains(currentController);
+                        <div class="ca-mobile-nav-group @(isContentActive ? "open" : "")">
+                            <button type="button" class="ca-mobile-nav-item ca-mobile-group-toggle @(isContentActive ? "active" : "")" aria-expanded="@(isContentActive ? "true" : "false")">
+                                <span class="ca-mobile-nav-item-left">
+                                    <i class="fas fa-store"></i>
+                                    <span>Mağaza İçeriği</span>
+                                    @if (ViewBag.OkunmamisIletisim != null && (int)ViewBag.OkunmamisIletisim > 0)
+                                    {
+                                        <span class="ca-top-badge warning">@ViewBag.OkunmamisIletisim</span>
+                                    }
+                                </span>
+                                <i class="fas fa-chevron-down ca-mobile-group-chevron"></i>
+                            </button>
+                            <div class="ca-mobile-sublist">
+                                <a href="/Admin/Slayt" class="ca-mobile-subitem"><i class="fas fa-images"></i> Slayt Yönetimi</a>
+                                <a href="/Admin/AnaSayfa" class="ca-mobile-subitem"><i class="fas fa-palette"></i> Ana Sayfa İçeriği</a>
+                                <a href="/Admin/HomeSections" class="ca-mobile-subitem"><i class="fas fa-layer-group"></i> Ana Sayfa Bölümleri</a>
+                                <a href="/Admin/Sayfa" class="ca-mobile-subitem"><i class="fas fa-file-lines"></i> Kurumsal Sayfalar</a>
+                                <a href="/Admin/Kupon" class="ca-mobile-subitem"><i class="fas fa-tags"></i> Kuponlar</a>
+                                <a href="/Admin/Iletisim" class="ca-mobile-subitem"><i class="fas fa-inbox"></i> Mesajlar</a>
+                                <a href="/Admin/Yorum" class="ca-mobile-subitem"><i class="fas fa-comments"></i> Ürün Yorumları</a>
+                                <a href="/Admin/Bulten" class="ca-mobile-subitem"><i class="fas fa-envelope-open-text"></i> Bülten Aboneleri</a>
+                            </div>
+                        </div>
+                    }
+
+                    @if (canManageUsers)
+                    {
+                        <a href="/Admin/Kullanici" class="ca-mobile-nav-item @(currentController == "Kullanici" ? "active" : "")">
+                            <span class="ca-mobile-nav-item-left">
+                                <i class="fas fa-users"></i>
+                                <span>Üyeler</span>
+                            </span>
+                            <i class="fas fa-chevron-right ca-mobile-nav-arrow"></i>
+                        </a>
+                    }
+
+                    @if (canViewReports)
+                    {
+                        var isReportsActive = reportControllers.Contains(currentController) && currentController != "Home";
+                        <div class="ca-mobile-nav-group @(isReportsActive ? "open" : "")">
+                            <button type="button" class="ca-mobile-nav-item ca-mobile-group-toggle @(isReportsActive ? "active" : "")" aria-expanded="@(isReportsActive ? "true" : "false")">
+                                <span class="ca-mobile-nav-item-left">
+                                    <i class="fas fa-chart-pie"></i>
+                                    <span>Raporlar</span>
+                                </span>
+                                <i class="fas fa-chevron-down ca-mobile-group-chevron"></i>
+                            </button>
+                            <div class="ca-mobile-sublist">
+                                <a href="/Admin/Rapor" class="ca-mobile-subitem"><i class="fas fa-chart-column"></i> Satış Raporları</a>
+                                <a href="/Admin/Ziyaretci" class="ca-mobile-subitem"><i class="fas fa-user-clock"></i> Ziyaretçi Analizi</a>
+                            </div>
+                        </div>
+                    }
+
+                    @if (canManageSettings)
+                    {
+                        <a href="/Admin/Ayarlar" class="ca-mobile-nav-item @(currentController == "Ayarlar" ? "active" : "")">
+                            <span class="ca-mobile-nav-item-left">
+                                <i class="fas fa-gear"></i>
+                                <span>Ayarlar</span>
+                            </span>
+                            <i class="fas fa-chevron-right ca-mobile-nav-arrow"></i>
+                        </a>
+                    }
+                </div>
+
+                <div class="ca-mobile-nav-footer">
+                    <a href="/" target="_blank" class="ca-btn ca-btn-outline ca-btn-sm flex-grow-1 justify-content-center">
+                        <i class="fas fa-arrow-up-right-from-square"></i> Siteyi Görüntüle
+                    </a>
+                    <form action="/Hesap/CikisYap" method="post" class="m-0 flex-grow-1 d-flex">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="ca-btn ca-btn-danger ca-btn-sm w-100 justify-content-center">
+                            <i class="fas fa-right-from-bracket"></i> Çıkış Yap
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </nav>
 
         <div class="ca-admin-workspace">
         <main class="ca-content ca-topnav-content">
@@ -230,7 +400,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
-    <script src="~/js/admin.js"></script>
+    <script src="~/js/admin.js" asp-append-version="true"></script>
     @if (!string.IsNullOrWhiteSpace(toastMessage))
     {
         <script>
